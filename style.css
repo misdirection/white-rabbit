@@ -26,3 +26,9 @@ canvas {
     pointer-events: none;
     transition: opacity 0.5s ease;
 }
+
+/* Hide value display for specific lil-gui controllers */
+.lil-gui .hide-value .display,
+.lil-gui .hide-value input {
+    display: none !important;
+}
