@@ -52,6 +52,19 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup) {
         });
     });
 
+    const updateDwarfVisibility = (val) => {
+        planets.forEach(p => {
+            if (p.data.type === 'dwarf') {
+                p.group.visible = val;
+                if (p.orbitLine) p.orbitLine.visible = val;
+            }
+        });
+    };
+
+    config.showDwarfPlanets = false;
+    controlsFolder.add(config, 'showDwarfPlanets').name('Show Dwarf Planets').onChange(updateDwarfVisibility);
+    updateDwarfVisibility(config.showDwarfPlanets);
+
     controlsFolder.add(config, 'showZodiacs').name('Show Zodiacs').onChange(val => {
         zodiacGroup.visible = val;
     });
