@@ -16,7 +16,9 @@ An interactive 3D solar system simulation built with Three.js and the Astronomy 
 ### Core Files
 
 - **`main.js`**: Application entry point, initializes the scene and animation loop
-- **`planets.js`**: Planet and moon data, creation, and update logic
+- **`planets.js`**: Three.js scene graph manipulation and rendering logic
+- **`src/data/bodies.js`**: Static data definitions for planets and moons
+- **`src/physics/orbits.js`**: Pure physics functions for orbital calculations
 - **`scene.js`**: Three.js scene, camera, renderer, and lighting setup
 - **`stars.js`**: Starfield generation from astronomical data
 - **`ui.js`**: GUI controls for simulation parameters

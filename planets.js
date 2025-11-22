@@ -1,137 +1,14 @@
 import * as THREE from 'three';
 import * as Astronomy from 'astronomy-engine';
 import { config } from './config.js';
+import { planetData, dwarfPlanetData } from './src/data/bodies.js';
+import { calculateKeplerianPosition } from './src/physics/orbits.js';
 
 // Scaling constants for converting astronomical distances to Three.js scene units
 // These values balance visual clarity with spatial relationships
 const AU_TO_SCENE = 50;           // 1 Astronomical Unit = 50 scene units
 const MOON_DISTANCE_SCALE = 50;   // Scale factor for Earth Moon distance (makes it visible)
 const JOVIAN_MOON_SCALE = 100;    // Scale factor for Jupiter's moons (Astronomy Engine returns AU)
-
-/**
- * Planet data for major planets
- * @property {string} name - Display name
- * @property {string} body - Astronomy Engine body identifier
- * @property {number} radius - Radius relative to Earth (Earth = 1.0)
- * @property {number} period - Orbital period in days
- * @property {number} rotationPeriod - Rotation period in hours
- * @property {number} axialTilt - Axial tilt in degrees
- * @property {string} texture - Path to surface texture
- * @property {Object[]} [moons] - Array of moon objects (optional)
- */
-const planetData = [
-    { name: "Mercury", body: "Mercury", radius: 0.38, color: 0xaaaaaa, period: 88, texture: "/assets/textures/mercury.jpg", rotationPeriod: 1408, axialTilt: 0.01 },
-    { name: "Venus", body: "Venus", radius: 0.95, color: 0xffcc00, period: 225, texture: "/assets/textures/venus.jpg", rotationPeriod: 5832, axialTilt: 177.4 },
-    {
-        name: "Earth", body: "Earth", radius: 1, color: 0x2233ff, period: 365.25, texture: "/assets/textures/earth.jpg", cloudTexture: "/assets/textures/earth_clouds.png", rotationPeriod: 24, axialTilt: 23.4, moons: [
-            { name: "Moon", body: "Moon", radius: 0.27, color: 0x888888, type: "real", period: 27.3, texture: "/assets/textures/moon.jpg", tidallyLocked: true, axialTilt: 6.7 }
-        ]
-    },
-    { name: "Mars", body: "Mars", radius: 0.53, color: 0xff4400, period: 687, texture: "/assets/textures/mars.jpg", rotationPeriod: 24.6, axialTilt: 25.2 },
-    {
-        name: "Jupiter", body: "Jupiter", radius: 11, color: 0xd2b48c, period: 4333, texture: "/assets/textures/jupiter.jpg", rotationPeriod: 9.9, axialTilt: 3.1, moons: [
-            { name: "Io", radius: 0.28, color: 0xffff00, type: "jovian", moonIndex: 0, period: 1.77, texture: "/assets/textures/io.png", tidallyLocked: true, axialTilt: 0 },
-            { name: "Europa", radius: 0.24, color: 0xffffff, type: "jovian", moonIndex: 1, period: 3.55, texture: "/assets/textures/europa.png", tidallyLocked: true, axialTilt: 0 },
-            { name: "Ganymede", radius: 0.41, color: 0xdddddd, type: "jovian", moonIndex: 2, period: 7.15, texture: "/assets/textures/ganymede.png", tidallyLocked: true, axialTilt: 0 },
-            { name: "Callisto", radius: 0.37, color: 0xaaaaaa, type: "jovian", moonIndex: 3, period: 16.7, texture: "/assets/textures/callisto.png", tidallyLocked: true, axialTilt: 0 }
-        ]
-    },
-    {
-        name: "Saturn", body: "Saturn", radius: 9, color: 0xeebb88, period: 10759, texture: "/assets/textures/saturn.jpg", rotationPeriod: 10.7, axialTilt: 26.7, ring: { inner: 11, outer: 18, color: 0xaa8866, texture: "/assets/textures/saturn_ring.png" }, moons: [
-            { name: "Titan", radius: 0.4, distance: 20, color: 0xffaa00, type: "simple", period: 15.95, texture: "/assets/textures/titan.png", tidallyLocked: true, axialTilt: 0 }
-        ]
-    },
-    { name: "Uranus", body: "Uranus", radius: 4, color: 0x4fd0e7, period: 30687, texture: "/assets/textures/uranus.jpg", rotationPeriod: 17.2, axialTilt: 97.8 },
-    { name: "Neptune", body: "Neptune", radius: 3.9, color: 0x4b70dd, period: 60190, texture: "/assets/textures/neptune.jpg", rotationPeriod: 16.1, axialTilt: 28.3 }
-];
-
-/**
- * Dwarf planet data
- * Uses Keplerian orbital elements for bodies not in Astronomy Engine
- * @property {Object} elements - Keplerian orbital elements
- * @property {number} elements.a - Semi-major axis in AU
- * @property {number} elements.e - Eccentricity (0 = circular, >0 = elliptical)
- * @property {number} elements.i - Inclination in degrees
- * @property {number} elements.Omega - Longitude of ascending node in degrees
- * @property {number} elements.w - Argument of perihelion in degrees
- * @property {number} elements.M - Mean anomaly at J2000 epoch in degrees
- */
-const dwarfPlanetData = [
-    {
-        name: "Ceres", type: "dwarf", radius: 0.07, color: 0xaaaaaa, period: 1682, texture: "/assets/textures/ceres.jpg", rotationPeriod: 9.1, axialTilt: 4,
-        elements: { a: 2.767, e: 0.079, i: 10.59, Omega: 80.33, w: 73.51, M: 77.37 }
-    },
-    {
-        name: "Pluto", type: "dwarf", body: "Pluto", radius: 0.18, color: 0xddaa88, period: 90560, texture: "/assets/textures/pluto.png", rotationPeriod: 153.3, axialTilt: 122.5
-    },
-    {
-        name: "Haumea", type: "dwarf", radius: 0.13, color: 0xeeeeee, period: 103468, texture: "/assets/textures/haumea.png", rotationPeriod: 3.9, axialTilt: 0,
-        elements: { a: 43.18, e: 0.195, i: 28.21, Omega: 122.16, w: 238.78, M: 219.87 }
-    },
-    {
-        name: "Makemake", type: "dwarf", radius: 0.11, color: 0xddbb99, period: 112897, texture: "/assets/textures/makemake.jpg", rotationPeriod: 22.5, axialTilt: 0,
-        elements: { a: 45.43, e: 0.161, i: 28.98, Omega: 79.62, w: 294.84, M: 200.0 }
-    },
-    {
-        name: "Eris", type: "dwarf", radius: 0.18, color: 0xffffff, period: 203830, texture: "/assets/textures/eris.jpg", rotationPeriod: 25.9, axialTilt: 0,
-        elements: { a: 67.86, e: 0.436, i: 44.04, Omega: 35.95, w: 151.64, M: 200.0 }
-    }
-];
-
-function solveKepler(M, e) {
-    let E = M; // Initial guess
-    for (let i = 0; i < 10; i++) {
-        const dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
-        E -= dE;
-        if (Math.abs(dE) < 1e-6) break;
-    }
-    return E;
-}
-
-// Helper to calculate position from Keplerian elements
-function calculateKeplerianPosition(elements, date) {
-    const dayMs = 86400000;
-    const J2000 = new Date('2000-01-01T12:00:00Z').getTime();
-    const d = (date.getTime() - J2000) / dayMs; // Days since J2000
-
-    // Mean motion (degrees per day)
-    const n = 0.9856076686 / Math.pow(elements.a, 1.5);
-
-    // Current Mean Anomaly
-    let M = elements.M + n * d;
-    M = M % 360;
-    if (M < 0) M += 360;
-
-    // Convert to radians
-    const rad = Math.PI / 180;
-    const a = elements.a;
-    const e = elements.e;
-    const i = elements.i * rad;
-    const Omega = elements.Omega * rad;
-    const w = elements.w * rad;
-    const M_rad = M * rad;
-
-    // Solve Kepler's Equation for Eccentric Anomaly E
-    const E = solveKepler(M_rad, e);
-
-    // True Anomaly v
-    const x_orb = a * (Math.cos(E) - e);
-    const y_orb = a * Math.sqrt(1 - e * e) * Math.sin(E);
-
-    // Rotate to heliocentric coordinates
-    const cos_Omega = Math.cos(Omega);
-    const sin_Omega = Math.sin(Omega);
-    const cos_w = Math.cos(w);
-    const sin_w = Math.sin(w);
-    const cos_i = Math.cos(i);
-    const sin_i = Math.sin(i);
-
-    const x = x_orb * (cos_Omega * cos_w - sin_Omega * sin_w * cos_i) - y_orb * (cos_Omega * sin_w + sin_Omega * cos_w * cos_i);
-    const y = x_orb * (sin_Omega * cos_w + cos_Omega * sin_w * cos_i) + y_orb * (sin_Omega * sin_w - cos_Omega * cos_w * cos_i);
-    const z = x_orb * (sin_w * sin_i) + y_orb * (cos_w * sin_i);
-
-    return { x, y, z };
-}
 
 /**
  * Creates all planet and moon meshes with their orbit lines
