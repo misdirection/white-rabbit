@@ -29,6 +29,18 @@ export function createPlanets(scene, orbitGroup) {
     const sun = new THREE.Mesh(sunGeometry, sunMaterial);
     scene.add(sun);
 
+    // Create sun axis line
+    const sunAxisLength = 5 * 2.5;
+    const sunAxisGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, -sunAxisLength, 0),
+        new THREE.Vector3(0, sunAxisLength, 0)
+    ]);
+    const sunAxisMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+    const sunAxisLine = new THREE.Line(sunAxisGeo, sunAxisMat);
+    sunAxisLine.visible = config.showAxes;
+    sun.add(sunAxisLine);
+    sun.axisLine = sunAxisLine;
+
     // Combine data for creation loop
     const allBodies = [...planetData, ...dwarfPlanetData];
 
@@ -58,6 +70,18 @@ export function createPlanets(scene, orbitGroup) {
             const tiltRadians = (data.axialTilt * Math.PI) / 180;
             mesh.rotation.z = tiltRadians;
         }
+
+        // Create axis line
+        const axisLength = data.radius * 2.5; // Extend beyond poles
+        const axisGeo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, -axisLength, 0),
+            new THREE.Vector3(0, axisLength, 0)
+        ]);
+        const axisMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+        const axisLine = new THREE.Line(axisGeo, axisMat);
+        axisLine.visible = config.showAxes;
+        mesh.add(axisLine);
+        data.axisLine = axisLine;
 
         // Add atmosphere and clouds for Earth
         if (data.name === "Earth") {
@@ -144,12 +168,22 @@ export function createPlanets(scene, orbitGroup) {
                 // Apply initial scale
                 moonMesh.scale.setScalar(config.planetScale);
 
-                // Apply axial tilt if specified (only for non-tidally locked moons)
-                // Tidally locked moons will have their rotation set dynamically in updatePlanets
                 if (moonData.axialTilt !== undefined && !moonData.tidallyLocked) {
                     const tiltRadians = (moonData.axialTilt * Math.PI) / 180;
                     moonMesh.rotation.z = tiltRadians;
                 }
+
+                // Create moon axis line
+                const moonAxisLength = moonData.radius * 2.5;
+                const moonAxisGeo = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(0, -moonAxisLength, 0),
+                    new THREE.Vector3(0, moonAxisLength, 0)
+                ]);
+                const moonAxisMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+                const moonAxisLine = new THREE.Line(moonAxisGeo, moonAxisMat);
+                moonAxisLine.visible = config.showAxes;
+                moonMesh.add(moonAxisLine);
+                moonData.axisLine = moonAxisLine;
 
                 if (moonData.type === "jovian") {
                     // Jupiter's Galilean moons - add to planetGroup to avoid rotation

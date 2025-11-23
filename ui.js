@@ -62,8 +62,11 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
     }
 
 
+    // Flag to prevent switching to Custom when preset is being applied
+    let isPresetChanging = false;
 
-    scaleFolder.add(uiState, 'scalePreset', ['Realistic', 'Artistic']).name('Scale Preset').onChange(val => {
+    const presetController = scaleFolder.add(uiState, 'scalePreset', ['Realistic', 'Artistic', 'Custom']).name('Scale Preset').onChange(val => {
+        isPresetChanging = true;
         if (val === 'Realistic') {
             sunSlider.setValue(1 / REAL_SUN_SCALE_FACTOR);
             planetSlider.setValue(1 / REAL_PLANET_SCALE_FACTOR);
@@ -73,12 +76,19 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
             planetSlider.setValue(1.0);
             moonOrbitSlider.setValue(0.2);
         }
+        // Custom doesn't change values, just indicates manual adjustment
+        isPresetChanging = false;
     });
 
     const minSunScale = 1 / REAL_SUN_SCALE_FACTOR;
     const sunSlider = scaleFolder.add(config, 'sunScale', minSunScale, 5).name('Sun Scale').onChange(val => {
         sun.scale.setScalar(val);
         uiState.sunScaleDisplay = (val * REAL_SUN_SCALE_FACTOR).toFixed(1) + 'x';
+        // Switch to Custom if user manually adjusts
+        if (!isPresetChanging && uiState.scalePreset !== 'Custom') {
+            uiState.scalePreset = 'Custom';
+            presetController.updateDisplay();
+        }
     });
     sunSlider.domElement.classList.add('hide-value');
     const sunDisplay = addValueDisplay(sunSlider, val => (val * REAL_SUN_SCALE_FACTOR).toFixed(1) + 'x');
@@ -92,6 +102,11 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
         uiState.planetScaleDisplay = (val * REAL_PLANET_SCALE_FACTOR).toFixed(0) + 'x';
         // Also update moon display when planet scale changes
         if (moonDisplay) moonDisplay.update();
+        // Switch to Custom if user manually adjusts
+        if (!isPresetChanging && uiState.scalePreset !== 'Custom') {
+            uiState.scalePreset = 'Custom';
+            presetController.updateDisplay();
+        }
     });
     planetSlider.domElement.classList.add('hide-value');
     const planetDisplay = addValueDisplay(planetSlider, val => (val * REAL_PLANET_SCALE_FACTOR).toFixed(0) + 'x');
@@ -99,6 +114,11 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
     const moonOrbitSlider = scaleFolder.add(config, 'moonOrbitScale', 0.1, 10).name('Moon Orbit Scale').onChange(val => {
         uiState.moonOrbitScaleDisplay = (val * config.planetScale * REAL_PLANET_SCALE_FACTOR).toFixed(0) + 'x';
         // Moon positions will be updated in the next animation frame via updatePlanets
+        // Switch to Custom if user manually adjusts
+        if (!isPresetChanging && uiState.scalePreset !== 'Custom') {
+            uiState.scalePreset = 'Custom';
+            presetController.updateDisplay();
+        }
     });
     moonOrbitSlider.domElement.classList.add('hide-value');
     const moonDisplay = addValueDisplay(moonOrbitSlider, val => (val * config.planetScale * REAL_PLANET_SCALE_FACTOR).toFixed(0) + 'x');
@@ -118,6 +138,21 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
         planets.forEach(p => {
             p.moons.forEach(m => {
                 if (m.data.orbitLine) m.data.orbitLine.visible = val;
+            });
+        });
+    });
+
+    visualFolder.add(config, 'showAxes').name('Show Axes').onChange(val => {
+        // Toggle sun axis
+        if (sun.axisLine) sun.axisLine.visible = val;
+
+        // Toggle planet axes
+        planets.forEach(p => {
+            if (p.data.axisLine) p.data.axisLine.visible = val;
+
+            // Toggle moon axes
+            p.moons.forEach(m => {
+                if (m.data.axisLine) m.data.axisLine.visible = val;
             });
         });
     });

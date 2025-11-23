@@ -14,6 +14,7 @@ export const config = {
     moonOrbitScale: 0.2,
     starBrightness: 1.0,
     showOrbits: true,
+    showAxes: false,
     showZodiacs: false,
     date: new Date(),
     stop: false
