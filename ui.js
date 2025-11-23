@@ -157,6 +157,17 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
         });
     });
 
+    const missionsFolder = visualFolder.addFolder('Missions');
+    const v1Ctrl = missionsFolder.add(config.showMissions, 'voyager1').name('Voyager 1').onChange(() => {
+        if (window.updateMissions) window.updateMissions();
+    });
+    v1Ctrl.domElement.classList.add('voyager1-checkbox');
+
+    const v2Ctrl = missionsFolder.add(config.showMissions, 'voyager2').name('Voyager 2').onChange(() => {
+        if (window.updateMissions) window.updateMissions();
+    });
+    v2Ctrl.domElement.classList.add('voyager2-checkbox');
+
     const updateDwarfVisibility = (val) => {
         planets.forEach(p => {
             if (p.data.type === 'dwarf') {

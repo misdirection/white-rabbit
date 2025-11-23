@@ -6,6 +6,7 @@ import { createPlanets, updatePlanets } from './planets.js';
 import { setupGUI, updateUI } from './ui.js';
 import { setupTooltipSystem } from './interactions.js';
 import { setupFocusMode, updateFocusMode } from './focusMode.js';
+import { initializeMissions, updateMissions } from './missions.js';
 
 // --- Init ---
 (async () => {
@@ -29,6 +30,10 @@ import { setupFocusMode, updateFocusMode } from './focusMode.js';
 
         // 6. Setup focus mode (double-click to zoom)
         setupFocusMode(camera, controls, planets, sun);
+
+        // 7. Initialize mission trajectories
+        initializeMissions(scene);
+        window.updateMissions = updateMissions; // Make available to UI
 
         // 7. Remove Loading Screen
         document.getElementById('loading').style.opacity = 0;

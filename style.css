@@ -57,3 +57,16 @@ canvas {
     font-size: 0.9em;
     white-space: nowrap;
 }
+
+/* Mission checkbox colored indicators - add colored dot before label */
+.voyager1-checkbox .name::before {
+    content: "● ";
+    color: #00FFFF;
+    font-size: 1em;
+}
+
+.voyager2-checkbox .name::before {
+    content: "● ";
+    color: #FF00FF;
+    font-size: 1em;
+}
