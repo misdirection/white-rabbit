@@ -28,7 +28,7 @@ export const planetData = [
     },
     {
         name: "Saturn", body: "Saturn", radius: 9, color: 0xeebb88, period: 10759, texture: `${import.meta.env.BASE_URL}assets/textures/saturn.jpg`, rotationPeriod: 10.7, axialTilt: 26.7, ring: { inner: 11, outer: 18, color: 0xaa8866, texture: `${import.meta.env.BASE_URL}assets/textures/saturn_ring.png` }, moons: [
-            { name: "Titan", radius: 0.4, distance: 20, color: 0xffaa00, type: "simple", period: 15.95, texture: `${import.meta.env.BASE_URL}assets/textures/titan.png`, tidallyLocked: true, axialTilt: 0 }
+            { name: "Titan", radius: 0.4, distance: 0.00816, color: 0xffaa00, type: "simple", period: 15.95, texture: `${import.meta.env.BASE_URL}assets/textures/titan.png`, tidallyLocked: true, axialTilt: 0 }
         ]
     },
     { name: "Uranus", body: "Uranus", radius: 4, color: 0x4fd0e7, period: 30687, texture: `${import.meta.env.BASE_URL}assets/textures/uranus.jpg`, rotationPeriod: 17.2, axialTilt: 97.8 },

@@ -47,3 +47,13 @@ canvas {
     backdrop-filter: blur(4px);
     line-height: 1.4;
 }
+
+.lil-gui .custom-value {
+    margin-left: 8px;
+    min-width: 45px;
+    text-align: right;
+    color: #aaccff;
+    font-family: monospace;
+    font-size: 0.9em;
+    white-space: nowrap;
+}

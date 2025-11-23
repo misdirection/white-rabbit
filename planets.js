@@ -1,12 +1,9 @@
+
 import * as THREE from 'three';
 import * as Astronomy from 'astronomy-engine';
-import { config } from './config.js';
+import { config, AU_TO_SCENE, REAL_PLANET_SCALE_FACTOR } from './config.js';
 import { planetData, dwarfPlanetData } from './src/data/bodies.js';
 import { calculateKeplerianPosition } from './src/physics/orbits.js';
-
-// Scaling constants for converting astronomical distances to Three.js scene units
-// These values balance visual clarity with spatial relationships
-const AU_TO_SCENE = 50;           // 1 Astronomical Unit = 50 scene units
 
 /**
  * Creates all planet and moon meshes with their orbit lines
@@ -174,9 +171,10 @@ export function createPlanets(scene, orbitGroup) {
                             -moonState.y * AU_TO_SCENE
                         ));
                     }
-                    // Save base points for later scaling
+                    // Save base points for later scaling (not strictly needed for scaling mesh, but good for debug)
                     moonData._orbitBasePoints = orbitPoints;
-                    const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints.map(p => p.clone().multiplyScalar(config.planetScale * config.moonOrbitScale)));
+                    // Create geometry at 1x scale (base AU_TO_SCENE)
+                    const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
                     const orbitMat = new THREE.LineBasicMaterial({ color: 0x666666, transparent: true, opacity: 0.3 });
                     const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
                     orbitLinesGroup.add(orbitLine);
@@ -185,16 +183,17 @@ export function createPlanets(scene, orbitGroup) {
                     // Simple circular orbit - add to planetGroup to avoid rotation
                     planetGroup.add(moonMesh);
 
-                    const moonScale = config.planetScale * config.moonOrbitScale;
+                    const moonScale = config.planetScale * config.moonOrbitScale * REAL_PLANET_SCALE_FACTOR;
                     const orbitPoints = [];
-                    const radiusBase = moonData.distance;
+                    const radiusBase = moonData.distance * AU_TO_SCENE;
                     for (let i = 0; i < 64; i++) {
                         const angle = (i / 64) * Math.PI * 2;
                         orbitPoints.push(new THREE.Vector3(Math.cos(angle) * radiusBase, 0, Math.sin(angle) * radiusBase));
                     }
                     // Save base points for scaling later
                     moonData._orbitBasePoints = orbitPoints;
-                    const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints.map(p => p.clone().multiplyScalar(config.planetScale * config.moonOrbitScale)));
+                    // Create geometry at 1x scale
+                    const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
                     const orbitMat = new THREE.LineBasicMaterial({ color: 0x666666, transparent: true, opacity: 0.3 });
                     const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
                     orbitLinesGroup.add(orbitLine);
@@ -209,16 +208,17 @@ export function createPlanets(scene, orbitGroup) {
                     const periodDays = moonData.period || 27.3;
 
                     // Calculate moon orbit scale: base distance × planet scale × moon orbit scale
-                    const moonScale = config.planetScale * config.moonOrbitScale;
+                    // const moonScale = config.planetScale * config.moonOrbitScale; // REMOVED: We want base points for scaling via mesh.scale
                     for (let i = 0; i < steps; i++) {
                         const t = new Date(startTime.getTime() + (i / steps) * periodDays * 24 * 60 * 60 * 1000);
                         const vec = Astronomy.GeoVector(Astronomy.Body[moonData.body], t, true);
                         points.push(new THREE.Vector3(
-                            vec.x * AU_TO_SCENE * moonScale,
-                            vec.z * AU_TO_SCENE * moonScale,
-                            -vec.y * AU_TO_SCENE * moonScale
+                            vec.x * AU_TO_SCENE,
+                            vec.z * AU_TO_SCENE,
+                            -vec.y * AU_TO_SCENE
                         ));
                     }
+                    // Create geometry at 1x scale
                     const orbitGeo = new THREE.BufferGeometry().setFromPoints(points);
                     const orbitMat = new THREE.LineBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.5 });
                     const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
@@ -323,25 +323,23 @@ export function updatePlanets(planets) {
                     const jm = Astronomy.JupiterMoons(config.date);
                     const moonState = [jm.io, jm.europa, jm.ganymede, jm.callisto][m.data.moonIndex];
 
-                    // Use stored base points to update orbit line geometry
-                    if (m.data.orbitLine && m.data._orbitBasePoints) {
-                        const scaledPoints = m.data._orbitBasePoints.map(p => p.clone().multiplyScalar(config.planetScale * config.moonOrbitScale));
-                        m.data.orbitLine.geometry.setFromPoints(scaledPoints);
+                    // Update orbit line scale
+                    if (m.data.orbitLine) {
+                        m.data.orbitLine.scale.setScalar(config.planetScale * config.moonOrbitScale * REAL_PLANET_SCALE_FACTOR);
                     }
 
-                    const moonScale = config.planetScale * config.moonOrbitScale;
+                    const moonScale = config.planetScale * config.moonOrbitScale * REAL_PLANET_SCALE_FACTOR;
                     xOffset = moonState.x * AU_TO_SCENE * moonScale;
                     zOffset = -moonState.y * AU_TO_SCENE * moonScale;
                     yOffset = moonState.z * AU_TO_SCENE * moonScale;
                 } else if (m.data.type === "real") {
                     // Earth's Moon - world position (planet pos + moon offset)
                     const moonVector = Astronomy.GeoVector(Astronomy.Body[m.data.body], config.date, true);
-                    // Update orbit line geometry for real moons
-                    if (m.data.orbitLine && m.data._orbitBasePoints) {
-                        const scaledPoints = m.data._orbitBasePoints.map(p => p.clone().multiplyScalar(config.planetScale * config.moonOrbitScale));
-                        m.data.orbitLine.geometry.setFromPoints(scaledPoints);
+                    // Update orbit line scale
+                    if (m.data.orbitLine) {
+                        m.data.orbitLine.scale.setScalar(config.planetScale * config.moonOrbitScale * REAL_PLANET_SCALE_FACTOR);
                     }
-                    const moonScale = config.planetScale * config.moonOrbitScale;
+                    const moonScale = config.planetScale * config.moonOrbitScale * REAL_PLANET_SCALE_FACTOR;
                     xOffset = moonVector.x * AU_TO_SCENE * moonScale;
                     zOffset = -moonVector.y * AU_TO_SCENE * moonScale;
                     yOffset = moonVector.z * AU_TO_SCENE * moonScale;
@@ -352,20 +350,18 @@ export function updatePlanets(planets) {
                     const daysSinceEpoch = (currentTime - epoch) / (24 * 60 * 60 * 1000);
                     const angle = (daysSinceEpoch * 2 * Math.PI) / m.data.period;
 
-                    // Update orbit line for simple moons
-                    if (m.data.orbitLine && m.data._orbitBasePoints) {
-                        const scaledPoints = m.data._orbitBasePoints.map(p => p.clone().multiplyScalar(config.planetScale * config.moonOrbitScale));
-                        m.data.orbitLine.geometry.setFromPoints(scaledPoints);
+                    // Update orbit line scale
+                    if (m.data.orbitLine) {
+                        m.data.orbitLine.scale.setScalar(config.planetScale * config.moonOrbitScale * REAL_PLANET_SCALE_FACTOR);
                     }
 
-                    const radius = m.data.distance * config.planetScale * config.moonOrbitScale;
+                    const radius = m.data.distance * AU_TO_SCENE * config.planetScale * config.moonOrbitScale * REAL_PLANET_SCALE_FACTOR;
                     xOffset = Math.cos(angle) * radius;
                     zOffset = Math.sin(angle) * radius;
                     yOffset = 0;
                 }
 
                 // Apply expansion factor (if any) - though with dynamic scaling this might be redundant or additive
-                // We'll keep it to respect the original logic of preventing overlap if planet is huge
                 m.mesh.position.x = p.mesh.position.x + (xOffset * expansionFactor);
                 m.mesh.position.z = p.mesh.position.z + (zOffset * expansionFactor);
                 m.mesh.position.y = p.mesh.position.y + (yOffset * expansionFactor);

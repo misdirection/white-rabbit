@@ -12,43 +12,82 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
         speedFactor: '0x',
         planetScaleDisplay: (1 * REAL_PLANET_SCALE_FACTOR).toFixed(0) + 'x',
         sunScaleDisplay: (1 * REAL_SUN_SCALE_FACTOR).toFixed(1) + 'x',
+        moonOrbitScaleDisplay: (1 * 1).toFixed(1) + 'x',
         rotate: 'Left Click + Drag',
         pan: 'Right Click + Drag',
-        zoom: 'Scroll'
+        zoom: 'Scroll',
+        focusEnter: 'Double Click Object',
+        focusExit: 'Escape Key',
+        scalePreset: 'Artistic'
     };
 
-    const controlsFolder = gui.addFolder('Controls');
+    const scaleFolder = gui.addFolder('Scale');
+    const visualFolder = gui.addFolder('Visual');
 
-    const speedSlider = controlsFolder.add(uiState, 'speedExponent', -11, 11).name('Speed (Log)').onChange(val => {
-        const speed = (val >= 0 ? 1 : -1) * Math.pow(10, Math.abs(val));
-        config.simulationSpeed = speed;
-        uiState.speedFactor = Math.round(speed).toLocaleString() + 'x';
+    // Helper to add custom value display next to slider
+    function addValueDisplay(controller, formatFn) {
+        const display = document.createElement('div');
+        display.className = 'custom-value';
+        controller.domElement.querySelector('.widget').appendChild(display);
+
+        const update = () => {
+            display.textContent = formatFn(controller.getValue());
+        };
+
+        // Hook into onChange to update display immediately
+        const originalOnChange = controller._onChange;
+        controller.onChange(val => {
+            update();
+            if (originalOnChange) originalOnChange(val);
+        });
+
+        update(); // Initial update
+        return { update }; // Return interface to force update
+    }
+
+
+
+    scaleFolder.add(uiState, 'scalePreset', ['Realistic', 'Artistic']).name('Scale Preset').onChange(val => {
+        if (val === 'Realistic') {
+            sunSlider.setValue(1 / REAL_SUN_SCALE_FACTOR);
+            planetSlider.setValue(1 / REAL_PLANET_SCALE_FACTOR);
+            moonOrbitSlider.setValue(1.0);
+        } else if (val === 'Artistic') {
+            sunSlider.setValue(1.0);
+            planetSlider.setValue(1.0);
+            moonOrbitSlider.setValue(0.2);
+        }
     });
-    speedSlider.domElement.classList.add('hide-value');
+
+    const minSunScale = 1 / REAL_SUN_SCALE_FACTOR;
+    const sunSlider = scaleFolder.add(config, 'sunScale', minSunScale, 5).name('Sun Scale').onChange(val => {
+        sun.scale.setScalar(val);
+        uiState.sunScaleDisplay = (val * REAL_SUN_SCALE_FACTOR).toFixed(1) + 'x';
+    });
+    sunSlider.domElement.classList.add('hide-value');
+    const sunDisplay = addValueDisplay(sunSlider, val => (val * REAL_SUN_SCALE_FACTOR).toFixed(1) + 'x');
 
     const minPlanetScale = 1 / REAL_PLANET_SCALE_FACTOR;
-    const planetSlider = controlsFolder.add(config, 'planetScale', minPlanetScale, 5).name('Planet Scale').onChange(val => {
+    const planetSlider = scaleFolder.add(config, 'planetScale', minPlanetScale, 5).name('Planet Scale').onChange(val => {
         planets.forEach(p => {
             p.mesh.scale.setScalar(val);
             p.moons.forEach(m => m.mesh.scale.setScalar(val));
         });
         uiState.planetScaleDisplay = (val * REAL_PLANET_SCALE_FACTOR).toFixed(0) + 'x';
+        // Also update moon display when planet scale changes
+        if (moonDisplay) moonDisplay.update();
     });
     planetSlider.domElement.classList.add('hide-value');
+    const planetDisplay = addValueDisplay(planetSlider, val => (val * REAL_PLANET_SCALE_FACTOR).toFixed(0) + 'x');
 
-    const minSunScale = 1 / REAL_SUN_SCALE_FACTOR;
-    const sunSlider = controlsFolder.add(config, 'sunScale', minSunScale, 5).name('Sun Scale').onChange(val => {
-        sun.scale.setScalar(val);
-        uiState.sunScaleDisplay = (val * REAL_SUN_SCALE_FACTOR).toFixed(1) + 'x';
-    });
-    sunSlider.domElement.classList.add('hide-value');
-
-    const moonOrbitSlider = controlsFolder.add(config, 'moonOrbitScale', 1, 100).name('Moon Orbit Scale').onChange(val => {
+    const moonOrbitSlider = scaleFolder.add(config, 'moonOrbitScale', 0.1, 10).name('Moon Orbit Scale').onChange(val => {
+        uiState.moonOrbitScaleDisplay = (val * config.planetScale * REAL_PLANET_SCALE_FACTOR).toFixed(0) + 'x';
         // Moon positions will be updated in the next animation frame via updatePlanets
     });
     moonOrbitSlider.domElement.classList.add('hide-value');
+    const moonDisplay = addValueDisplay(moonOrbitSlider, val => (val * config.planetScale * REAL_PLANET_SCALE_FACTOR).toFixed(0) + 'x');
 
-    const starSlider = controlsFolder.add(config, 'starBrightness', 0.1, 5.0).name('Star Brightness').onChange(val => {
+    const starSlider = visualFolder.add(config, 'starBrightness', 0.1, 5.0).name('Star Brightness').onChange(val => {
         if (stars && stars.material) {
             // Control opacity
             stars.material.opacity = Math.min(val, 2.0);
@@ -58,7 +97,7 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
     });
     starSlider.domElement.classList.add('hide-value');
 
-    controlsFolder.add(config, 'showOrbits').name('Show Orbits').onChange(val => {
+    visualFolder.add(config, 'showOrbits').name('Show Orbits').onChange(val => {
         orbitGroup.visible = val;
         planets.forEach(p => {
             p.moons.forEach(m => {
@@ -77,17 +116,17 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
     };
 
     config.showDwarfPlanets = false;
-    controlsFolder.add(config, 'showDwarfPlanets').name('Show Dwarf Planets').onChange(updateDwarfVisibility);
+    visualFolder.add(config, 'showDwarfPlanets').name('Show Dwarf Planets').onChange(updateDwarfVisibility);
     updateDwarfVisibility(config.showDwarfPlanets);
 
-    controlsFolder.add(config, 'showZodiacs').name('Show Zodiacs').onChange(val => {
+    visualFolder.add(config, 'showZodiacs').name('Show Zodiacs').onChange(val => {
         zodiacGroup.visible = val;
     });
 
-    controlsFolder.add(config, 'stop').name('Pause Simulation');
+    visualFolder.add(config, 'stop').name('Pause Simulation');
 
-    const infoFolder = gui.addFolder('Info');
-    const dateCtrl = infoFolder.add(uiState, 'date').name('Date').onChange(val => {
+    const timeFolder = gui.addFolder('Time');
+    const dateCtrl = timeFolder.add(uiState, 'date').name('Date').onChange(val => {
         const [year, month, day] = val.split('-').map(Number);
         // Create new date from selected YYYY-MM-DD
         // Maintain current time of day
@@ -97,23 +136,28 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
     // Hack to make it a date input
     const dateInput = dateCtrl.domElement.querySelector('input');
     dateInput.type = 'date';
-    const timeCtrl = infoFolder.add(uiState, 'time').name('Time');
+    const timeCtrl = timeFolder.add(uiState, 'time').name('Time');
     timeCtrl.disable();
-    const stardateCtrl = infoFolder.add(uiState, 'stardate').name('Stardate');
+    const stardateCtrl = timeFolder.add(uiState, 'stardate').name('Stardate');
     stardateCtrl.disable();
 
     uiState.setNow = () => {
         config.date = new Date();
-        // Immediate UI update will happen in the next frame of the animation loop
     };
-    infoFolder.add(uiState, 'setNow').name('Set to Now');
+    timeFolder.add(uiState, 'setNow').name('Set to Now');
 
-    const speedCtrl = infoFolder.add(uiState, 'speedFactor').name('Speed Factor');
-    speedCtrl.disable();
-    const pScaleCtrl = infoFolder.add(uiState, 'planetScaleDisplay').name('Planet Scale');
-    pScaleCtrl.disable();
-    const sScaleCtrl = infoFolder.add(uiState, 'sunScaleDisplay').name('Sun Scale');
-    sScaleCtrl.disable();
+    const speedSlider = timeFolder.add(uiState, 'speedExponent', -11, 11).name('Speed').onChange(val => {
+        const speed = (val >= 0 ? 1 : -1) * Math.pow(10, Math.abs(val));
+        config.simulationSpeed = speed;
+        uiState.speedFactor = Math.round(speed).toLocaleString() + 'x';
+    });
+    speedSlider.domElement.classList.add('hide-value');
+    const speedDisplay = addValueDisplay(speedSlider, () => uiState.speedFactor);
+
+    uiState.setRealTime = () => {
+        speedSlider.setValue(0); // 10^0 = 1x speed
+    };
+    timeFolder.add(uiState, 'setRealTime').name('Set to Real-Time');
 
     const navFolder = gui.addFolder('Navigation');
     const rotateCtrl = navFolder.add(uiState, 'rotate').name('Rotate');
@@ -122,8 +166,12 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
     panCtrl.disable();
     const zoomCtrl = navFolder.add(uiState, 'zoom').name('Zoom');
     zoomCtrl.disable();
+    const focusEnterCtrl = navFolder.add(uiState, 'focusEnter').name('Focus');
+    focusEnterCtrl.disable();
+    const focusExitCtrl = navFolder.add(uiState, 'focusExit').name('Exit Focus');
+    focusExitCtrl.disable();
 
-    return { uiState, dateCtrl, timeCtrl, stardateCtrl, speedCtrl, pScaleCtrl, sScaleCtrl };
+    return { uiState, dateCtrl, timeCtrl, stardateCtrl, speedDisplay, sunDisplay, planetDisplay, moonDisplay };
 }
 
 export function updateUI(uiState, controls) {
@@ -146,6 +194,9 @@ export function updateUI(uiState, controls) {
         uiState.speedFactor = Math.round(config.simulationSpeed).toLocaleString() + 'x';
     }
 
+    // Update moon orbit scale display
+    uiState.moonOrbitScaleDisplay = (config.planetScale * config.moonOrbitScale * REAL_PLANET_SCALE_FACTOR).toFixed(0) + 'x';
+
     // Manually update the date input value (lil-gui doesn't handle date inputs well)
     const dateInput = controls.dateCtrl.domElement.querySelector('input');
     if (dateInput && dateInput.value !== dateString) {
@@ -155,7 +206,10 @@ export function updateUI(uiState, controls) {
     controls.dateCtrl.updateDisplay();
     controls.timeCtrl.updateDisplay();
     controls.stardateCtrl.updateDisplay();
-    controls.speedCtrl.updateDisplay();
-    controls.pScaleCtrl.updateDisplay();
-    controls.sScaleCtrl.updateDisplay();
+
+    // Update custom value displays
+    if (controls.speedDisplay) controls.speedDisplay.update();
+    if (controls.sunDisplay) controls.sunDisplay.update();
+    if (controls.planetDisplay) controls.planetDisplay.update();
+    if (controls.moonDisplay) controls.moonDisplay.update();
 }
