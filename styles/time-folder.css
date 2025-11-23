@@ -7,12 +7,13 @@
 
 .time-folder .children {
     position: relative;
-    display: block !important;
+    display: block;
 }
 
-/* Fix for closing the folder: ensure it stays hidden when closed */
+/* Fix for closing the folder: use height/overflow instead of display */
 .time-folder.closed .children {
-    display: none;
+    height: 0 !important;
+    overflow: hidden !important;
 }
 
 .compact-ctrl {
