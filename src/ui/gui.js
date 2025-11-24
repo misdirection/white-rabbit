@@ -1,5 +1,5 @@
 import GUI from 'lil-gui';
-import { config, REAL_PLANET_SCALE_FACTOR, REAL_SUN_SCALE_FACTOR } from './config.js';
+import { config, REAL_PLANET_SCALE_FACTOR, REAL_SUN_SCALE_FACTOR } from '../config.js';
 
 /**
  * Sets up the GUI with Scale, Visual, Time, and Navigation sections
@@ -18,7 +18,7 @@ import { config, REAL_PLANET_SCALE_FACTOR, REAL_SUN_SCALE_FACTOR } from './confi
  * - Navigation: Help text for camera and focus controls
  */
 export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
-    const gui = new GUI({ title: 'Solar System' });
+    const gui = new GUI({ title: 'White Rabbit' });
 
     const uiState = {
         speedExponent: 0,

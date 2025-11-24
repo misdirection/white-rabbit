@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as Astronomy from 'astronomy-engine';
-import { config, AU_TO_SCENE, REAL_PLANET_SCALE_FACTOR } from '../../config.js';
+import { config, AU_TO_SCENE, REAL_PLANET_SCALE_FACTOR } from '../config.js';
 
 /**
  * Creates moons for a planet

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { config } from './config.js';
+import { config } from '../config.js';
 
 const SCREEN_HIT_RADIUS = 15; // Pixels on screen for hit detection (slightly larger for double-click)
 const ANIMATION_DURATION = 2000; // ms for camera transition

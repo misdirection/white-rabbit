@@ -1,12 +1,12 @@
 import * as THREE from 'three';
-import { config } from './config.js';
-import { createScene } from './scene.js';
-import { createStarfield, createConstellations } from './stars.js';
-import { createPlanets, updatePlanets } from './planets.js';
-import { setupGUI, updateUI } from './ui.js';
+import { config } from './src/config.js';
+import { createScene } from './src/core/scene.js';
+import { createStarfield, createConstellations } from './src/core/stars.js';
+import { createPlanets, updatePlanets } from './src/core/planets.js';
+import { setupGUI, updateUI } from './src/ui/gui.js';
 import { setupTooltipSystem } from './interactions.js';
-import { setupFocusMode, updateFocusMode } from './focusMode.js';
-import { initializeMissions, updateMissions } from './missions.js';
+import { setupFocusMode, updateFocusMode } from './src/features/focusMode.js';
+import { initializeMissions, updateMissions } from './src/features/missions.js';
 
 // --- Init ---
 (async () => {
@@ -52,7 +52,7 @@ import { initializeMissions, updateMissions } from './missions.js';
             }
 
             updateUI(uiControls.uiState, uiControls);
-            updatePlanets(planets);
+            updatePlanets(planets, sun);
 
             // Update focus mode (handles camera following)
             updateFocusMode(camera, controls);

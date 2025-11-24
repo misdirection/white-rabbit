@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { config, AU_TO_SCENE } from './config.js';
+import { config, AU_TO_SCENE } from '../config.js';
 
 /**
  * Simplified Voyager trajectory data

@@ -1,12 +1,12 @@
 
 import * as THREE from 'three';
 import * as Astronomy from 'astronomy-engine';
-import { config, AU_TO_SCENE, REAL_PLANET_SCALE_FACTOR } from './config.js';
-import { planetData, dwarfPlanetData } from './src/data/bodies.js';
-import { calculateKeplerianPosition } from './src/physics/orbits.js';
-import { createRing } from './src/systems/rings.js';
-import { createMoons, updateMoonPositions } from './src/systems/moons.js';
-import { createOrbitLine } from './src/systems/orbits.js';
+import { config, AU_TO_SCENE, REAL_PLANET_SCALE_FACTOR } from '../config.js';
+import { planetData, dwarfPlanetData } from '../data/bodies.js';
+import { calculateKeplerianPosition } from '../physics/orbits.js';
+import { createRing } from '../systems/rings.js';
+import { createMoons, updateMoonPositions } from '../systems/moons.js';
+import { createOrbitLine } from '../systems/orbits.js';
 
 /**
  * Creates all planet and moon meshes with their orbit lines
@@ -130,8 +130,21 @@ export function createPlanets(scene, orbitGroup) {
  * Updates all planet and moon positions and rotations based on config.date
  * 
  * @param {Object[]} planets - Array of planet objects from createPlanets()
+ * @param {THREE.Mesh} sun - The sun mesh (optional)
  */
-export function updatePlanets(planets) {
+export function updatePlanets(planets, sun = null) {
+    // Update Sun rotation
+    if (sun) {
+        const J2000 = new Date('2000-01-01T12:00:00Z').getTime();
+        const currentMs = config.date.getTime();
+        const hoursSinceJ2000 = (currentMs - J2000) / (1000 * 60 * 60);
+
+        // Sun's rotation period is approximately 25 days (600 hours) at the equator
+        const sunRotationPeriod = 600; // hours
+        const sunRotationAngle = (hoursSinceJ2000 / sunRotationPeriod) * 2 * Math.PI;
+        sun.rotation.y = sunRotationAngle;
+    }
+
     planets.forEach(p => {
         if (p.data.body) {
             // Major planets + Pluto (if using Astronomy.Body.Pluto)

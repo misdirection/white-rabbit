@@ -1,11 +1,11 @@
-# Solar System Simulation
+# White Rabbit
 
-An interactive 3D solar system simulation built with Three.js and the Astronomy Engine library, featuring accurate celestial mechanics and real star positions.
+Just another solar system simulator - follow the white rabbit! An interactive 3D solar system simulation built with Three.js and the Astronomy Engine library, featuring accurate celestial mechanics and real star positions.
 
 ## Features
 
 - **Accurate Planetary Positions**: Uses the Astronomy Engine for real-time calculation of planet positions
-- **Realistic Rotation**: Planets rotate based on their actual rotation periods (e.g., Earth rotates once every 24 hours)
+- **Realistic Rotation**: Planets and the Sun rotate based on their actual rotation periods (e.g., Earth rotates once every 24 hours, Sun every 25 days)
 - **Tidal Locking**: Moons like Earth's Moon are tidally locked, always showing the same face to their parent planet
 - **Real Starfield**: Star positions based on actual astronomical data with accurate right ascension and declination
 - **Adjustable Scaling**: Artistic (500x planets, 20x sun, 100x moon orbits) or Realistic (1x) preset modes
