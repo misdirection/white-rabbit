@@ -39,7 +39,6 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
     };
 
     const scaleFolder = gui.addFolder('Scale');
-    const visualFolder = gui.addFolder('Visual');
 
     // Helper to add custom value display next to slider
     function addValueDisplay(controller, formatFn) {
@@ -61,7 +60,6 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
         update(); // Initial update
         return { update }; // Return interface to force update
     }
-
 
     // Flag to prevent switching to Custom when preset is being applied
     let isPresetChanging = false;
@@ -124,17 +122,66 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
     moonOrbitSlider.domElement.classList.add('hide-value');
     const moonDisplay = addValueDisplay(moonOrbitSlider, val => (val * config.planetScale * REAL_PLANET_SCALE_FACTOR).toFixed(0) + 'x');
 
-    const starSlider = visualFolder.add(config, 'starBrightness', 0.1, 5.0).name('Star Brightness').onChange(val => {
-        if (stars && stars.material) {
-            // Control opacity
-            stars.material.opacity = Math.min(val, 2.0);
-            // At high brightness, also increase size to make dim stars more visible
-            stars.material.size = 200 * Math.max(1.0, val / 2.0);
-        }
-    });
-    starSlider.domElement.classList.add('hide-value');
+    scaleFolder.close(); // Close Scale folder by default
 
-    visualFolder.add(config, 'showOrbits').name('Show Orbits').onChange(val => {
+    const objectsFolder = gui.addFolder('Objects');
+
+    objectsFolder.add(config, 'showSun').name('Sun').onChange(val => {
+        sun.visible = val;
+    });
+
+    const updatePlanetVisibility = (val) => {
+        planets.forEach(p => {
+            if (p.data.type !== 'dwarf') {
+                p.mesh.visible = val;
+                if (p.data.cloudMesh) p.data.cloudMesh.visible = val;
+
+                // Toggle planet orbit line
+                if (p.orbitLine) p.orbitLine.visible = val;
+
+                // Rings should also be toggled
+                p.group.children.forEach(child => {
+                    if (child !== p.mesh && child !== p.orbitLinesGroup && child.type === 'Mesh') {
+                        // This catches rings
+                        child.visible = val;
+                    }
+                });
+            }
+        });
+    };
+    objectsFolder.add(config, 'showPlanets').name('Planets').onChange(updatePlanetVisibility);
+    updatePlanetVisibility(config.showPlanets);
+
+    const updateMoonVisibility = (val) => {
+        planets.forEach(p => {
+            p.moons.forEach(m => {
+                m.mesh.visible = val;
+                // Toggle moon orbit line
+                if (m.data.orbitLine) m.data.orbitLine.visible = val;
+            });
+        });
+    };
+    objectsFolder.add(config, 'showMoons').name('Moons').onChange(updateMoonVisibility);
+    updateMoonVisibility(config.showMoons);
+
+    const updateDwarfVisibility = (val) => {
+        planets.forEach(p => {
+            if (p.data.type === 'dwarf') {
+                p.group.visible = val;
+                if (p.orbitLine) p.orbitLine.visible = val;
+            }
+        });
+    };
+
+    // config.showDwarfPlanets is now initialized in config.js
+    objectsFolder.add(config, 'showDwarfPlanets').name('Dwarf Planets').onChange(updateDwarfVisibility);
+    updateDwarfVisibility(config.showDwarfPlanets);
+
+    objectsFolder.close();
+
+    const overlaysFolder = gui.addFolder('Overlays');
+
+    overlaysFolder.add(config, 'showOrbits').name('Orbits').onChange(val => {
         orbitGroup.visible = val;
         planets.forEach(p => {
             p.moons.forEach(m => {
@@ -143,7 +190,7 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
         });
     });
 
-    visualFolder.add(config, 'showAxes').name('Show Axes').onChange(val => {
+    overlaysFolder.add(config, 'showAxes').name('Axes').onChange(val => {
         // Toggle sun axis
         if (sun.axisLine) sun.axisLine.visible = val;
 
@@ -158,7 +205,13 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
         });
     });
 
-    const missionsFolder = visualFolder.addFolder('Missions');
+    overlaysFolder.add(config, 'showZodiacs').name('Zodiacs').onChange(val => {
+        zodiacGroup.visible = val;
+    });
+
+    overlaysFolder.close();
+
+    const missionsFolder = gui.addFolder('Missions');
     const v1Ctrl = missionsFolder.add(config.showMissions, 'voyager1').name('Voyager 1 (1977)').onChange(() => {
         if (window.updateMissions) window.updateMissions();
     });
@@ -186,22 +239,17 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, stars) {
 
     missionsFolder.close(); // Close Missions subfolder by default
 
-    const updateDwarfVisibility = (val) => {
-        planets.forEach(p => {
-            if (p.data.type === 'dwarf') {
-                p.group.visible = val;
-                if (p.orbitLine) p.orbitLine.visible = val;
-            }
-        });
-    };
+    const visualFolder = gui.addFolder('Visual');
 
-    config.showDwarfPlanets = false;
-    visualFolder.add(config, 'showDwarfPlanets').name('Show Dwarf Planets').onChange(updateDwarfVisibility);
-    updateDwarfVisibility(config.showDwarfPlanets);
-
-    visualFolder.add(config, 'showZodiacs').name('Show Zodiacs').onChange(val => {
-        zodiacGroup.visible = val;
+    const starSlider = visualFolder.add(config, 'starBrightness', 0.1, 5.0).name('Star Brightness').onChange(val => {
+        if (stars && stars.material) {
+            // Control opacity
+            stars.material.opacity = Math.min(val, 2.0);
+            // At high brightness, also increase size to make dim stars more visible
+            stars.material.size = 200 * Math.max(1.0, val / 2.0);
+        }
     });
+    starSlider.domElement.classList.add('hide-value');
 
     visualFolder.close(); // Close Visual folder by default
 

@@ -25,19 +25,26 @@ The UI is organized into four collapsible sections (all closed by default):
 - **Planet Scale**: Adjust planet sizes (500x default, ~1x realistic)
 - **Moon Orbit Scale**: Adjust moon orbital distances (0.1-10 range, 0.2 default for ~100x)
 
+### Objects
+- **Sun**: Toggle visibility of the Sun
+- **Planets**: Toggle visibility of major planets
+- **Moons**: Toggle visibility of moons
+- **Dwarf Planets**: Toggle visibility of Ceres and Pluto
+
+### Overlays
+- **Orbits**: Toggle planet and moon orbit lines
+- **Axes**: Toggle rotation axis lines for sun, planets, and moons
+- **Zodiacs**: Toggle zodiac constellation lines
+
+### Missions
+- **Voyager 1 (1977)** - Cyan
+- **Voyager 2 (1977)** - Magenta
+- **Pioneer 10 (1972)** - Orange
+- **Pioneer 11 (1973)** - Lime Green
+- **Galileo (1989)** - Gold
+
 ### Visual
 - **Star Brightness**: Adjust starfield brightness and size
-- **Show Orbits**: Toggle planet and moon orbit lines
-- **Show Axes**: Toggle rotation axis lines for sun, planets, and moons
-- **Missions**: Toggle visibility for space mission trajectories
-  - Voyager 1 (1977) - Cyan
-  - Voyager 2 (1977) - Magenta
-  - Pioneer 10 (1972) - Orange
-  - Pioneer 11 (1973) - Lime Green
-  - Galileo (1989) - Gold
-- **Show Dwarf Planets**: Toggle visibility of Ceres and Pluto
-- **Show Zodiacs**: Toggle zodiac constellation lines
-- **Pause Simulation**: Pause time progression
 
 ### Time
 - **Date**: Select simulation date

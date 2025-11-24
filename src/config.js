@@ -16,6 +16,10 @@ export const config = {
     showOrbits: true,
     showAxes: false,
     showZodiacs: false,
+    showSun: true,
+    showPlanets: true,
+    showMoons: true,
+    showDwarfPlanets: false,
     showMissions: {
         voyager1: false,
         voyager2: false,
