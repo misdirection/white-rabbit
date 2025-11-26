@@ -23,8 +23,8 @@ function compressOrbit(orbitSizeAU, maxOrbitAU) {
     const ratio = orbitSizeAU / maxOrbitAU;
     const compressed = maxOrbitAU * (1 + Math.log(ratio) / Math.log(10));
 
-    // Cap at 1.5x maxOrbit
-    return Math.min(compressed, maxOrbitAU * 1.5);
+    // Hard cap at maxOrbit - strict boundary enforcement
+    return Math.min(compressed, maxOrbitAU);
 }
 
 /**
