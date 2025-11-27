@@ -152,211 +152,31 @@
 /* Custom Value Display */
 .custom-value {
     position: absolute;
-    right: 5px;
-    top: 50%;
-    transform: translateY(-50%);
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 5px;
     font-size: 0.8em;
     color: #aaccff;
     pointer-events: none;
+    background: #1a1a1a;
+    /* Match GUI background to cover slider */
+    border-left: 1px solid #333;
 }
 
-.hide-value .display {
-    display: none !important;
-}
-
-.lil-gui .widget {
-    position: relative;
-}
-
-/* Time Folder */
-.time-folder .title {
-    color: #aaccff;
-}
-
-.compact-ctrl .widget {
-    height: 20px;
-}
-
-.set-now-btn .widget {
-    justify-content: center;
-}
-
-.set-now-btn button {
-    width: 100%;
-    text-align: center;
-}
-
-/* Mission Checkboxes */
-.voyager1-checkbox input {
-    accent-color: #ffcc00;
-}
-
-.voyager2-checkbox input {
-    accent-color: #00ccff;
-}
-
-.pioneer10-checkbox input {
-    accent-color: #ff6666;
-}
-
-.find-container {
-    padding: 4px 0;
-}
-
-.find-input-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-}
-
-.find-input-wrapper label {
-    color: #ffffff;
-    font-size: 0.9em;
-    margin-right: 10px;
-    white-space: nowrap;
-}
-
-#find-search {
-    flex: 1;
-    max-width: 70%;
-    padding: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #fff;
-    border-radius: 4px;
+/* Fix for Planet Slider Layout */
+.lil-gui .controller.hide-value .widget {
+    padding-right: 55px;
+    /* Reserve space for custom value */
     box-sizing: border-box;
 }
 
-#find-search:focus {
-    outline: none;
-    border-color: #88ccff;
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.find-results {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    max-height: 150px;
-    overflow-y: auto;
-    background: #1a1a1a;
-    border: 1px solid #444;
-    border-radius: 4px;
-    z-index: 999999 !important;
-    display: none;
-}
-
-.find-result-item {
-    padding: 6px 10px;
-    cursor: pointer;
-    border-bottom: 1px solid #333;
-}
-
-.find-result-item:hover {
-    background: #333;
-    color: #88ccff;
-}
-
-.find-actions {
-    display: flex;
-    width: 70%;
-    margin-left: auto;
-    gap: 8px;
-    margin-bottom: 8px;
-}
-
-.find-actions button {
-    flex: 1;
-    padding: 6px 12px;
-    background: #333;
-    border: 1px solid #555;
-    color: #fff;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-}
-
-.find-actions button:hover:not(:disabled) {
-    background: #444;
-    border-color: #88ccff;
-}
-
-.find-actions button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-#find-status {
-    font-size: 0.85em;
-    color: #88ccff;
-    min-height: 1.2em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: right;
-}
-
-/* Speed Controls */
-.speed-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
-    margin-top: 4px;
-    padding: 0 4px;
-}
-
-.speed-btn {
-    flex: 1;
-    min-width: 40px;
-    text-align: center;
-    padding: 4px;
-    background: #2c2c2c;
-    border: 1px solid #444;
-    border-radius: 2px;
-    cursor: pointer;
-    font-size: 0.8em;
-    color: #aaa;
-    user-select: none;
-}
-
-.speed-btn:hover {
-    background: #3c3c3c;
-    color: #fff;
-}
-
-.speed-btn.active {
-    background: #4a4a4a;
-    color: #fff;
-    border-color: #666;
-}
-
-.speed-btn.pause {
-    color: #ffaa88;
-}
-
-.speed-btn.pause.active {
-    background: #5a3a3a;
-    border-color: #ff8866;
-}
-
-/* Custom Value Display */
-.custom-value {
-    position: absolute;
-    right: 5px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.8em;
-    color: #aaccff;
-    pointer-events: none;
-}
-
-.hide-value .display {
+.hide-value .display,
+.hide-value input {
     display: none !important;
 }
 

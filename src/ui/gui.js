@@ -46,7 +46,7 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, render
     };
 
     // --- SCALE SECTION ---
-    const { sunDisplay, planetDisplay } = setupScaleFolder(gui, uiState, planets, sun);
+    setupScaleFolder(gui, uiState, planets, sun);
 
     // --- OBJECTS SECTION ---
     setupObjectsFolder(gui, planets, sun);
@@ -74,7 +74,7 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, render
 
     gui.close();
 
-    return { uiState, dateCtrl, timeCtrl, stardateCtrl, speedDisplay, sunDisplay, planetDisplay };
+    return { uiState, dateCtrl, timeCtrl, stardateCtrl, speedDisplay };
 }
 
 /**
@@ -123,7 +123,4 @@ export function updateUI(uiState, controls) {
 
     // Update custom value displays
     if (controls.speedDisplay) controls.speedDisplay.update();
-    if (controls.sunDisplay) controls.sunDisplay.update();
-    if (controls.planetDisplay) controls.planetDisplay.update();
-    if (controls.moonDisplay) controls.moonDisplay.update();
 }

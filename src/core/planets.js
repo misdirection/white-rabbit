@@ -202,26 +202,8 @@ export function updatePlanets(planets, sun = null) {
             p.mesh.rotation.y = rotationAngle;
         }
 
-        // Dynamic Orbit Scaling
-        // Prevent planet from consuming moons by expanding orbits if planet gets too big
-        let expansionFactor = 1;
-        if (p.moons && p.moons.length > 0) {
-            let baseMinDistance = 1000;
-            if (p.data.name === 'Jupiter') baseMinDistance = 14; // Io distance approx
-            else if (p.data.name === 'Saturn') baseMinDistance = 20; // Titan distance
-            else if (p.data.name === 'Earth') baseMinDistance = 6.4; // Moon distance approx
-
-            const currentRadius = p.data.radius * config.planetScale;
-            const requiredDistance = currentRadius * 1.1; // 10% padding
-            expansionFactor = Math.max(1, requiredDistance / baseMinDistance);
-
-            if (p.orbitLinesGroup) {
-                p.orbitLinesGroup.scale.setScalar(expansionFactor);
-            }
-        }
-
         // Update Moons
         const planetIndex = planets.indexOf(p);
-        updateMoonPositions(p, expansionFactor, planetIndex, planets);
+        updateMoonPositions(p, planetIndex, planets);
     });
 }
