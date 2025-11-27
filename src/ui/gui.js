@@ -19,14 +19,11 @@ import { setupAboutFolder } from './modules/about.js';
  * @param {THREE.Points} stars - The starfield points object
  * @returns {Object} Object containing uiState and control references for updates
  * 
- * Sections:
- * - Scale: Sun/Planet/Moon scaling with Artistic/Realistic presets
- * - Visual: Star brightness, orbit lines, dwarf planets, zodiacs, pause
- * - Time: Date, time, speed controls, and quick-set buttons
  * - Navigation: Help text for camera and focus controls
  */
-export function setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, renderer, camera, controls) {
+export function setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, renderer, camera, controls, zodiacSignsGroup) {
     const gui = new GUI({ title: 'Menu' });
+    gui.domElement.classList.add('main-gui');
 
     const uiState = {
         speedExponent: 0,
@@ -52,7 +49,7 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, render
     setupObjectsFolder(gui, planets, sun);
 
     // --- OVERLAYS SECTION ---
-    setupOverlaysFolder(gui, orbitGroup, zodiacGroup, planets, sun);
+    setupOverlaysFolder(gui, orbitGroup, zodiacGroup, planets, sun, zodiacSignsGroup);
 
     // --- MISSIONS SECTION ---
     setupMissionsFolder(gui, config);

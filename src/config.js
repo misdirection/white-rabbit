@@ -16,7 +16,8 @@ export const config = {
     gamma: 1.0,
     showOrbits: true,
     showAxes: false,
-    showZodiacs: false,
+    showZodiacs: false, // Constellation lines
+    showZodiacSigns: false, // Zodiac sign sprites
     showSun: true,
     showPlanets: true,
     showLargestMoons: true,

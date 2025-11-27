@@ -9,6 +9,7 @@ import { setupFocusMode, updateFocusMode } from './src/features/focusMode.js';
 import { initializeMissions, updateMissions } from './src/features/missions.js';
 
 import { createRabbit } from './src/systems/rabbit.js';
+import { createZodiacSigns, alignZodiacSigns } from './src/systems/zodiacSigns.js';
 
 // --- Init ---
 (async () => {
@@ -22,6 +23,10 @@ import { createRabbit } from './src/systems/rabbit.js';
         const { scene, camera, renderer, controls, orbitGroup, zodiacGroup } = createScene();
         zodiacGroup.visible = config.showZodiacs;
 
+        // 1.5 Create Zodiac Signs
+        const textureLoader = new THREE.TextureLoader();
+        const zodiacSignsGroup = createZodiacSigns(scene, textureLoader);
+
         // 2. Create Planets & Sun (Immediate)
         loading.textContent = 'Loading Planets...';
         const { planets, sun } = createPlanets(scene, orbitGroup);
@@ -29,7 +34,7 @@ import { createRabbit } from './src/systems/rabbit.js';
         // 3. Setup GUI & Interactions (Immediate)
         loading.textContent = 'Setting up GUI...';
         const starsRef = { value: null }; // Placeholder for stars
-        const uiControls = setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, renderer, camera, controls);
+        const uiControls = setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, renderer, camera, controls, zodiacSignsGroup);
         setupTooltipSystem(camera, planets, sun, starsRef);
         setupFocusMode(camera, controls, planets, sun);
         initializeMissions(scene);
@@ -83,6 +88,7 @@ import { createRabbit } from './src/systems/rabbit.js';
                 stars.material.opacity = (config.starBrightness / 0.6) * 0.3;
 
                 createConstellations(zodiacGroup, rawData);
+                alignZodiacSigns(zodiacSignsGroup, rawData);
             }
         }).catch(err => console.error("Error loading stars:", err));
 
