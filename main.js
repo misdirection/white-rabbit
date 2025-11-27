@@ -10,6 +10,7 @@ import { initializeMissions, updateMissions } from './src/features/missions.js';
 
 import { createRabbit } from './src/systems/rabbit.js';
 import { createZodiacSigns, alignZodiacSigns } from './src/systems/zodiacSigns.js';
+import { createHabitableZone } from './src/systems/habitableZone.js';
 
 // --- Init ---
 (async () => {
@@ -27,6 +28,9 @@ import { createZodiacSigns, alignZodiacSigns } from './src/systems/zodiacSigns.j
         const textureLoader = new THREE.TextureLoader();
         const zodiacSignsGroup = createZodiacSigns(scene, textureLoader);
 
+        // 1.6 Create Habitable Zone
+        const habitableZone = createHabitableZone(scene);
+
         // 2. Create Planets & Sun (Immediate)
         loading.textContent = 'Loading Planets...';
         const { planets, sun } = createPlanets(scene, orbitGroup);
@@ -34,7 +38,7 @@ import { createZodiacSigns, alignZodiacSigns } from './src/systems/zodiacSigns.j
         // 3. Setup GUI & Interactions (Immediate)
         loading.textContent = 'Setting up GUI...';
         const starsRef = { value: null }; // Placeholder for stars
-        const uiControls = setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, renderer, camera, controls, zodiacSignsGroup);
+        const uiControls = setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, renderer, camera, controls, zodiacSignsGroup, habitableZone);
         setupTooltipSystem(camera, planets, sun, starsRef);
         setupFocusMode(camera, controls, planets, sun);
         initializeMissions(scene);

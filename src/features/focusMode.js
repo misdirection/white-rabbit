@@ -113,7 +113,15 @@ export function updateFocusMode(camera, controls) {
  * @param {Object} controls - OrbitControls instance
  */
 export function focusOnObject(targetObject, camera, controls) {
+    // If we are already focused on a different object, revert its resolution
+    if (focusedObject && focusedObject !== targetObject) {
+        disableHighRes(focusedObject);
+    }
+
     focusedObject = targetObject;
+
+    // Enable high resolution for the new target
+    enableHighRes(focusedObject);
 
     // Get the world position of the target
     const worldPos = new THREE.Vector3();
@@ -168,9 +176,50 @@ export function focusOnObject(targetObject, camera, controls) {
  * @param {Object} controls - OrbitControls instance
  */
 export function exitFocusMode(controls) {
-    focusedObject = null;
+    if (focusedObject) {
+        disableHighRes(focusedObject);
+        focusedObject = null;
+    }
     controls.enabled = true;
     showFocusNotification('Focus mode deactivated');
+}
+
+/**
+ * Swaps the object's geometry to a high-resolution version
+ * @param {Object} objectWrapper - The object wrapper { mesh, data, type }
+ */
+function enableHighRes(objectWrapper) {
+    if (!objectWrapper || !objectWrapper.mesh) return;
+
+    // Store original geometry if not already stored
+    if (!objectWrapper.originalGeometry) {
+        objectWrapper.originalGeometry = objectWrapper.mesh.geometry;
+    }
+
+    // Create high-res geometry (128x128)
+    // Use the radius from data, defaulting to 5 for Sun if not present
+    const radius = objectWrapper.data.radius || 5;
+    const highResGeo = new THREE.SphereGeometry(radius, 128, 128);
+
+    // Swap geometry
+    objectWrapper.mesh.geometry = highResGeo;
+}
+
+/**
+ * Reverts the object's geometry to the original version
+ * @param {Object} objectWrapper - The object wrapper { mesh, data, type }
+ */
+function disableHighRes(objectWrapper) {
+    if (!objectWrapper || !objectWrapper.mesh || !objectWrapper.originalGeometry) return;
+
+    // Dispose of the high-res geometry to free memory
+    objectWrapper.mesh.geometry.dispose();
+
+    // Restore original geometry
+    objectWrapper.mesh.geometry = objectWrapper.originalGeometry;
+
+    // Clear stored original geometry reference
+    delete objectWrapper.originalGeometry;
 }
 
 /**

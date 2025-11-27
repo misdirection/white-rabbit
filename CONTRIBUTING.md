@@ -163,6 +163,19 @@ src/
    - Each module in `ui/modules/` is self-contained
    - Imported and orchestrated by `gui.js`
 
+### Coordinate Systems
+    
+The simulation uses the **Equatorial Coordinate System (J2000 epoch)** as its primary reference frame. This is standard in astronomy and matches the data provided by `astronomy-engine`.
+
+- **X-Axis**: Points towards the Vernal Equinox (First Point of Aries).
+- **Y-Axis**: Points towards the North Celestial Pole (parallel to Earth's rotation axis).
+- **Z-Axis**: Perpendicular to X and Y (Right-handed system).
+
+**Important Note on the Ecliptic Plane**:
+The planets orbit in the **Ecliptic Plane**, which is tilted relative to the Equatorial plane by Earth's axial tilt (obliquity), approximately **23.4 degrees**.
+- When adding features that align with planetary orbits (like the Habitable Zone), you must apply this tilt.
+- Rotation: `rotation.x = 23.4 * (Math.PI / 180)` (if starting from XZ plane).
+
 ---
 
 ## How to Add New Features

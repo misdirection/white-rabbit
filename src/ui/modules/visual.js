@@ -55,7 +55,7 @@ export function setupVisualFolder(gui, starsRef, renderer) {
     visualFolder.close(); // Close Visual folder by default
 }
 
-export function setupOverlaysFolder(gui, orbitGroup, zodiacGroup, planets, sun, zodiacSignsGroup) {
+export function setupOverlaysFolder(gui, orbitGroup, zodiacGroup, planets, sun, zodiacSignsGroup, habitableZone) {
     const overlaysFolder = gui.addFolder('Overlays');
 
     overlaysFolder.add(config, 'showOrbits').name('Orbits').onChange(val => {
@@ -89,6 +89,12 @@ export function setupOverlaysFolder(gui, orbitGroup, zodiacGroup, planets, sun, 
     overlaysFolder.add(config, 'showZodiacSigns').name('Zodiac Signs').onChange(val => {
         if (zodiacSignsGroup) {
             zodiacSignsGroup.visible = val;
+        }
+    });
+
+    overlaysFolder.add(config, 'showHabitableZone').name('Habitable Zone').onChange(val => {
+        if (habitableZone) {
+            habitableZone.visible = val;
         }
     });
 

@@ -21,7 +21,7 @@ import { setupAboutFolder } from './modules/about.js';
  * 
  * - Navigation: Help text for camera and focus controls
  */
-export function setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, renderer, camera, controls, zodiacSignsGroup) {
+export function setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, renderer, camera, controls, zodiacSignsGroup, habitableZone) {
     const gui = new GUI({ title: 'Menu' });
     gui.domElement.classList.add('main-gui');
 
@@ -49,7 +49,7 @@ export function setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, render
     setupObjectsFolder(gui, planets, sun);
 
     // --- OVERLAYS SECTION ---
-    setupOverlaysFolder(gui, orbitGroup, zodiacGroup, planets, sun, zodiacSignsGroup);
+    setupOverlaysFolder(gui, orbitGroup, zodiacGroup, planets, sun, zodiacSignsGroup, habitableZone);
 
     // --- MISSIONS SECTION ---
     setupMissionsFolder(gui, config);

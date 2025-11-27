@@ -18,6 +18,7 @@ export const config = {
     showAxes: false,
     showZodiacs: false, // Constellation lines
     showZodiacSigns: false, // Zodiac sign sprites
+    showHabitableZone: false,
     showSun: true,
     showPlanets: true,
     showLargestMoons: true,

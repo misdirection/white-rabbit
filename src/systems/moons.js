@@ -22,7 +22,7 @@ function getPlanetDistanceAU(planetData) {
  * @returns {THREE.Mesh} Moon mesh
  */
 function createMoonMesh(moonData, textureLoader) {
-    const moonGeo = new THREE.SphereGeometry(moonData.radius, 16, 16);
+    const moonGeo = new THREE.SphereGeometry(moonData.radius, 32, 32);
     // Start with base color
     const moonMat = new THREE.MeshStandardMaterial({ color: moonData.color });
 
