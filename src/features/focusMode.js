@@ -12,7 +12,7 @@ let animationStartPosition = new THREE.Vector3();
 let animationStartTarget = new THREE.Vector3();
 let animationEndPosition = new THREE.Vector3();
 let animationEndTarget = new THREE.Vector3();
-let cameraOffset = new THREE.Vector3(); // Stores the fixed offset from the focused object
+let previousObjectPosition = new THREE.Vector3(); // Tracks the object's position in the previous frame
 
 /**
  * Sets up the focus mode system with double-click detection
@@ -68,10 +68,11 @@ export function updateFocusMode(camera, controls) {
 
     if (progress >= 1) {
       isAnimating = false;
-      // Store the final offset for following
+      // Initialize previous position for tracking
       const worldPos = new THREE.Vector3();
       focusedObject.mesh.getWorldPosition(worldPos);
-      cameraOffset.subVectors(camera.position, worldPos);
+      previousObjectPosition.copy(worldPos);
+
       // Enable controls after animation
       controls.enabled = true;
     }
@@ -90,15 +91,21 @@ export function updateFocusMode(camera, controls) {
 
     const targetMesh = focusedObject.mesh;
 
-    // Get the world position of the target
-    const worldPos = new THREE.Vector3();
-    targetMesh.getWorldPosition(worldPos);
+    // Get the current world position of the target
+    const currentObjectPosition = new THREE.Vector3();
+    targetMesh.getWorldPosition(currentObjectPosition);
 
-    // Apply the fixed offset to maintain constant distance
-    camera.position.copy(worldPos).add(cameraOffset);
+    // Calculate the movement delta of the object since the last frame
+    const delta = new THREE.Vector3().subVectors(currentObjectPosition, previousObjectPosition);
 
-    // Keep the target locked on the object
-    controls.target.copy(worldPos);
+    // Apply the delta to the camera position to keep it moving with the object
+    camera.position.add(delta);
+
+    // Update the controls target to the new object position
+    controls.target.copy(currentObjectPosition);
+
+    // Update previous position for the next frame
+    previousObjectPosition.copy(currentObjectPosition);
 
     controls.update();
   }
