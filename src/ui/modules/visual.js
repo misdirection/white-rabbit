@@ -1,4 +1,4 @@
-import { config } from '../../config.js';
+import { config, REAL_PLANET_SCALE_FACTOR } from '../../config.js';
 
 export function setupVisualFolder(gui, starsRef, renderer) {
     const visualFolder = gui.addFolder('Visual');
@@ -55,9 +55,10 @@ export function setupVisualFolder(gui, starsRef, renderer) {
     visualFolder.close(); // Close Visual folder by default
 }
 
-export function setupOverlaysFolder(gui, orbitGroup, zodiacGroup, planets, sun, zodiacSignsGroup, habitableZone) {
+export function setupOverlaysFolder(gui, orbitGroup, zodiacGroup, planets, sun, zodiacSignsGroup, habitableZone, magneticFieldsGroup) {
     const overlaysFolder = gui.addFolder('Overlays');
 
+    // Orbits
     overlaysFolder.add(config, 'showOrbits').name('Orbits').onChange(val => {
         orbitGroup.visible = val;
         planets.forEach(p => {
@@ -65,8 +66,23 @@ export function setupOverlaysFolder(gui, orbitGroup, zodiacGroup, planets, sun, 
                 if (m.data.orbitLine) m.data.orbitLine.visible = val;
             });
         });
+        updateCapMoonOrbitsVisibility();
     });
 
+    const capMoonOrbitsCtrl = overlaysFolder.add(config, 'capMoonOrbits')
+        .name('Cap Moon Orbits When Scaling')
+        .onChange(() => {
+            // Moon positions will be updated in the next animation frame
+        });
+    capMoonOrbitsCtrl.domElement.classList.add('child-control');
+
+    // Show/hide child control based on parent state
+    const updateCapMoonOrbitsVisibility = () => {
+        capMoonOrbitsCtrl.domElement.style.display = config.showOrbits ? '' : 'none';
+    };
+    updateCapMoonOrbitsVisibility();
+
+    // Axes
     overlaysFolder.add(config, 'showAxes').name('Axes').onChange(val => {
         // Toggle sun axis
         if (sun.axisLine) sun.axisLine.visible = val;
@@ -82,24 +98,90 @@ export function setupOverlaysFolder(gui, orbitGroup, zodiacGroup, planets, sun, 
         });
     });
 
+    // Zodiacs
     overlaysFolder.add(config, 'showZodiacs').name('Zodiacs').onChange(val => {
         zodiacGroup.visible = val;
     });
 
+    // Zodiac Signs
     overlaysFolder.add(config, 'showZodiacSigns').name('Zodiac Signs').onChange(val => {
         if (zodiacSignsGroup) {
             zodiacSignsGroup.visible = val;
         }
     });
 
+    // Habitable Zone
     overlaysFolder.add(config, 'showHabitableZone').name('Habitable Zone').onChange(val => {
         if (habitableZone) {
             habitableZone.visible = val;
         }
     });
 
+    // Magnetic Fields
+    overlaysFolder.add(config, 'showMagneticFields').name('Magnetic Fields').onChange(val => {
+        if (magneticFieldsGroup) {
+            magneticFieldsGroup.visible = val;
+
+            planets.forEach(p => {
+                p.mesh.children.forEach(child => {
+                    if (child.type === 'Group' && child.children.length > 0 && child.children[0].type === 'Line') {
+                        child.visible = val;
+                    }
+                });
+
+                // Also moons
+                p.moons.forEach(m => {
+                    m.mesh.children.forEach(child => {
+                        if (child.type === 'Group' && child.children.length > 0 && child.children[0].type === 'Line') {
+                            child.visible = val;
+                        }
+                    });
+                });
+            });
+        }
+        updateCapMagneticFieldsVisibility();
+    });
+
+    const capMagneticFieldsCtrl = overlaysFolder.add(config, 'capMagneticFields')
+        .name('Cap When Scaling')
+        .onChange(() => {
+            updateMagneticFieldScales(planets);
+        });
+    capMagneticFieldsCtrl.domElement.classList.add('child-control');
+
+    // Show/hide child control based on parent state
+    const updateCapMagneticFieldsVisibility = () => {
+        capMagneticFieldsCtrl.domElement.style.display = config.showMagneticFields ? '' : 'none';
+    };
+    updateCapMagneticFieldsVisibility();
 
     overlaysFolder.close();
+}
+
+/**
+ * Updates the scale of magnetic field meshes based on planet scale and capping setting.
+ * If capped, fields won't grow beyond 100x planet scale equivalent.
+ */
+export function updateMagneticFieldScales(planets) {
+    const currentScale = config.planetScale * REAL_PLANET_SCALE_FACTOR;
+    let magScale = 1.0;
+
+    if (config.capMagneticFields && currentScale > 100) {
+        // Cap at 100x equivalent
+        magScale = 100 / currentScale;
+    }
+
+    planets.forEach(p => {
+        // Planet fields
+        const field = p.mesh.getObjectByName('MagneticField');
+        if (field) field.scale.setScalar(magScale);
+
+        // Moon fields
+        p.moons.forEach(m => {
+            const mField = m.mesh.getObjectByName('MagneticField');
+            if (mField) mField.scale.setScalar(magScale);
+        });
+    });
 }
 
 export function setupObjectsFolder(gui, planets, sun) {

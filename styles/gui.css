@@ -338,3 +338,15 @@
     color: #fff;
     box-shadow: 0 0 5px rgba(136, 204, 255, 0.3);
 }
+
+/* Child Control Indentation */
+.lil-gui .controller.child-control {
+    padding-left: 20px;
+    border-left: 2px solid #555;
+    margin-left: 10px;
+}
+
+.lil-gui .controller.child-control .name {
+    color: #999;
+    font-size: 0.95em;
+}

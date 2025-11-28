@@ -12,6 +12,7 @@ export const config = {
     planetScale: 1,
     sunScale: 1,
     capMoonOrbits: true,
+    capMagneticFields: true,
     starBrightness: 0.35,
     gamma: 1.0,
     showOrbits: true,
@@ -19,6 +20,7 @@ export const config = {
     showZodiacs: false, // Constellation lines
     showZodiacSigns: false, // Zodiac sign sprites
     showHabitableZone: false,
+    showMagneticFields: false,
     showSun: true,
     showPlanets: true,
     showLargestMoons: true,

@@ -40,7 +40,8 @@ export const planetData = [
         name: "Mercury", body: "Mercury", radius: 0.38, color: 0xaaaaaa, period: 88, texture: `${import.meta.env.BASE_URL}assets/textures/mercury.jpg`, rotationPeriod: 1408, axialTilt: 0.01,
         details: {
             mass: "0.330 × 10²⁴ kg", density: "5427 kg/m³", gravity: "0.38 g", albedo: "0.12", temp: "-173°C to 427°C", pressure: "~0 bar", solarDay: "176 days", siderealDay: "58.6 days", eccentricity: "0.205", inclination: "7.0°"
-        }
+        },
+        magneticField: { strength: 1.5, tilt: 0, color: 0x00ffff } // Weak (~1.5 radii)
     },
     {
         name: "Venus", body: "Venus", radius: 0.95, color: 0xffcc00, period: 225, texture: `${import.meta.env.BASE_URL}assets/textures/venus.jpg`, rotationPeriod: 5832, axialTilt: 177.4,
@@ -53,7 +54,8 @@ export const planetData = [
         details: {
             mass: "5.97 × 10²⁴ kg", density: "5514 kg/m³", gravity: "1.0 g", albedo: "0.30", temp: "-88°C to 58°C", pressure: "1.013 bar", solarDay: "24 h", siderealDay: "23h 56m", eccentricity: "0.017", inclination: "0.0°"
         },
-        moons: getMoonsForPlanet("Earth")
+        moons: getMoonsForPlanet("Earth"),
+        magneticField: { strength: 10, tilt: 11.5, color: 0x00ffff } // Moderate (~10 radii)
     },
     {
         name: "Mars", body: "Mars", radius: 0.53, color: 0xff4400, period: 687, texture: `${import.meta.env.BASE_URL}assets/textures/mars.jpg`, rotationPeriod: 24.6, axialTilt: 25.2,
@@ -67,28 +69,32 @@ export const planetData = [
         details: {
             mass: "1898 × 10²⁴ kg", density: "1326 kg/m³", gravity: "2.53 g", albedo: "0.34", temp: "-108°C (1 bar)", pressure: "Unknown", solarDay: "9h 56m", siderealDay: "9h 55m", eccentricity: "0.049", inclination: "1.3°"
         },
-        moons: getMoonsForPlanet("Jupiter")
+        moons: getMoonsForPlanet("Jupiter"),
+        magneticField: { strength: 65, tilt: 9.6, color: 0x00ffff } // Massive (~65 radii)
     },
     {
         name: "Saturn", body: "Saturn", radius: 9, color: 0xeebb88, period: 10759, texture: `${import.meta.env.BASE_URL}assets/textures/saturn.jpg`, rotationPeriod: 10.7, axialTilt: 26.7, ring: { inner: 11, outer: 18, color: 0xaa8866, texture: `${import.meta.env.BASE_URL}assets/textures/saturn_ring.png` },
         details: {
             mass: "568 × 10²⁴ kg", density: "687 kg/m³", gravity: "1.07 g", albedo: "0.34", temp: "-139°C (1 bar)", pressure: "Unknown", solarDay: "10h 33m", siderealDay: "10h 33m", eccentricity: "0.057", inclination: "2.49°"
         },
-        moons: getMoonsForPlanet("Saturn")
+        moons: getMoonsForPlanet("Saturn"),
+        magneticField: { strength: 20, tilt: 0, color: 0x00ffff } // Strong (~20 radii)
     },
     {
         name: "Uranus", body: "Uranus", radius: 4, color: 0x4fd0e7, period: 30687, texture: `${import.meta.env.BASE_URL}assets/textures/uranus.jpg`, rotationPeriod: 17.2, axialTilt: 97.8,
         details: {
             mass: "86.8 × 10²⁴ kg", density: "1271 kg/m³", gravity: "0.89 g", albedo: "0.30", temp: "-197°C", pressure: "Unknown", solarDay: "17h 14m", siderealDay: "17h 14m", eccentricity: "0.046", inclination: "0.77°"
         },
-        moons: getMoonsForPlanet("Uranus")
+        moons: getMoonsForPlanet("Uranus"),
+        magneticField: { strength: 18, tilt: 59, color: 0x00ffff } // Moderate (~18 radii)
     },
     {
         name: "Neptune", body: "Neptune", radius: 3.9, color: 0x4b70dd, period: 60190, texture: `${import.meta.env.BASE_URL}assets/textures/neptune.jpg`, rotationPeriod: 16.1, axialTilt: 28.3,
         details: {
             mass: "102 × 10²⁴ kg", density: "1638 kg/m³", gravity: "1.14 g", albedo: "0.29", temp: "-201°C", pressure: "Unknown", solarDay: "16h 6m", siderealDay: "16h 6m", eccentricity: "0.011", inclination: "1.77°"
         },
-        moons: getMoonsForPlanet("Neptune")
+        moons: getMoonsForPlanet("Neptune"),
+        magneticField: { strength: 24, tilt: 47, color: 0x00ffff } // Moderate (~24 radii)
     }
 ];
 

@@ -11,6 +11,7 @@ import { initializeMissions, updateMissions } from './src/features/missions.js';
 import { createRabbit } from './src/systems/rabbit.js';
 import { createZodiacSigns, alignZodiacSigns } from './src/systems/zodiacSigns.js';
 import { createHabitableZone } from './src/systems/habitableZone.js';
+import { createMagneticField } from './src/systems/magneticFields.js';
 
 // --- Init ---
 (async () => {
@@ -35,10 +36,35 @@ import { createHabitableZone } from './src/systems/habitableZone.js';
         loading.textContent = 'Loading Planets...';
         const { planets, sun } = createPlanets(scene, orbitGroup);
 
+        // 2.5 Create Magnetic Fields
+        const magneticFieldsGroup = new THREE.Group();
+        magneticFieldsGroup.visible = config.showMagneticFields;
+        scene.add(magneticFieldsGroup);
+
+        planets.forEach(p => {
+            // Planet fields
+            if (p.data.magneticField) {
+                const field = createMagneticField(p.data, p.data.radius);
+                if (field) {
+                    p.mesh.add(field); // Add to planet mesh so it moves/rotates with it
+                }
+            }
+
+            // Moon fields (e.g. Ganymede)
+            p.moons.forEach(m => {
+                if (m.data.magneticField) {
+                    const field = createMagneticField(m.data, m.data.radius);
+                    if (field) {
+                        m.mesh.add(field);
+                    }
+                }
+            });
+        });
+
         // 3. Setup GUI & Interactions (Immediate)
         loading.textContent = 'Setting up GUI...';
         const starsRef = { value: null }; // Placeholder for stars
-        const uiControls = setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, renderer, camera, controls, zodiacSignsGroup, habitableZone);
+        const uiControls = setupGUI(planets, sun, orbitGroup, zodiacGroup, starsRef, renderer, camera, controls, zodiacSignsGroup, habitableZone, magneticFieldsGroup);
         setupTooltipSystem(camera, planets, sun, starsRef);
         setupFocusMode(camera, controls, planets, sun);
         initializeMissions(scene);

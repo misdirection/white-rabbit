@@ -86,7 +86,8 @@ export const largestMoons = {
             gravity: 1.428,
             meanTemp: 110,
             discoveryYear: 1610,
-            discoveredBy: "Galileo Galilei"
+            discoveredBy: "Galileo Galilei",
+            magneticField: { strength: 2, tilt: 176, color: 0x00ffff } // Small (~2 radii)
         },
         {
             name: "Callisto",

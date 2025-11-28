@@ -1,5 +1,6 @@
 import { config, REAL_PLANET_SCALE_FACTOR, REAL_SUN_SCALE_FACTOR } from '../../config.js';
 import { addValueDisplay } from './utils.js';
+import { updateMagneticFieldScales } from './visual.js';
 
 
 export function setupScaleFolder(gui, uiState, planets, sun) {
@@ -49,6 +50,7 @@ export function setupScaleFolder(gui, uiState, planets, sun) {
                 p.mesh.scale.setScalar(internalVal);
                 p.moons.forEach(m => m.mesh.scale.setScalar(internalVal));
             });
+            updateMagneticFieldScales(planets);
         }
     };
 
@@ -79,13 +81,10 @@ export function setupScaleFolder(gui, uiState, planets, sun) {
         isPresetChanging = false;
     });
 
-    scaleFolder.add(config, 'capMoonOrbits')
-        .name('Cap Moon Orbit Size')
-        .onChange(() => {
-            // Moon positions will be updated in the next animation frame
-        });
-
     scaleFolder.close(); // Close Scale folder by default
+
+    // Initial update to apply defaults
+    updateMagneticFieldScales(planets);
 
     return {};
 }
