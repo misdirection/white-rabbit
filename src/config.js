@@ -7,33 +7,34 @@ export const REAL_SUN_SCALE_FACTOR = 20;
 export const AU_TO_SCENE = 50;
 
 export const config = {
-    speedExponent: 0,
-    simulationSpeed: 1,
-    planetScale: 1,
-    sunScale: 1,
-    capMoonOrbits: true,
-    capMagneticFields: true,
-    starBrightness: 0.35,
-    gamma: 1.0,
-    showOrbits: true,
-    showAxes: false,
-    showZodiacs: false, // Constellation lines
-    showZodiacSigns: false, // Zodiac sign sprites
-    showHabitableZone: false,
-    showMagneticFields: false,
-    showSun: true,
-    showPlanets: true,
-    showLargestMoons: true,
-    showMajorMoons: false,
-    showSmallMoons: false,
-    showDwarfPlanets: false,
-    showMissions: {
-        voyager1: false,
-        voyager2: false,
-        pioneer10: false,
-        pioneer11: false,
-        galileo: false
-    },
-    date: new Date(),
-    stop: false
+  speedExponent: 0,
+  simulationSpeed: 1,
+  planetScale: 1,
+  sunScale: 1,
+  capMoonOrbits: true,
+  capMagneticFields: true,
+  starBrightness: 0.35,
+  gamma: 1.0,
+  showOrbits: true,
+  showAxes: false,
+  referencePlane: 'Ecliptic', // 'Equatorial' or 'Ecliptic'
+  showZodiacs: false, // Constellation lines
+  showZodiacSigns: false, // Zodiac sign sprites
+  showHabitableZone: false,
+  showMagneticFields: false,
+  showSun: true,
+  showPlanets: true,
+  showLargestMoons: true,
+  showMajorMoons: false,
+  showSmallMoons: false,
+  showDwarfPlanets: false,
+  showMissions: {
+    voyager1: false,
+    voyager2: false,
+    pioneer10: false,
+    pioneer11: false,
+    galileo: false,
+  },
+  date: new Date(),
+  stop: false,
 };

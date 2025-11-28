@@ -22,28 +22,28 @@ let cameraOffset = new THREE.Vector3(); // Stores the fixed offset from the focu
  * @param {THREE.Mesh} sun - The sun mesh
  */
 export function setupFocusMode(camera, controls, planets, sun) {
-    window.addEventListener('dblclick', (event) => {
-        const mouseX = event.clientX;
-        const mouseY = event.clientY;
+  window.addEventListener('dblclick', (event) => {
+    const mouseX = event.clientX;
+    const mouseY = event.clientY;
 
-        // Find the clicked object
-        const clickedObject = findObjectAtPosition(mouseX, mouseY, camera, planets, sun);
+    // Find the clicked object
+    const clickedObject = findObjectAtPosition(mouseX, mouseY, camera, planets, sun);
 
-        if (clickedObject) {
-            // Focus on the clicked object
-            focusOnObject(clickedObject, camera, controls);
-        } else if (focusedObject) {
-            // If we're in focus mode and clicked empty space, exit focus mode
-            exitFocusMode(controls);
-        }
-    });
+    if (clickedObject) {
+      // Focus on the clicked object
+      focusOnObject(clickedObject, camera, controls);
+    } else if (focusedObject) {
+      // If we're in focus mode and clicked empty space, exit focus mode
+      exitFocusMode(controls);
+    }
+  });
 
-    // ESC key to exit focus mode
-    window.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && focusedObject) {
-            exitFocusMode(controls);
-        }
-    });
+  // ESC key to exit focus mode
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && focusedObject) {
+      exitFocusMode(controls);
+    }
+  });
 }
 
 /**
@@ -52,58 +52,56 @@ export function setupFocusMode(camera, controls, planets, sun) {
  * @param {Object} controls - OrbitControls instance
  */
 export function updateFocusMode(camera, controls) {
-    const now = performance.now();
+  const now = performance.now();
 
-    // Handle animation
-    if (isAnimating) {
-        const elapsed = now - animationStartTime;
-        const progress = Math.min(elapsed / ANIMATION_DURATION, 1);
+  // Handle animation
+  if (isAnimating) {
+    const elapsed = now - animationStartTime;
+    const progress = Math.min(elapsed / ANIMATION_DURATION, 1);
 
-        // Smooth easing function (ease-in-out)
-        const eased = progress < 0.5
-            ? 2 * progress * progress
-            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+    // Smooth easing function (ease-in-out)
+    const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
 
-        // Interpolate camera position and target
-        camera.position.lerpVectors(animationStartPosition, animationEndPosition, eased);
-        controls.target.lerpVectors(animationStartTarget, animationEndTarget, eased);
+    // Interpolate camera position and target
+    camera.position.lerpVectors(animationStartPosition, animationEndPosition, eased);
+    controls.target.lerpVectors(animationStartTarget, animationEndTarget, eased);
 
-        if (progress >= 1) {
-            isAnimating = false;
-            // Store the final offset for following
-            const worldPos = new THREE.Vector3();
-            focusedObject.mesh.getWorldPosition(worldPos);
-            cameraOffset.subVectors(camera.position, worldPos);
-            // Enable controls after animation
-            controls.enabled = true;
-        }
-
-        controls.update();
-        return;
+    if (progress >= 1) {
+      isAnimating = false;
+      // Store the final offset for following
+      const worldPos = new THREE.Vector3();
+      focusedObject.mesh.getWorldPosition(worldPos);
+      cameraOffset.subVectors(camera.position, worldPos);
+      // Enable controls after animation
+      controls.enabled = true;
     }
 
-    // Follow the focused object
-    if (focusedObject && !isAnimating) {
-        // Check if object became invisible
-        if (!focusedObject.mesh.visible) {
-            exitFocusMode(controls);
-            return;
-        }
+    controls.update();
+    return;
+  }
 
-        const targetMesh = focusedObject.mesh;
-
-        // Get the world position of the target
-        const worldPos = new THREE.Vector3();
-        targetMesh.getWorldPosition(worldPos);
-
-        // Apply the fixed offset to maintain constant distance
-        camera.position.copy(worldPos).add(cameraOffset);
-
-        // Keep the target locked on the object
-        controls.target.copy(worldPos);
-
-        controls.update();
+  // Follow the focused object
+  if (focusedObject && !isAnimating) {
+    // Check if object became invisible
+    if (!focusedObject.mesh.visible) {
+      exitFocusMode(controls);
+      return;
     }
+
+    const targetMesh = focusedObject.mesh;
+
+    // Get the world position of the target
+    const worldPos = new THREE.Vector3();
+    targetMesh.getWorldPosition(worldPos);
+
+    // Apply the fixed offset to maintain constant distance
+    camera.position.copy(worldPos).add(cameraOffset);
+
+    // Keep the target locked on the object
+    controls.target.copy(worldPos);
+
+    controls.update();
+  }
 }
 
 /**
@@ -113,62 +111,62 @@ export function updateFocusMode(camera, controls) {
  * @param {Object} controls - OrbitControls instance
  */
 export function focusOnObject(targetObject, camera, controls) {
-    // If we are already focused on a different object, revert its resolution
-    if (focusedObject && focusedObject !== targetObject) {
-        disableHighRes(focusedObject);
-    }
+  // If we are already focused on a different object, revert its resolution
+  if (focusedObject && focusedObject !== targetObject) {
+    disableHighRes(focusedObject);
+  }
 
-    focusedObject = targetObject;
+  focusedObject = targetObject;
 
-    // Enable high resolution for the new target
-    enableHighRes(focusedObject);
+  // Enable high resolution for the new target
+  enableHighRes(focusedObject);
 
-    // Get the world position of the target
-    const worldPos = new THREE.Vector3();
-    targetObject.mesh.getWorldPosition(worldPos);
+  // Get the world position of the target
+  const worldPos = new THREE.Vector3();
+  targetObject.mesh.getWorldPosition(worldPos);
 
-    // Calculate camera position based on object's VISUAL size (radius × scale)
-    const radius = targetObject.data.radius || 5;
+  // Calculate camera position based on object's VISUAL size (radius × scale)
+  const radius = targetObject.data.radius || 5;
 
-    // Get the current scale of the object
-    let currentScale = 1;
-    if (targetObject.type === 'sun') {
-        currentScale = config.sunScale;
-    } else if (targetObject.type === 'planet' || targetObject.type === 'moon') {
-        currentScale = config.planetScale;
-    }
+  // Get the current scale of the object
+  let currentScale = 1;
+  if (targetObject.type === 'sun') {
+    currentScale = config.sunScale;
+  } else if (targetObject.type === 'planet' || targetObject.type === 'moon') {
+    currentScale = config.planetScale;
+  }
 
-    // Calculate visual radius (how big the object actually appears)
-    const visualRadius = radius * currentScale;
+  // Calculate visual radius (how big the object actually appears)
+  const visualRadius = radius * currentScale;
 
-    // Calculate distance based on visual size
-    const distance = visualRadius * FOLLOW_DISTANCE_MULTIPLIER;
+  // Calculate distance based on visual size
+  const distance = visualRadius * FOLLOW_DISTANCE_MULTIPLIER;
 
-    // Position camera in front and slightly above the object
-    const angle = Math.PI / 6; // 30 degrees above
-    const offset = new THREE.Vector3(
-        distance * Math.cos(angle),
-        distance * Math.sin(angle),
-        distance * Math.cos(angle)
-    );
+  // Position camera in front and slightly above the object
+  const angle = Math.PI / 6; // 30 degrees above
+  const offset = new THREE.Vector3(
+    distance * Math.cos(angle),
+    distance * Math.sin(angle),
+    distance * Math.cos(angle)
+  );
 
-    // Store animation start state
-    animationStartPosition.copy(camera.position);
-    animationStartTarget.copy(controls.target);
+  // Store animation start state
+  animationStartPosition.copy(camera.position);
+  animationStartTarget.copy(controls.target);
 
-    // Calculate animation end state
-    animationEndPosition.copy(worldPos).add(offset);
-    animationEndTarget.copy(worldPos);
+  // Calculate animation end state
+  animationEndPosition.copy(worldPos).add(offset);
+  animationEndTarget.copy(worldPos);
 
-    // Start animation
-    isAnimating = true;
-    animationStartTime = performance.now();
+  // Start animation
+  isAnimating = true;
+  animationStartTime = performance.now();
 
-    // Disable controls during animation
-    controls.enabled = false;
+  // Disable controls during animation
+  controls.enabled = false;
 
-    // Show notification
-    showFocusNotification(targetObject.data.name);
+  // Show notification
+  showFocusNotification(targetObject.data.name);
 }
 
 /**
@@ -176,12 +174,12 @@ export function focusOnObject(targetObject, camera, controls) {
  * @param {Object} controls - OrbitControls instance
  */
 export function exitFocusMode(controls) {
-    if (focusedObject) {
-        disableHighRes(focusedObject);
-        focusedObject = null;
-    }
-    controls.enabled = true;
-    showFocusNotification('Focus mode deactivated');
+  if (focusedObject) {
+    disableHighRes(focusedObject);
+    focusedObject = null;
+  }
+  controls.enabled = true;
+  showFocusNotification('Focus mode deactivated');
 }
 
 /**
@@ -189,20 +187,20 @@ export function exitFocusMode(controls) {
  * @param {Object} objectWrapper - The object wrapper { mesh, data, type }
  */
 function enableHighRes(objectWrapper) {
-    if (!objectWrapper || !objectWrapper.mesh) return;
+  if (!objectWrapper || !objectWrapper.mesh) return;
 
-    // Store original geometry if not already stored
-    if (!objectWrapper.originalGeometry) {
-        objectWrapper.originalGeometry = objectWrapper.mesh.geometry;
-    }
+  // Store original geometry if not already stored
+  if (!objectWrapper.originalGeometry) {
+    objectWrapper.originalGeometry = objectWrapper.mesh.geometry;
+  }
 
-    // Create high-res geometry (128x128)
-    // Use the radius from data, defaulting to 5 for Sun if not present
-    const radius = objectWrapper.data.radius || 5;
-    const highResGeo = new THREE.SphereGeometry(radius, 128, 128);
+  // Create high-res geometry (128x128)
+  // Use the radius from data, defaulting to 5 for Sun if not present
+  const radius = objectWrapper.data.radius || 5;
+  const highResGeo = new THREE.SphereGeometry(radius, 128, 128);
 
-    // Swap geometry
-    objectWrapper.mesh.geometry = highResGeo;
+  // Swap geometry
+  objectWrapper.mesh.geometry = highResGeo;
 }
 
 /**
@@ -210,16 +208,16 @@ function enableHighRes(objectWrapper) {
  * @param {Object} objectWrapper - The object wrapper { mesh, data, type }
  */
 function disableHighRes(objectWrapper) {
-    if (!objectWrapper || !objectWrapper.mesh || !objectWrapper.originalGeometry) return;
+  if (!objectWrapper || !objectWrapper.mesh || !objectWrapper.originalGeometry) return;
 
-    // Dispose of the high-res geometry to free memory
-    objectWrapper.mesh.geometry.dispose();
+  // Dispose of the high-res geometry to free memory
+  objectWrapper.mesh.geometry.dispose();
 
-    // Restore original geometry
-    objectWrapper.mesh.geometry = objectWrapper.originalGeometry;
+  // Restore original geometry
+  objectWrapper.mesh.geometry = objectWrapper.originalGeometry;
 
-    // Clear stored original geometry reference
-    delete objectWrapper.originalGeometry;
+  // Clear stored original geometry reference
+  delete objectWrapper.originalGeometry;
 }
 
 /**
@@ -232,55 +230,55 @@ function disableHighRes(objectWrapper) {
  * @returns {Object|null} The clicked object or null
  */
 function findObjectAtPosition(mouseX, mouseY, camera, planets, sun) {
-    let closestObject = null;
-    let closestDistance = SCREEN_HIT_RADIUS;
+  let closestObject = null;
+  let closestDistance = SCREEN_HIT_RADIUS;
 
-    // Helper function to check an object
-    const checkObject = (mesh, objectData, objectType) => {
-        if (!mesh || !mesh.position) return;
+  // Helper function to check an object
+  const checkObject = (mesh, objectData, objectType) => {
+    if (!mesh || !mesh.position) return;
 
-        // Get world position
-        const worldPos = new THREE.Vector3();
-        mesh.getWorldPosition(worldPos);
+    // Get world position
+    const worldPos = new THREE.Vector3();
+    mesh.getWorldPosition(worldPos);
 
-        // Project to screen space
-        const projected = worldPos.clone().project(camera);
+    // Project to screen space
+    const projected = worldPos.clone().project(camera);
 
-        // Convert to pixel coordinates
-        const screenX = (projected.x * 0.5 + 0.5) * window.innerWidth;
-        const screenY = (-(projected.y * 0.5) + 0.5) * window.innerHeight;
+    // Convert to pixel coordinates
+    const screenX = (projected.x * 0.5 + 0.5) * window.innerWidth;
+    const screenY = (-(projected.y * 0.5) + 0.5) * window.innerHeight;
 
-        // Calculate 2D pixel distance from mouse
-        const dx = mouseX - screenX;
-        const dy = mouseY - screenY;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+    // Calculate 2D pixel distance from mouse
+    const dx = mouseX - screenX;
+    const dy = mouseY - screenY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
 
-        // Check if this object is closer than the current closest
-        if (distance < closestDistance) {
-            // Also check if object is in front of camera
-            if (projected.z < 1 && projected.z > -1) {
-                closestDistance = distance;
-                closestObject = { mesh, data: objectData, type: objectType };
-            }
-        }
-    };
+    // Check if this object is closer than the current closest
+    if (distance < closestDistance) {
+      // Also check if object is in front of camera
+      if (projected.z < 1 && projected.z > -1) {
+        closestDistance = distance;
+        closestObject = { mesh, data: objectData, type: objectType };
+      }
+    }
+  };
 
-    // Check the Sun
-    checkObject(sun, { name: 'Sun', radius: 5 }, 'sun');
+  // Check the Sun
+  checkObject(sun, { name: 'Sun', radius: 5 }, 'sun');
 
-    // Check all planets
-    planets.forEach(planet => {
-        checkObject(planet.mesh, planet.data, 'planet');
+  // Check all planets
+  planets.forEach((planet) => {
+    checkObject(planet.mesh, planet.data, 'planet');
 
-        // Check all moons of this planet
-        if (planet.moons) {
-            planet.moons.forEach(moon => {
-                checkObject(moon.mesh, moon.data, 'moon');
-            });
-        }
-    });
+    // Check all moons of this planet
+    if (planet.moons) {
+      planet.moons.forEach((moon) => {
+        checkObject(moon.mesh, moon.data, 'moon');
+      });
+    }
+  });
 
-    return closestObject;
+  return closestObject;
 }
 
 /**
@@ -288,12 +286,12 @@ function findObjectAtPosition(mouseX, mouseY, camera, planets, sun) {
  * @param {string} message - Message to display
  */
 function showFocusNotification(message) {
-    // Create or get notification element
-    let notification = document.getElementById('focus-notification');
-    if (!notification) {
-        notification = document.createElement('div');
-        notification.id = 'focus-notification';
-        notification.style.cssText = `
+  // Create or get notification element
+  let notification = document.getElementById('focus-notification');
+  if (!notification) {
+    notification = document.createElement('div');
+    notification.id = 'focus-notification';
+    notification.style.cssText = `
             position: fixed;
             top: 20px;
             left: 50%;
@@ -309,16 +307,16 @@ function showFocusNotification(message) {
             opacity: 0;
             transition: opacity 0.3s ease;
         `;
-        document.body.appendChild(notification);
-    }
+    document.body.appendChild(notification);
+  }
 
-    notification.textContent = message;
-    notification.style.opacity = '1';
+  notification.textContent = message;
+  notification.style.opacity = '1';
 
-    // Fade out after 2 seconds
-    setTimeout(() => {
-        notification.style.opacity = '0';
-    }, 2000);
+  // Fade out after 2 seconds
+  setTimeout(() => {
+    notification.style.opacity = '0';
+  }, 2000);
 }
 
 /**
@@ -326,7 +324,7 @@ function showFocusNotification(message) {
  * @returns {boolean} True if in focus mode
  */
 export function isFocusModeActive() {
-    return focusedObject !== null;
+  return focusedObject !== null;
 }
 
 /**
@@ -334,5 +332,5 @@ export function isFocusModeActive() {
  * @returns {Object|null} The focused object or null
  */
 export function getFocusedObject() {
-    return focusedObject;
+  return focusedObject;
 }

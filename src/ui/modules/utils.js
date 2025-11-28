@@ -5,21 +5,21 @@
  * @returns {Object} Object containing update function
  */
 export function addValueDisplay(controller, formatFn) {
-    const display = document.createElement('div');
-    display.className = 'custom-value';
-    controller.domElement.querySelector('.widget').appendChild(display);
+  const display = document.createElement('div');
+  display.className = 'custom-value';
+  controller.domElement.querySelector('.widget').appendChild(display);
 
-    const update = () => {
-        display.textContent = formatFn(controller.getValue());
-    };
+  const update = () => {
+    display.textContent = formatFn(controller.getValue());
+  };
 
-    // Hook into onChange to update display immediately
-    const originalOnChange = controller._onChange;
-    controller.onChange(val => {
-        update();
-        if (originalOnChange) originalOnChange(val);
-    });
+  // Hook into onChange to update display immediately
+  const originalOnChange = controller._onChange;
+  controller.onChange((val) => {
+    update();
+    if (originalOnChange) originalOnChange(val);
+  });
 
-    update(); // Initial update
-    return { update }; // Return interface to force update
+  update(); // Initial update
+  return { update }; // Return interface to force update
 }

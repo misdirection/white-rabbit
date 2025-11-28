@@ -1,36 +1,36 @@
 /* Mission checkbox colored indicators */
 
 .voyager1-checkbox .name::before {
-    content: "● ";
-    color: #00FFFF;
-    /* Cyan */
-    font-size: 1em;
+  content: "● ";
+  color: #00ffff;
+  /* Cyan */
+  font-size: 1em;
 }
 
 .voyager2-checkbox .name::before {
-    content: "● ";
-    color: #FF00FF;
-    /* Magenta */
-    font-size: 1em;
+  content: "● ";
+  color: #ff00ff;
+  /* Magenta */
+  font-size: 1em;
 }
 
 .pioneer10-checkbox .name::before {
-    content: "● ";
-    color: #FFA500;
-    /* Orange */
-    font-size: 1em;
+  content: "● ";
+  color: #ffa500;
+  /* Orange */
+  font-size: 1em;
 }
 
 .pioneer11-checkbox .name::before {
-    content: "● ";
-    color: #00FF00;
-    /* Lime Green */
-    font-size: 1em;
+  content: "● ";
+  color: #00ff00;
+  /* Lime Green */
+  font-size: 1em;
 }
 
 .galileo-checkbox .name::before {
-    content: "● ";
-    color: #FFD700;
-    /* Gold */
-    font-size: 1em;
+  content: "● ";
+  color: #ffd700;
+  /* Gold */
+  font-size: 1em;
 }

@@ -1,352 +1,352 @@
 /* Global Section Headings */
 .lil-gui .title {
-    color: #aaccff;
+  color: #aaccff;
 }
 
 .find-container {
-    padding: 4px 0;
+  padding: 4px 0;
 }
 
 .find-input-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
 }
 
 .find-input-wrapper label {
-    color: #ffffff;
-    font-size: 0.9em;
-    margin-right: 10px;
-    white-space: nowrap;
+  color: #ffffff;
+  font-size: 0.9em;
+  margin-right: 10px;
+  white-space: nowrap;
 }
 
 #find-search {
-    flex: 1;
-    max-width: 70%;
-    padding: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: #fff;
-    border-radius: 4px;
-    box-sizing: border-box;
+  flex: 1;
+  max-width: 70%;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 4px;
+  box-sizing: border-box;
 }
 
 #find-search:focus {
-    outline: none;
-    border-color: #88ccff;
-    background: rgba(255, 255, 255, 0.15);
+  outline: none;
+  border-color: #88ccff;
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .find-results {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    max-height: 150px;
-    overflow-y: auto;
-    background: #1a1a1a;
-    border: 1px solid #444;
-    border-radius: 4px;
-    z-index: 999999 !important;
-    display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  max-height: 150px;
+  overflow-y: auto;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  z-index: 999999 !important;
+  display: none;
 }
 
 .find-result-item {
-    padding: 6px 10px;
-    cursor: pointer;
-    border-bottom: 1px solid #333;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #333;
 }
 
 .find-result-item:hover {
-    background: #333;
-    color: #88ccff;
+  background: #333;
+  color: #88ccff;
 }
 
 .find-actions {
-    display: flex;
-    width: 70%;
-    margin-left: auto;
-    gap: 8px;
-    margin-bottom: 8px;
+  display: flex;
+  width: 70%;
+  margin-left: auto;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .find-actions button {
-    flex: 1;
-    padding: 6px 12px;
-    background: #333;
-    border: 1px solid #555;
-    color: #fff;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
+  flex: 1;
+  padding: 6px 12px;
+  background: #333;
+  border: 1px solid #555;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .find-actions button:hover:not(:disabled) {
-    background: #444;
-    border-color: #88ccff;
+  background: #444;
+  border-color: #88ccff;
 }
 
 .find-actions button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 #find-status {
-    font-size: 0.85em;
-    color: #88ccff;
-    min-height: 1.2em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-align: right;
+  font-size: 0.85em;
+  color: #88ccff;
+  min-height: 1.2em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
 }
 
 /* Speed Controls */
 .speed-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
-    margin-top: 4px;
-    padding: 0 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 4px;
+  padding: 0 4px;
 }
 
 .speed-btn {
-    flex: 1;
-    min-width: 40px;
-    text-align: center;
-    padding: 4px;
-    background: #2c2c2c;
-    border: 1px solid #444;
-    border-radius: 2px;
-    cursor: pointer;
-    font-size: 0.8em;
-    color: #aaa;
-    user-select: none;
+  flex: 1;
+  min-width: 40px;
+  text-align: center;
+  padding: 4px;
+  background: #2c2c2c;
+  border: 1px solid #444;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 0.8em;
+  color: #aaa;
+  user-select: none;
 }
 
 .speed-btn:hover {
-    background: #3c3c3c;
-    color: #fff;
+  background: #3c3c3c;
+  color: #fff;
 }
 
 .speed-btn.active {
-    background: #4a4a4a;
-    color: #fff;
-    border-color: #666;
+  background: #4a4a4a;
+  color: #fff;
+  border-color: #666;
 }
 
 .speed-btn.pause {
-    color: #ffaa88;
+  color: #ffaa88;
 }
 
 .speed-btn.pause.active {
-    background: #5a3a3a;
-    border-color: #ff8866;
+  background: #5a3a3a;
+  border-color: #ff8866;
 }
 
 /* Custom Value Display */
 .custom-value {
-    position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    width: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding-right: 5px;
-    font-size: 0.8em;
-    color: #aaccff;
-    pointer-events: none;
-    background: #1a1a1a;
-    /* Match GUI background to cover slider */
-    border-left: 1px solid #333;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 5px;
+  font-size: 0.8em;
+  color: #aaccff;
+  pointer-events: none;
+  background: #1a1a1a;
+  /* Match GUI background to cover slider */
+  border-left: 1px solid #333;
 }
 
 /* Fix for Planet Slider Layout */
 .lil-gui .controller.hide-value .widget {
-    padding-right: 55px;
-    /* Reserve space for custom value */
-    box-sizing: border-box;
+  padding-right: 55px;
+  /* Reserve space for custom value */
+  box-sizing: border-box;
 }
 
 .hide-value .display,
 .hide-value input {
-    display: none !important;
+  display: none !important;
 }
 
 .lil-gui .widget {
-    position: relative;
+  position: relative;
 }
 
 /* Time Folder */
 .time-folder .title {
-    color: #aaccff;
+  color: #aaccff;
 }
 
 .compact-ctrl .widget {
-    height: 20px;
+  height: 20px;
 }
 
 .set-now-btn .widget {
-    justify-content: center;
+  justify-content: center;
 }
 
 .set-now-btn button {
-    width: 100%;
-    text-align: center;
+  width: 100%;
+  text-align: center;
 }
 
 /* Mission Checkboxes */
 .voyager1-checkbox input {
-    accent-color: #ffcc00;
+  accent-color: #ffcc00;
 }
 
 .voyager2-checkbox input {
-    accent-color: #00ccff;
+  accent-color: #00ccff;
 }
 
 .pioneer10-checkbox input {
-    accent-color: #ff6666;
+  accent-color: #ff6666;
 }
 
 .pioneer11-checkbox input {
-    accent-color: #66ff66;
+  accent-color: #66ff66;
 }
 
 .galileo-checkbox input {
-    accent-color: #cc66ff;
+  accent-color: #cc66ff;
 }
 
 /* Speedometer */
 .speedometer-container {
-    position: relative;
-    width: 100%;
-    height: 80px;
-    margin: 10px 0;
-    display: flex;
-    justify-content: center;
-    overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 80px;
+  margin: 10px 0;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .gauge-arc {
-    position: absolute;
-    bottom: 0;
-    width: 140px;
-    height: 70px;
-    border-radius: 70px 70px 0 0;
-    background: radial-gradient(circle at 50% 100%, #222 40%, #444 41%, #333 100%);
-    border: 1px solid #555;
-    border-bottom: none;
+  position: absolute;
+  bottom: 0;
+  width: 140px;
+  height: 70px;
+  border-radius: 70px 70px 0 0;
+  background: radial-gradient(circle at 50% 100%, #222 40%, #444 41%, #333 100%);
+  border: 1px solid #555;
+  border-bottom: none;
 }
 
 .gauge-needle {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    width: 4px;
-    height: 65px;
-    background: #ff4444;
-    transform-origin: bottom center;
-    transform: rotate(0deg);
-    transition: transform 0.2s cubic-bezier(0.4, 2.5, 0.6, 0.8);
-    pointer-events: none;
-    z-index: 2;
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  height: 65px;
+  background: #ff4444;
+  transform-origin: bottom center;
+  transform: rotate(0deg);
+  transition: transform 0.2s cubic-bezier(0.4, 2.5, 0.6, 0.8);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .gauge-needle::after {
-    content: '';
-    position: absolute;
-    bottom: -4px;
-    left: -3px;
-    width: 10px;
-    height: 10px;
-    background: #fff;
-    border-radius: 50%;
+  content: "";
+  position: absolute;
+  bottom: -4px;
+  left: -3px;
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-radius: 50%;
 }
 
 .digital-speed {
-    position: absolute;
-    bottom: 5px;
-    width: 100%;
-    text-align: center;
-    font-family: monospace;
-    color: #aaccff;
-    font-size: 1.1em;
-    font-weight: bold;
-    text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
-    pointer-events: none;
-    z-index: 3;
+  position: absolute;
+  bottom: 5px;
+  width: 100%;
+  text-align: center;
+  font-family: monospace;
+  color: #aaccff;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  z-index: 3;
 }
 
 /* Interactive Overlay */
 .speedometer-interaction {
-    position: absolute;
-    bottom: 0;
-    width: 160px;
-    height: 80px;
-    cursor: pointer;
-    z-index: 10;
+  position: absolute;
+  bottom: 0;
+  width: 160px;
+  height: 80px;
+  cursor: pointer;
+  z-index: 10;
 }
 
 /* Control Buttons */
 .control-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 4px;
-    margin-bottom: 8px;
-    padding: 0 10px;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 0 10px;
 }
 
 .control-btn {
-    flex: 1;
-    max-width: 40px;
-    height: 30px;
-    background: #333;
-    border: 1px solid #555;
-    border-radius: 4px;
-    color: #fff;
-    font-family: monospace;
-    font-size: 1.2em;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.1s;
-    user-select: none;
+  flex: 1;
+  max-width: 40px;
+  height: 30px;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #fff;
+  font-family: monospace;
+  font-size: 1.2em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+  user-select: none;
 }
 
 .control-btn:hover {
-    background: #444;
-    border-color: #88ccff;
-    color: #aaccff;
+  background: #444;
+  border-color: #88ccff;
+  color: #aaccff;
 }
 
 .control-btn:active {
-    background: #222;
-    transform: translateY(1px);
+  background: #222;
+  transform: translateY(1px);
 }
 
 .control-btn.active {
-    background: #4a4a4a;
-    border-color: #88ccff;
-    color: #fff;
-    box-shadow: 0 0 5px rgba(136, 204, 255, 0.3);
+  background: #4a4a4a;
+  border-color: #88ccff;
+  color: #fff;
+  box-shadow: 0 0 5px rgba(136, 204, 255, 0.3);
 }
 
 /* Child Control Indentation */
 .lil-gui .controller.child-control {
-    padding-left: 20px;
-    border-left: 2px solid #555;
-    margin-left: 10px;
+  padding-left: 20px;
+  border-left: 2px solid #555;
+  margin-left: 10px;
 }
 
 .lil-gui .controller.child-control .name {
-    color: #999;
-    font-size: 0.95em;
+  color: #999;
+  font-size: 0.95em;
 }

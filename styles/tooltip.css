@@ -1,16 +1,16 @@
 /* Tooltip styles */
 
 .tooltip {
-    position: absolute;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 10px;
-    border-radius: 5px;
-    pointer-events: none;
-    display: none;
-    font-size: 0.9rem;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    z-index: 1000;
-    backdrop-filter: blur(4px);
-    line-height: 1.4;
+  position: absolute;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  pointer-events: none;
+  display: none;
+  font-size: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  line-height: 1.4;
 }

@@ -1,66 +1,66 @@
 /* Time folder custom layout */
 
 .time-folder .controller {
-    --name-width: 70px !important;
-    /* Fixed width for ALL labels in this folder */
+  --name-width: 70px !important;
+  /* Fixed width for ALL labels in this folder */
 }
 
 .time-folder .children {
-    position: relative;
-    display: block;
+  position: relative;
+  display: block;
 }
 
 /* Fix for closing the folder: use height/overflow instead of display */
 .time-folder.closed .children {
-    height: 0 !important;
-    overflow: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
 }
 
 .compact-ctrl {
-    width: 70% !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
-    box-sizing: border-box;
+  width: 70% !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
 }
 
 .set-now-btn {
-    position: absolute !important;
-    top: 0;
-    right: 0;
-    width: 30% !important;
-    height: 40px !important;
-    border-left: none !important;
-    z-index: 10;
-    margin-top: 0 !important;
-    min-height: 0 !important;
+  position: absolute !important;
+  top: 0;
+  right: 0;
+  width: 30% !important;
+  height: 40px !important;
+  border-left: none !important;
+  z-index: 10;
+  margin-top: 0 !important;
+  min-height: 0 !important;
 }
 
 .set-now-btn .name {
-    display: none !important;
+  display: none !important;
 }
 
 .set-now-btn .widget {
-    width: 100% !important;
-    height: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .set-now-btn button {
-    height: 100% !important;
-    line-height: 1.2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    color: #eee;
-    font-weight: bold;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    font-size: 0.9em;
+  height: 100% !important;
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  color: #eee;
+  font-weight: bold;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 0.9em;
 }
 
 .set-now-btn button::after {
-    content: "NOW";
+  content: "NOW";
 }
 
 .set-now-btn button:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
 }
