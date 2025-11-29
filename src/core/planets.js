@@ -377,8 +377,25 @@ export function updatePlanets(planets, sun = null, shadowLight = null) {
       p.mesh.rotation.y = rotationAngle;
     }
 
+    // Enforce layers to prevent lighting artifacts
+    // Earth and its Moon: Layer 1 (Shadow Light)
+    // Others: Layer 0 (Sun Light)
+    const isEarth = p.data.name === 'Earth';
+    const targetLayer = isEarth ? 1 : 0;
+
+    if (p.mesh.layers.mask !== 1 << targetLayer) {
+      p.mesh.layers.set(targetLayer);
+    }
+
     // Update Moons
     const planetIndex = planets.indexOf(p);
     updateMoonPositions(p, planetIndex, planets);
+
+    // Enforce layers for moons
+    p.moons.forEach((m) => {
+      if (m.mesh.layers.mask !== 1 << targetLayer) {
+        m.mesh.layers.set(targetLayer);
+      }
+    });
   });
 }

@@ -286,5 +286,10 @@ export function setupTimeFolder(gui, uiState, config) {
 
   timeFolder.close(); // Close Time folder by default
 
-  return { dateCtrl, timeCtrl, stardateCtrl };
+  return {
+    dateCtrl,
+    timeCtrl,
+    stardateCtrl,
+    speedDisplay: { update: updateSpeedometer },
+  };
 }

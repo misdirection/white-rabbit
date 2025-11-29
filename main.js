@@ -15,6 +15,7 @@
  */
 
 import * as THREE from 'three';
+import { SimulationControl } from './src/api/SimulationControl.js';
 import { setupTooltipSystem } from './interactions.js';
 import { config } from './src/config.js';
 import { createPlanets, updatePlanets } from './src/core/planets.js';
@@ -39,6 +40,7 @@ import { setupGUI, updateUI } from './src/ui/gui.js';
     loading.textContent = 'Creating Scene...';
     const { scene, camera, renderer, controls, orbitGroup, zodiacGroup, shadowLight } =
       createScene();
+    window.scene = scene; // Expose for debugging
 
     // Create Universe Group (Root for all celestial objects)
     const universeGroup = new THREE.Group();
@@ -112,6 +114,22 @@ import { setupGUI, updateUI } from './src/ui/gui.js';
     setupFocusMode(camera, controls, planets, sun);
     initializeMissions(universeGroup);
     window.updateMissions = updateMissions;
+
+    // 3.1 Setup Simulation Control API
+    window.SimulationControl = new SimulationControl(
+      planets,
+      sun,
+      orbitGroup,
+      zodiacGroup,
+      constellationsGroup,
+      starsRef,
+      camera,
+      controls,
+      zodiacSignsGroup,
+      habitableZone,
+      magneticFieldsGroup,
+      universeGroup
+    );
 
     // 3.5 Setup Rabbit Intro
     const rabbit = createRabbit(renderer);

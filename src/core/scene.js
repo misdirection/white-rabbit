@@ -46,7 +46,7 @@ export function createScene() {
   controls.dampingFactor = 0.05;
 
   // --- Lighting ---
-  const ambientLight = new THREE.AmbientLight(0x333333);
+  const ambientLight = new THREE.AmbientLight(0x333333, 0.5); // Reduced intensity
   // Ambient light should affect ALL layers (0 and 1)
   // By default it's layer 0. We need to enable it for layer 1 too?
   // Actually, lights affect objects if (light.layers & object.layers) !== 0.
