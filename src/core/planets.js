@@ -336,16 +336,17 @@ export function updatePlanets(planets, sun = null, shadowLight = null) {
     if (p.data.name === 'Earth' && shadowLight) {
       shadowLight.target = p.mesh;
 
-      // Dynamic Shadow Frustum Resizing
-      // In "Realistic" mode, Earth is tiny (~0.002 units). The default 10x10 shadow frustum makes it sub-pixel.
-      // We resize the frustum to fit the Earth (plus margin for Moon) to ensure high-resolution shadows.
+      // Dynamic Shadow Frustum/FOV Resizing
+      // For SpotLight, we adjust the angle (FOV) to cover Earth + Moon
       const currentRadius = p.data.radius * config.planetScale;
-      const frustumSize = currentRadius * 4; // 4x radius covers Earth + Moon's orbit range (roughly)
-
-      shadowLight.shadow.camera.left = -frustumSize;
-      shadowLight.shadow.camera.right = frustumSize;
-      shadowLight.shadow.camera.top = frustumSize;
-      shadowLight.shadow.camera.bottom = -frustumSize;
+      const distToSun = p.mesh.position.length();
+      
+      // Calculate required angle: tan(theta) = radius / distance
+      // We use 4x radius to cover Moon's orbit
+      const requiredRadius = currentRadius * 4;
+      const angle = Math.atan(requiredRadius / distToSun);
+      
+      shadowLight.angle = angle * 1.2; // Add 20% margin
       shadowLight.shadow.camera.updateProjectionMatrix();
     }
 

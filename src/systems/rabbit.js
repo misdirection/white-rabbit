@@ -8,11 +8,12 @@ export function createRabbit(renderer) {
   camera.position.z = 5;
 
   // Light for the rabbit
-  const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
   scene.add(ambientLight);
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0);
-  directionalLight.position.set(2, 2, 5);
-  scene.add(directionalLight);
+  // Removed DirectionalLight to prevent leakage into main scene
+  // const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0);
+  // directionalLight.position.set(2, 2, 5);
+  // scene.add(directionalLight);
 
   // Group to handle world position and Y-rotation (spinning/turning)
   const rabbitGroup = new THREE.Group();
@@ -144,6 +145,7 @@ export function createRabbit(renderer) {
         if (progress >= 1.0) {
           state.active = false;
           scene.remove(rabbitGroup);
+          scene.remove(ambientLight); // Cleanup light
           // Cleanup
           window.removeEventListener('resize', onWindowResize);
         }

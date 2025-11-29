@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { config } from '../config.js';
 import { focusOnObject, exitFocusMode } from '../features/focusMode.js';
 import {
@@ -105,6 +106,26 @@ export class SimulationControl {
 
   exitFocus() {
     exitFocusMode(this.controls);
+  }
+
+  rotateToDarkSide() {
+    const target = this.controls.target;
+    const camera = this.camera;
+
+    // Sun is at 0,0,0
+    const sunPos = new THREE.Vector3(0, 0, 0);
+    const objPos = target.clone();
+
+    // Vector from Sun to Object
+    const sunToObj = new THREE.Vector3().subVectors(objPos, sunPos).normalize();
+    const dist = camera.position.distanceTo(objPos);
+
+    // New position: ObjectPos + SunToObj * dist
+    // This places the camera directly behind the object relative to the Sun
+    const newPos = objPos.clone().add(sunToObj.multiplyScalar(dist));
+
+    camera.position.copy(newPos);
+    this.controls.update();
   }
 
   // --- Visual Settings ---

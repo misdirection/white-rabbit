@@ -60,9 +60,10 @@ export function createScene() {
   sunLight.layers.set(0);
   scene.add(sunLight);
 
-  // Shadow Light (Directional) - Illuminates ONLY Earth/Moon (Layer 1)
-  // This ensures high-quality shadows for the eclipse without affecting the rest of the solar system
-  const shadowLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  // Shadow Light (SpotLight) - Illuminates ONLY Earth/Moon (Layer 1)
+  // We use SpotLight instead of DirectionalLight to prevent light leaking backwards onto other planets
+  // when they are in opposition (e.g. Earth-Sun-Jupiter alignment).
+  const shadowLight = new THREE.SpotLight(0xffffff, 2.0);
   shadowLight.position.set(0, 0, 0); // At Sun
   shadowLight.castShadow = true;
   shadowLight.layers.set(1);
@@ -73,6 +74,12 @@ export function createScene() {
   shadowLight.shadow.bias = -0.00001;
   shadowLight.shadow.camera.near = 0.1;
   shadowLight.shadow.camera.far = 500;
+  
+  // SpotLight specific
+  shadowLight.angle = Math.PI / 8; // Narrow cone to target Earth
+  shadowLight.penumbra = 0.1; // Soft edges
+  shadowLight.decay = 0; // No decay to mimic sunlight intensity over distance (roughly)
+  shadowLight.distance = 1000; // Far enough to reach Earth
 
   scene.add(shadowLight);
 
