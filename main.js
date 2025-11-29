@@ -37,7 +37,8 @@ import { setupGUI, updateUI } from './src/ui/gui.js';
 
     // 1. Setup Scene
     loading.textContent = 'Creating Scene...';
-    const { scene, camera, renderer, controls, orbitGroup, zodiacGroup } = createScene();
+    const { scene, camera, renderer, controls, orbitGroup, zodiacGroup, shadowLight } =
+      createScene();
 
     // Create Universe Group (Root for all celestial objects)
     const universeGroup = new THREE.Group();
@@ -133,7 +134,7 @@ import { setupGUI, updateUI } from './src/ui/gui.js';
       }
 
       updateUI(uiControls.uiState, uiControls);
-      updatePlanets(planets, sun);
+      updatePlanets(planets, sun, shadowLight);
       updateFocusMode(camera, controls, planets, sun);
 
       // Update Rabbit

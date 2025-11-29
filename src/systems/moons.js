@@ -43,6 +43,8 @@ function createMoonMesh(moonData, textureLoader) {
   }
 
   const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+  moonMesh.castShadow = true;
+  moonMesh.receiveShadow = true;
 
   // Apply initial scale
   moonMesh.scale.setScalar(config.planetScale);
@@ -51,6 +53,12 @@ function createMoonMesh(moonData, textureLoader) {
     const tiltRadians = (moonData.axialTilt * Math.PI) / 180;
     moonMesh.rotation.z = tiltRadians;
   }
+
+  // Set layer based on parent planet (Earth's moon needs Layer 1)
+  // We don't have parent info here directly, but we can check name or pass it.
+  // Actually, createMoons is called with planetData.
+  // But this helper function doesn't know.
+  // Let's handle it in createMoons loop.
 
   return moonMesh;
 }
@@ -212,6 +220,13 @@ export function createMoons(planetData, planetGroup, orbitLinesGroup, textureLoa
 
     // Add to planet group (all moons)
     planetGroup.add(moonMesh);
+
+    // Set layer: Earth's moons get Layer 1 (Shadow Light), others get Layer 0
+    if (planetData.name === 'Earth') {
+      moonMesh.layers.set(1);
+    } else {
+      moonMesh.layers.set(0);
+    }
 
     // Create orbit line based on moon type
     if (moonData.type === 'jovian') {

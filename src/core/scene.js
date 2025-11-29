@@ -37,6 +37,8 @@ export function createScene() {
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.0;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.body.appendChild(renderer.domElement);
 
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -45,10 +47,38 @@ export function createScene() {
 
   // --- Lighting ---
   const ambientLight = new THREE.AmbientLight(0x333333);
+  // Ambient light should affect ALL layers (0 and 1)
+  // By default it's layer 0. We need to enable it for layer 1 too?
+  // Actually, lights affect objects if (light.layers & object.layers) !== 0.
+  // AmbientLight defaults to layer 0 (mask 1). Earth is layer 1 (mask 2).
+  // So Earth gets no ambient light!
+  ambientLight.layers.enable(1);
   scene.add(ambientLight);
 
+  // Sun Light (Point) - Illuminates everything EXCEPT Earth/Moon (Layer 0)
   const sunLight = new THREE.PointLight(0xffffff, 2, 0, 0);
+  sunLight.layers.set(0);
   scene.add(sunLight);
+
+  // Shadow Light (Directional) - Illuminates ONLY Earth/Moon (Layer 1)
+  // This ensures high-quality shadows for the eclipse without affecting the rest of the solar system
+  const shadowLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  shadowLight.position.set(0, 0, 0); // At Sun
+  shadowLight.castShadow = true;
+  shadowLight.layers.set(1);
+
+  // Configure shadow properties
+  shadowLight.shadow.mapSize.width = 2048;
+  shadowLight.shadow.mapSize.height = 2048;
+  shadowLight.shadow.bias = -0.00001;
+  shadowLight.shadow.camera.near = 0.1;
+  shadowLight.shadow.camera.far = 500;
+
+  scene.add(shadowLight);
+
+  // Camera needs to see both layers
+  camera.layers.enable(0);
+  camera.layers.enable(1);
 
   // --- Groups ---
   const orbitGroup = new THREE.Group();
@@ -64,5 +94,5 @@ export function createScene() {
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  return { scene, camera, renderer, controls, orbitGroup, zodiacGroup };
+  return { scene, camera, renderer, controls, orbitGroup, zodiacGroup, shadowLight };
 }

@@ -114,9 +114,10 @@ export function setupEventsFolder(gui, camera, controls, planets, setScalePreset
 
   goToBtn.onclick = () => {
     if (eventsState.selectedEvent && camera && controls) {
-      if (setScalePreset) {
-        setScalePreset('Realistic');
-      }
+      // User requested to keep current scale mode
+      // if (setScalePreset) {
+      //   setScalePreset('Realistic');
+      // }
       navigateToEvent(eventsState.selectedEvent, camera, controls, planets);
       statusDiv.textContent = `Navigating to ${formatEventName(eventsState.selectedEvent)}...`;
     }

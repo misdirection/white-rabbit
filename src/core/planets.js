@@ -183,6 +183,8 @@ export function createPlanets(scene, orbitGroup) {
       );
     }
     const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     console.log(`Creating planet: ${data.name}`); // Debug log
     planetGroup.add(mesh); // Mesh is added to planetGroup
 
@@ -211,6 +213,14 @@ export function createPlanets(scene, orbitGroup) {
     mesh.add(axisLine);
     data.axisLine = axisLine;
 
+    // Set layers for shadow handling
+    // Earth gets Layer 1 (Shadow Light), others get Layer 0 (Point Light)
+    if (data.name === 'Earth') {
+      mesh.layers.set(1);
+    } else {
+      mesh.layers.set(0);
+    }
+
     // Add atmosphere and clouds for Earth
     if (data.name === 'Earth') {
       // 2. Cloud layer
@@ -223,6 +233,7 @@ export function createPlanets(scene, orbitGroup) {
         });
         const cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial);
         cloudMesh.visible = false; // Hide until loaded
+        cloudMesh.layers.set(1); // Clouds also need shadows
 
         textureLoader.load(
           data.cloudTexture,
@@ -281,8 +292,9 @@ export function createPlanets(scene, orbitGroup) {
  *
  * @param {Object[]} planets - Array of planet objects from createPlanets()
  * @param {THREE.Mesh} sun - The sun mesh (optional)
+ * @param {THREE.DirectionalLight} shadowLight - The shadow casting light (optional)
  */
-export function updatePlanets(planets, sun = null) {
+export function updatePlanets(planets, sun = null, shadowLight = null) {
   // Update Sun rotation
   if (sun) {
     // Rigid rotation (Sun rotates once every ~25 days)
@@ -318,6 +330,23 @@ export function updatePlanets(planets, sun = null) {
       const pos = calculateKeplerianPosition(p.data.elements, config.date);
       p.mesh.position.x = pos.x * AU_TO_SCENE;
       p.mesh.position.z = -pos.y * AU_TO_SCENE; // Swap Y/Z for Three.js coordinate system
+    }
+
+    // Update shadow light target if this is Earth
+    if (p.data.name === 'Earth' && shadowLight) {
+      shadowLight.target = p.mesh;
+
+      // Dynamic Shadow Frustum Resizing
+      // In "Realistic" mode, Earth is tiny (~0.002 units). The default 10x10 shadow frustum makes it sub-pixel.
+      // We resize the frustum to fit the Earth (plus margin for Moon) to ensure high-resolution shadows.
+      const currentRadius = p.data.radius * config.planetScale;
+      const frustumSize = currentRadius * 4; // 4x radius covers Earth + Moon's orbit range (roughly)
+
+      shadowLight.shadow.camera.left = -frustumSize;
+      shadowLight.shadow.camera.right = frustumSize;
+      shadowLight.shadow.camera.top = frustumSize;
+      shadowLight.shadow.camera.bottom = -frustumSize;
+      shadowLight.shadow.camera.updateProjectionMatrix();
     }
 
     if (!config.stop && p.data.cloudMesh) {
