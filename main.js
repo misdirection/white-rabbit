@@ -34,6 +34,7 @@ import { createRabbit } from './src/systems/rabbit.js';
 import { alignZodiacSigns, createZodiacSigns } from './src/systems/zodiacSigns.js';
 import { updateCoordinateSystem } from './src/systems/coordinates.js';
 import { setupGUI, updateUI } from './src/ui/gui.js';
+import { musicSystem } from './src/systems/music.js';
 
 // --- Init ---
 (async () => {
@@ -169,6 +170,9 @@ import { setupGUI, updateUI } from './src/ui/gui.js';
 
     // 3.5 Setup Rabbit Intro
     const rabbit = createRabbit(renderer);
+
+    // 3.6 Initialize Music System
+    musicSystem.init();
 
     // 4. Remove Loading Screen (Immediate)
     loading.style.opacity = 0;

@@ -102,6 +102,7 @@ export function setupVisualFolder(
     .name('Star Brightness')
     .onChange((val) => updateStarBrightness(val, starsRef));
   starSlider.domElement.classList.add('hide-value');
+  starSlider.domElement.classList.add('full-width');
 
   // Initialize star brightness state
   updateStarBrightness(config.starBrightness, starsRef);
@@ -115,6 +116,7 @@ export function setupVisualFolder(
       }
     });
   gammaSlider.domElement.classList.add('hide-value');
+  gammaSlider.domElement.classList.add('full-width');
 
   // Tooltips
   const tooltipsCtrl = visualFolder.add(config, 'showTooltips').name('Tooltips');
@@ -427,6 +429,8 @@ export function setupOverlaysFolder(
     .name('Habitable Zone')
     .onChange((val) => updateHabitableZoneVisibility(val, habitableZone));
   habitableZoneCtrl.domElement.classList.add('checkbox-left');
+
+  overlaysFolder.close(); // Close Overlays folder by default
 }
 
 export function updateSunVisibility(val, sun) {

@@ -66,4 +66,9 @@ export const config = {
   },
   date: new Date(),
   stop: false,
+  music: {
+    enabled: false,
+    volume: 0.5,
+    playlist: [], // Array of track IDs to play
+  },
 };

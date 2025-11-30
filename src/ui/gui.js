@@ -8,6 +8,7 @@ import { setupNavigationFolder } from './modules/navigation.js';
 import { setupScaleFolder } from './modules/scale.js';
 import { setupTimeFolder } from './modules/time.js';
 import { setupObjectsFolder, setupOverlaysFolder, setupVisualFolder } from './modules/visual.js';
+import { setupSoundUI } from './modules/sound.js';
 
 /**
  * Sets up the GUI with Scale, Visual, Time, and Navigation sections
@@ -104,6 +105,9 @@ export function setupGUI(
 
   // --- NAVIGATION SECTION ---
   setupNavigationFolder(gui, uiState);
+
+  // --- SOUND SECTION ---
+  setupSoundUI(gui);
 
   // --- ABOUT SECTION ---
   setupAboutFolder(gui);

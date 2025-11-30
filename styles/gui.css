@@ -186,6 +186,18 @@
   display: none !important;
 }
 
+.lil-gui .controller.full-width {
+  grid-template-columns: auto 1fr 0 !important;
+}
+
+.lil-gui .controller.full-width .widget {
+  padding-right: 0 !important;
+}
+
+.lil-gui .controller.full-width .display {
+  display: none !important;
+}
+
 .lil-gui .widget {
   position: relative;
 }
