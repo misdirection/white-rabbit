@@ -171,9 +171,6 @@ import { musicSystem } from './src/systems/music.js';
     // 3.5 Setup Rabbit Intro
     const rabbit = createRabbit(renderer);
 
-    // 3.6 Initialize Music System
-    musicSystem.init();
-
     // 4. Remove Loading Screen (Immediate)
     loading.style.opacity = 0;
     loading.style.pointerEvents = 'none';
@@ -295,7 +292,13 @@ import { musicSystem } from './src/systems/music.js';
     }
     animate();
 
-    // 6. Load Stars & Constellations (Background)
+    // 6. Initialize Music System (After page is interactive)
+    // Delay music initialization to prevent blocking page load
+    setTimeout(() => {
+      musicSystem.init();
+    }, 100);
+
+    // 7. Load Stars & Constellations (Background)
     // Don't await here, let it run
     createStarfield(universeGroup)
       .then(({ stars, rawData }) => {
