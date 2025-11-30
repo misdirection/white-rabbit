@@ -237,7 +237,7 @@ export function updateMagneticFieldsVisibility(
     });
   }
   if (capMagneticFieldsCtrl) {
-    capMagneticFieldsCtrl.domElement.style.display = val ? '' : 'none';
+    val ? capMagneticFieldsCtrl.show() : capMagneticFieldsCtrl.hide();
   }
 }
 
@@ -356,15 +356,26 @@ export function setupOverlaysFolder(
   magneticFieldsFolder.domElement.classList.add('magnetic-fields-folder');
   magneticFieldsFolder.close();
 
-  const magneticFieldsCtrl = magneticFieldsFolder
-    .add(config, 'showMagneticFields')
-    .name('Planets, Moons')
-    .onChange((val) => updateMagneticFieldsVisibility(val, magneticFieldsGroup, planets, null));
-  magneticFieldsCtrl.domElement.classList.add('checkbox-left');
+  // Sun basic field (dipole without solar wind)
+  const sunMagneticFieldBasicCtrl = magneticFieldsFolder
+    .add(config, 'showSunMagneticFieldBasic')
+    .name('Sun')
+    .onChange((val) => {
+      if (universeGroup) {
+        const field = universeGroup.children.find((c) => c.name === 'SunMagneticFieldBasic');
+        if (field) field.visible = val;
+      }
+      // Toggle child control
+      if (sunMagneticFieldCtrl) {
+        val ? sunMagneticFieldCtrl.show() : sunMagneticFieldCtrl.hide();
+      }
+    });
+  sunMagneticFieldBasicCtrl.domElement.classList.add('checkbox-left');
 
+  // Sun with solar wind (Parker Spiral)
   const sunMagneticFieldCtrl = magneticFieldsFolder
     .add(config, 'showSunMagneticField')
-    .name('Sun')
+    .name('Solar Wind')
     .onChange((val) => {
       if (universeGroup) {
         // Find by name in universeGroup (direct child)
@@ -373,6 +384,18 @@ export function setupOverlaysFolder(
       }
     });
   sunMagneticFieldCtrl.domElement.classList.add('checkbox-left');
+  sunMagneticFieldCtrl.domElement.classList.add('child-control');
+
+  // Initialize visibility of child control
+  config.showSunMagneticFieldBasic ? sunMagneticFieldCtrl.show() : sunMagneticFieldCtrl.hide();
+
+  const magneticFieldsCtrl = magneticFieldsFolder
+    .add(config, 'showMagneticFields')
+    .name('Planets, Moons')
+    .onChange((val) =>
+      updateMagneticFieldsVisibility(val, magneticFieldsGroup, planets, capMagneticFieldsCtrl)
+    );
+  magneticFieldsCtrl.domElement.classList.add('checkbox-left');
 
   const capMagneticFieldsCtrl = magneticFieldsFolder
     .add(config, 'capMagneticFields')
@@ -381,9 +404,15 @@ export function setupOverlaysFolder(
       updateMagneticFieldScales(planets);
     });
   capMagneticFieldsCtrl.domElement.classList.add('checkbox-left');
+  capMagneticFieldsCtrl.domElement.classList.add('child-control');
 
   // Show/hide child control based on parent state
-  updateMagneticFieldsVisibility(config.showMagneticFields, magneticFieldsGroup, planets, null);
+  updateMagneticFieldsVisibility(
+    config.showMagneticFields,
+    magneticFieldsGroup,
+    planets,
+    capMagneticFieldsCtrl
+  );
 
   // Axes
   const axesCtrl = overlaysFolder

@@ -179,6 +179,22 @@ export class SimulationControl {
     updateMagneticFieldsVisibility(visible, this.magneticFieldsGroup, this.planets, null);
   }
 
+  toggleSunMagneticFieldBasic(visible) {
+    config.showSunMagneticFieldBasic = visible;
+    if (this.universeGroup) {
+      const field = this.universeGroup.children.find((c) => c.name === 'SunMagneticFieldBasic');
+      if (field) field.visible = visible;
+    }
+  }
+
+  toggleSunMagneticFieldSolarWind(visible) {
+    config.showSunMagneticField = visible;
+    if (this.universeGroup) {
+      const field = this.universeGroup.children.find((c) => c.name === 'MagneticField');
+      if (field) field.visible = visible;
+    }
+  }
+
   // --- Object Visibility ---
 
   toggleSun(visible) {

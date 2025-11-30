@@ -41,6 +41,7 @@ export const config = {
   showZodiacSigns: false, // Zodiac sign sprites
   showHabitableZone: false,
   showMagneticFields: false,
+  showSunMagneticFieldBasic: false,
   showSunMagneticField: false,
   showPlanetColors: false, // New flag for orbit colors
   showDwarfPlanetColors: false, // New flag for dwarf orbit colors

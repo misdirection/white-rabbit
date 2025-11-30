@@ -24,7 +24,11 @@ import { createConstellations, createStarfield } from './src/core/stars.js';
 import { setupFocusMode, updateFocusMode } from './src/features/focusMode.js';
 import { initializeMissions, updateMissions } from './src/features/missions.js';
 import { createHabitableZone } from './src/systems/habitableZone.js';
-import { createMagneticField, createSunMagneticField } from './src/systems/magneticFields.js';
+import {
+  createMagneticField,
+  createSunMagneticField,
+  createSunMagneticFieldBasic,
+} from './src/systems/magneticFields.js';
 import { updateRelativeOrbits } from './src/systems/relativeOrbits.js';
 import { createRabbit } from './src/systems/rabbit.js';
 import { alignZodiacSigns, createZodiacSigns } from './src/systems/zodiacSigns.js';
@@ -79,7 +83,16 @@ import { setupGUI, updateUI } from './src/ui/gui.js';
     magneticFieldsGroup.visible = config.showMagneticFields;
     universeGroup.add(magneticFieldsGroup);
 
-    // Sun field
+    // Sun field - Basic dipole (without solar wind)
+    const sunFieldBasic = createSunMagneticFieldBasic(sun);
+    if (sunFieldBasic) {
+      sunFieldBasic.visible = config.showSunMagneticFieldBasic;
+      // Attach to universeGroup instead of sun to avoid inheriting scale
+      // And NOT magneticFieldsGroup because that might be hidden by a different toggle
+      universeGroup.add(sunFieldBasic);
+    }
+
+    // Sun field - Parker Spiral (with solar wind)
     const sunField = createSunMagneticField(sun);
     if (sunField) {
       sunField.visible = config.showSunMagneticField;
@@ -221,6 +234,55 @@ import { setupGUI, updateUI } from './src/ui/gui.js';
           if (sun) {
             sunField.rotation.y = sun.rotation.y;
           }
+        }
+
+        // Update Sun Basic Magnetic Field Animation (Coronal Loops)
+        const sunFieldBasic = universeGroup.children.find(
+          (c) => c.name === 'SunMagneticFieldBasic'
+        );
+
+        if (sunFieldBasic && sunFieldBasic.visible) {
+          const time = magneticFieldTime + sunFieldBasic.userData.timeOffset;
+
+          // Update shader uniform for time (Differential Rotation + Wobble)
+          if (sunFieldBasic.userData.shaderUniforms) {
+            // Calculate hours since J2000 for rotation
+            const J2000 = new Date('2000-01-01T12:00:00Z').getTime();
+            const currentMs = config.date.getTime();
+            const hoursSinceJ2000 = (currentMs - J2000) / (1000 * 60 * 60);
+
+            // Pass time to shader
+            sunFieldBasic.userData.shaderUniforms.uTime.value = hoursSinceJ2000;
+
+            // Sync rotation with Sun - REMOVED: Now attached to Sun directly
+            // if (sun) {
+            //   sunFieldBasic.rotation.copy(sun.rotation);
+            // }
+          }
+
+          // Animate polar lines (still CPU-based for now as they are lines, not tubes)
+          sunFieldBasic.children.forEach((line) => {
+            if (line.userData.isPolar && line.userData.basePoints) {
+              const positions = line.geometry.attributes.position;
+              const basePoints = line.userData.basePoints;
+
+              for (let i = 0; i < basePoints.length; i++) {
+                const basePoint = basePoints[i];
+
+                // Subtle flutter for polar lines
+                const flutter = Math.sin(time * 0.3 + i * 0.1) * 0.1;
+                const offset = new THREE.Vector3(flutter, 0, flutter);
+
+                positions.setXYZ(
+                  i,
+                  basePoint.x + offset.x,
+                  basePoint.y + offset.y,
+                  basePoint.z + offset.z
+                );
+              }
+              positions.needsUpdate = true;
+            }
+          });
         }
       }
 

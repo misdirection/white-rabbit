@@ -86,12 +86,397 @@ export function createMagneticField(bodyData, radius) {
 }
 
 /**
- * Creates a realistic, chaotic magnetic field for the Sun using the Parker Spiral model.
+ * Creates a basic dipole magnetic field for the Sun (without solar wind).
+ * This represents the Sun's magnetic field in the corona (~5-10 solar radii).
  *
  * @param {THREE.Mesh} sunMesh - The Sun mesh
  * @returns {THREE.Group} The group containing the field lines
  */
-export function createSunMagneticField(sunMesh) {
+export function createSunMagneticFieldBasic(_sunMesh) {
+  const group = new THREE.Group();
+  group.name = 'SunMagneticFieldBasic';
+
+  const sunRadius = 5.0;
+
+  // Store time offset for animation
+  group.userData.timeOffset = Math.random() * 1000;
+
+  // Material with custom shader for differential rotation and wobble
+  const tubeMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffaa, // Yellow (Lighter)
+    transparent: true,
+    opacity: 0.9,
+  });
+
+  // Inject shader for animation
+  tubeMaterial.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = { value: 0 };
+    // Store reference to update uniform later
+    group.userData.shaderUniforms = shader.uniforms;
+
+    shader.vertexShader = `
+      uniform float uTime;
+      
+      // Simplex 2D noise (Exact match to planets.js)
+      vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+
+      float snoise(vec2 v){
+        const vec4 C = vec4(0.211324865405187, 0.366025403784439,
+                 -0.577350269189626, 0.024390243902439);
+        vec2 i  = floor(v + dot(v, C.yy) );
+        vec2 x0 = v -   i + dot(i, C.xx);
+        vec2 i1;
+        i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+        vec4 x12 = x0.xyxy + C.xxzz;
+        x12.xy -= i1;
+        i = mod(i, 289.0);
+        vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
+        + i.x + vec3(0.0, i1.x, 1.0 ));
+        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+        m = m*m ;
+        m = m*m ;
+        vec3 x = 2.0 * fract(p * C.www) - 1.0;
+        vec3 h = abs(x) - 0.5;
+        vec3 ox = floor(x + 0.5);
+        vec3 a0 = x - ox;
+        m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+        vec3 g;
+        g.x  = a0.x  * x0.x  + h.x  * x0.y;
+        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+        return 130.0 * dot(m, g);
+      }
+      
+      ${shader.vertexShader}
+    `.replace(
+      '#include <begin_vertex>',
+      `
+      #include <begin_vertex>
+      
+      // Calculate "Sphere UV" for this vertex position
+      vec3 sphereNormal = normalize(transformed);
+      
+      // Standard UV mapping
+      float u = 0.5 + atan(sphereNormal.z, sphereNormal.x) / (2.0 * 3.14159265);
+      float v = 0.5 + asin(sphereNormal.y) / 3.14159265;
+      
+      // Match Sun Shader Parameters
+      float timeScale = uTime * 0.15;
+      float noiseScale = 0.005; 
+      
+      // Use 2D Noise on UVs (Exact match to surface)
+      float n1 = snoise(vec2(u * 25.0 + timeScale, v * 25.0 + timeScale));
+      float n2 = snoise(vec2(u * 30.0 - timeScale * 0.5, v * 30.0 - timeScale * 0.5));
+      
+      // Apply displacement
+      vec3 displacement = vec3(n1, n2, n1 * n2) * 0.5; 
+      
+      // Small wiggle to match boiling
+      transformed += displacement * 0.1; 
+      `
+    );
+  };
+
+  // --- Texture-Based Generation ---
+
+  const sunTexturePath = 'assets/textures/sun.jpg'; // Relative path
+
+  // Load texture data for CPU access
+  const loadTexturePixelData = (url) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, img.width, img.height);
+        console.log('Sun texture loaded for magnetic fields:', img.width, img.height);
+        resolve(imgData);
+      };
+      img.onerror = (e) => {
+        console.error('Error loading sun texture:', e);
+        reject(e);
+      };
+      img.src = url;
+    });
+  };
+
+  // Main generation function (async)
+  const generateFields = async () => {
+    let imgData;
+    try {
+      imgData = await loadTexturePixelData(sunTexturePath);
+    } catch (e) {
+      console.error('Failed to load sun texture for magnetic fields:', e);
+      return;
+    }
+
+    const { width, height, data } = imgData;
+
+    // Calculate current simulation time for initial alignment
+
+    // We need debugGeo for generation, so we keep the geometry but don't add the mesh
+    const debugGeo = new THREE.SphereGeometry(sunRadius, 64, 64);
+
+    // --- DEBUG: Sampling Points (Geometry Based) ---
+    // Use actual geometry vertices to ensure UV match
+    // --- Generation Loop (Geometry-Based) ---
+    // Use the Debug Sphere's geometry to ensure perfect alignment with the heatmap
+
+    const threshold = 0.45;
+    let loopsCreated = 0;
+
+    const positions = debugGeo.attributes.position;
+    const uvs = debugGeo.attributes.uv;
+    const count = positions.count;
+
+    console.log(
+      `[MagneticFields] Starting generation. Vertices: ${count}, Threshold: ${threshold}`
+    );
+
+    // 1. Collect Valid Seeds (High Intensity Points)
+    const validSeeds = [];
+
+    for (let i = 0; i < count; i++) {
+      const u = uvs.getX(i);
+      const v = uvs.getY(i);
+
+      let px = Math.floor(u * width) % width;
+      if (px < 0) px += width;
+
+      let py = Math.floor((1 - v) * height);
+      if (py < 0) py = 0;
+      if (py >= height) py = height - 1;
+
+      const pixelIndex = (py * width + px) * 4;
+      const intensity =
+        (data[pixelIndex] + data[pixelIndex + 1] + data[pixelIndex + 2]) / (3 * 255);
+
+      if (intensity >= threshold) {
+        validSeeds.push({
+          index: i,
+          pos: new THREE.Vector3(positions.getX(i), positions.getY(i), positions.getZ(i)),
+          intensity: intensity,
+          uv: { u, v },
+        });
+      }
+    }
+
+    console.log(`[MagneticFields] Found ${validSeeds.length} valid seeds.`);
+
+    // Shuffle seeds to randomize connections
+    for (let i = validSeeds.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [validSeeds[i], validSeeds[j]] = [validSeeds[j], validSeeds[i]];
+    }
+
+    // Spatial hashing for collision detection
+    const occupiedVoxels = new Set();
+    const voxelSize = 0.1 * sunRadius; // Increased to 0.5 units for stricter separation
+    const getVoxelKey = (p) => {
+      const vx = Math.floor(p.x / voxelSize);
+      const vy = Math.floor(p.y / voxelSize);
+      const vz = Math.floor(p.z / voxelSize);
+      return `${vx},${vy},${vz}`;
+    };
+
+    // 2. Connect Seeds to Form Loops
+    // For each seed, try to find another seed within a certain distance range
+    const minDist = sunRadius * 0.1;
+    const maxDist = sunRadius * 0.5;
+    const maxLoops = 200; // Reduced from 300 to 200
+    let rejections = 0;
+
+    for (let i = 0; i < validSeeds.length; i++) {
+      if (loopsCreated >= maxLoops) break;
+
+      const startSeed = validSeeds[i];
+
+      // Find a target
+      // Simple linear search for now (can be optimized with spatial index if needed)
+      // We look ahead in the shuffled list to avoid re-using pairs too often
+      let targetSeed = null;
+
+      // Try next 50 candidates
+      for (let j = 1; j < 50; j++) {
+        const candidateIdx = (i + j) % validSeeds.length;
+        const candidate = validSeeds[candidateIdx];
+
+        const dist = startSeed.pos.distanceTo(candidate.pos);
+        if (dist > minDist && dist < maxDist) {
+          targetSeed = candidate;
+          break;
+        }
+      }
+
+      if (!targetSeed) continue;
+
+      // 3. Generate Loop Geometry (Bezier Curve)
+      const startPos = startSeed.pos;
+      const endPos = targetSeed.pos;
+      const midPoint = startPos.clone().add(endPos).multiplyScalar(0.5).normalize();
+
+      // Height depends on distance
+      const dist = startPos.distanceTo(endPos);
+      const heightVal = dist * (0.5 + Math.random() * 0.5); // Height is proportional to length
+      const peakPos = midPoint.multiplyScalar(sunRadius + heightVal);
+
+      const curvePoints = [];
+      const segments = 16; // Smooth loops
+      let collision = false;
+
+      // Check collision along the path
+      for (let j = 0; j <= segments; j++) {
+        const t = j / segments;
+        // Quadratic Bezier: (1-t)^2 * P0 + 2(1-t)t * P1 + t^2 * P2
+        // P0 = start, P1 = peak (control), P2 = end
+        // Actually, let's use CatmullRom with 3 points: Start, Peak, End
+        // Or just interpolate manually for a nice arch
+
+        // Simple Quadratic Bezier interpolation
+        const p1 = startPos.clone().lerp(peakPos, t);
+        const p2 = peakPos.clone().lerp(endPos, t);
+        const pt = p1.lerp(p2, t);
+
+        const key = getVoxelKey(pt);
+        if (occupiedVoxels.has(key)) {
+          collision = true;
+          break;
+        }
+        curvePoints.push(pt);
+      }
+
+      if (collision) {
+        rejections++;
+        continue;
+      }
+
+      // Mark voxels as occupied
+      for (const pt of curvePoints) {
+        occupiedVoxels.add(getVoxelKey(pt));
+      }
+
+      const curve = new THREE.CatmullRomCurve3(curvePoints);
+      const tubeRadius = 0.008 + Math.random() * 0.007;
+      const geometry = new THREE.TubeGeometry(curve, segments, tubeRadius, 4, false);
+
+      const mesh = new THREE.Mesh(geometry, tubeMaterial);
+      group.add(mesh);
+
+      loopsCreated++;
+    }
+    console.log(
+      `[MagneticFields] Created ${loopsCreated} loops. Rejected ${rejections} due to collision.`
+    );
+    // 3. Generate Open Field Lines (Red/Green)
+    // These represent open field lines extending into space
+    // We use the remaining seeds or just sample from validSeeds
+
+    // 3. Generate Open Field Lines (Red/Green)
+    // These represent open field lines extending into space
+
+    const numOpenLines = 250; // Increased limit because we filter many out
+    const openLineMaterialRed = new THREE.LineBasicMaterial({
+      color: 0xff3333,
+      transparent: true,
+      opacity: 0.6,
+    });
+    const openLineMaterialGreen = new THREE.LineBasicMaterial({
+      color: 0x33ff33,
+      transparent: true,
+      opacity: 0.6,
+    });
+
+    let openLinesCreated = 0;
+
+    // Shuffle seeds again to ensure random sampling
+    const openSeeds = [...validSeeds];
+    for (let i = openSeeds.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [openSeeds[i], openSeeds[j]] = [openSeeds[j], openSeeds[i]];
+    }
+
+    for (let i = 0; i < openSeeds.length; i++) {
+      if (openLinesCreated >= numOpenLines) break;
+
+      const seed = openSeeds[i];
+      const startPos = seed.pos;
+
+      const lat = Math.asin(startPos.y / sunRadius); // -PI/2 to PI/2
+      const latDeg = lat * (180 / Math.PI);
+      const absLatDeg = Math.abs(latDeg);
+
+      // 1. Reduce density outside polar regions by 90%
+      // Polar region defined as > 30 degrees
+      const isPolar = absLatDeg > 30;
+
+      if (!isPolar) {
+        if (Math.random() < 0.9) continue; // Skip 90% of non-polar lines
+      }
+
+      // 2. Strict Hemisphere Colors (100% Separation)
+      // North (>= 0) -> Green
+      // South (< 0) -> Red
+      const isGreen = latDeg >= 0;
+
+      const material = isGreen ? openLineMaterialGreen : openLineMaterialRed;
+
+      // Generate a line extending outwards
+      const points = [];
+      const length = 5 + Math.random() * 10;
+      const segments = 20;
+
+      // Spiral outwards slightly
+      const spiralFactor = 0.2;
+
+      for (let j = 0; j <= segments; j++) {
+        const t = j / segments;
+        const r = sunRadius + t * length;
+
+        // Add some waviness
+        const wave = Math.sin(t * 10.0) * 0.1 * t;
+
+        const dir = startPos.clone().normalize();
+        // Twist direction slightly
+        const axis = new THREE.Vector3(0, 1, 0);
+        dir.applyAxisAngle(axis, t * spiralFactor);
+
+        const pos = dir.multiplyScalar(r);
+        pos.x += wave;
+
+        points.push(pos);
+      }
+
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const line = new THREE.Line(geometry, material);
+      group.add(line);
+
+      openLinesCreated++;
+    }
+  };
+
+  // Start generation
+  generateFields();
+
+  // Store active regions for debugging/future use
+  // group.userData.activeRegions = activeRegions; // Removed as activeRegions is no longer defined
+
+  // Initial visibility
+  group.visible = false;
+
+  return group;
+}
+
+/**
+ * Creates a realistic, chaotic magnetic field for the Sun using the Parker Spiral model.
+ * This represents the solar wind carrying the magnetic field far into space.
+ *
+ * @param {THREE.Mesh} sunMesh - The Sun mesh
+ * @returns {THREE.Group} The group containing the field lines
+ */
+export function createSunMagneticField(_sunMesh) {
   const group = new THREE.Group();
   group.name = 'MagneticField';
 
@@ -275,7 +660,6 @@ export function createSunMagneticField(sunMesh) {
     blending: THREE.AdditiveBlending,
   });
 
-  const lines = new THREE.Line(geometry, material);
   // Use LineSegments if we wanted disconnected segments, but here we want continuous lines.
   // However, BufferGeometry with 'position' attribute assumes a single continuous line strip
   // unless we use an index buffer or separate objects.
@@ -290,7 +674,6 @@ export function createSunMagneticField(sunMesh) {
   const segmentIndices = new Float32Array(numLines * (segments - 1) * 2);
   const segmentRatiosSeg = new Float32Array(numLines * (segments - 1) * 2);
 
-  let ptr = 0;
   let ptrAttr = 0;
 
   for (let i = 0; i < numLines; i++) {
