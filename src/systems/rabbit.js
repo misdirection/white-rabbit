@@ -1,152 +1,132 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export function createRabbit(renderer) {
   const scene = new THREE.Scene();
-  // Use a perspective camera for the 3D model, but positioned to look at a specific spot
-  const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+  // Use an orthographic camera for 2D sprite rendering
+  const camera = new THREE.OrthographicCamera(
+    -window.innerWidth / 2,
+    window.innerWidth / 2,
+    window.innerHeight / 2,
+    -window.innerHeight / 2,
+    0.1,
+    100
+  );
   camera.position.z = 5;
 
-  // Light for the rabbit
-  const ambientLight = new THREE.AmbientLight(0xffffff, 2.0);
-  scene.add(ambientLight);
-  // Removed DirectionalLight to prevent leakage into main scene
-  // const directionalLight = new THREE.DirectionalLight(0xffffff, 2.0);
-  // directionalLight.position.set(2, 2, 5);
-  // scene.add(directionalLight);
-
-  // Group to handle world position and Y-rotation (spinning/turning)
-  const rabbitGroup = new THREE.Group();
-  scene.add(rabbitGroup);
-
-  let rabbitModel = null;
-  let mixer = null;
+  let spaceshipSprite = null;
 
   // Animation State
   const state = {
     active: true,
-    phase: 'enter', // enter, wait, exit
+    phase: 'delay', // Start with delay phase, then fly
     startTime: 0,
-    opacity: 0,
   };
 
   const config = {
-    enterDuration: 2.0,
-    waitDuration: 3.0,
-    exitDuration: 2.0,
-    targetPosition: new THREE.Vector3(2.5, -2.0, 0), // Bottom right-ish
-    startPosition: new THREE.Vector3(2.5, -5.0, 0), // Below screen
-    rotationOffset: 0.5, // Counter-clockwise rotation to make it look "less thick"
+    initialDelay: 2.0, // Wait 2 seconds before starting animation
+    flyDuration: 4.0, // Duration of the flight animation
+    startPosition: new THREE.Vector3(0, 0, 0), // Upper right (will be set in resize)
+    targetPosition: new THREE.Vector3(0, 0, 0), // Lower left (will be set in resize)
+    startScale: 0.3, // Starting scale (smaller, farther away)
+    endScale: 1.0, // Ending scale (larger, closer)
   };
 
-  // Load Model
-  const loader = new GLTFLoader();
-  loader.load(
-    './assets/models/Logo1.glb',
-    (gltf) => {
-      rabbitModel = gltf.scene;
-
-      // Normalize scale if needed
-      rabbitModel.scale.set(0.15, 0.15, 0.15);
-
-      // Fix orientation (stand upright)
-      rabbitModel.rotation.x = Math.PI / 2;
-
-      // Reset position relative to group
-      rabbitModel.position.set(0, 0, 0);
-
-      // Ensure materials handle transparency
-      rabbitModel.traverse((child) => {
-        if (child.isMesh) {
-          child.material.transparent = true;
-          child.material.opacity = 1;
-        }
+  // Load spaceship texture
+  const textureLoader = new THREE.TextureLoader();
+  textureLoader.load(
+    './assets/images/rabbit_spaceship.png',
+    (texture) => {
+      const spriteMaterial = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 1.0,
       });
 
-      rabbitGroup.add(rabbitModel);
-      rabbitGroup.position.copy(config.startPosition);
+      spaceshipSprite = new THREE.Sprite(spriteMaterial);
 
-      // Setup Animation Mixer
-      if (gltf.animations && gltf.animations.length > 0) {
-        mixer = new THREE.AnimationMixer(rabbitModel);
-        gltf.animations.forEach((clip) => {
-          mixer.clipAction(clip).play();
-        });
-      }
+      // Set initial scale based on texture aspect ratio
+      const aspectRatio = texture.image.width / texture.image.height;
+      const baseSize = 200; // Base size in pixels
+      spaceshipSprite.scale.set(baseSize * aspectRatio, baseSize, 1);
+
+      spaceshipSprite.position.copy(config.startPosition);
+      scene.add(spaceshipSprite);
 
       state.startTime = performance.now() / 1000;
     },
     undefined,
     (error) => {
-      console.error('An error happened loading the rabbit:', error);
+      console.error('An error happened loading the spaceship:', error);
       state.active = false; // Disable if load fails
     }
   );
 
   // Handle Window Resize
   function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    camera.left = -width / 2;
+    camera.right = width / 2;
+    camera.top = height / 2;
+    camera.bottom = -height / 2;
     camera.updateProjectionMatrix();
 
-    const aspect = window.innerWidth / window.innerHeight;
+    // Set start position (upper right corner)
+    config.startPosition.x = width / 2 + 100; // Off-screen to the right
+    config.startPosition.y = height / 2 + 100; // Off-screen to the top
 
-    // Position logic
-    config.targetPosition.x = -1.0 * aspect;
-    config.startPosition.x = -1.0 * aspect;
-    config.targetPosition.y = -0.5;
+    // Set target position (lower left corner)
+    config.targetPosition.x = -width / 2 - 100; // Off-screen to the left
+    config.targetPosition.y = -height / 2 - 100; // Off-screen to the bottom
 
-    if (state.phase === 'wait') {
-      rabbitGroup.position.x = config.targetPosition.x;
-      rabbitGroup.position.y = config.targetPosition.y;
+    if (spaceshipSprite && state.phase === 'fly') {
+      // Update position if already flying
+      const now = performance.now() / 1000;
+      const elapsed = now - state.startTime;
+      const progress = Math.min(elapsed / config.flyDuration, 1.0);
+      spaceshipSprite.position.lerpVectors(config.startPosition, config.targetPosition, progress);
     }
   }
   window.addEventListener('resize', onWindowResize);
   onWindowResize(); // Initial setup
 
   return {
-    update: (dt) => {
-      if (!state.active || !rabbitModel) return;
-
-      if (mixer) mixer.update(dt);
+    update: () => {
+      if (!state.active || !spaceshipSprite) return;
 
       const now = performance.now() / 1000;
       const elapsed = now - state.startTime;
 
-      if (state.phase === 'enter') {
-        const progress = Math.min(elapsed / config.enterDuration, 1.0);
-        // Ease out cubic
-        const ease = 1 - (1 - progress) ** 3;
-
-        rabbitGroup.position.lerpVectors(config.startPosition, config.targetPosition, ease);
-
-        // Rotate from a starting angle to the target offset
-        // Start at offset - 0.5, end at offset
-        rabbitGroup.rotation.y = config.rotationOffset - 0.5 + ease * 0.5;
-
-        if (progress >= 1.0) {
-          state.phase = 'wait';
-          state.startTime = now; // Reset timer for wait phase
+      if (state.phase === 'delay') {
+        // Wait at starting position during delay
+        if (elapsed >= config.initialDelay) {
+          state.phase = 'fly';
+          state.startTime = now; // Reset timer for fly phase
         }
-      } else if (state.phase === 'wait') {
-        // Idle movement around the offset
-        rabbitGroup.rotation.y = config.rotationOffset + Math.sin(now) * 0.1;
+      } else if (state.phase === 'fly') {
+        const progress = Math.min(elapsed / config.flyDuration, 1.0);
+        // Ease out quintic for more pronounced slowdown
+        const ease = 1 - (1 - progress) ** 5;
 
-        if (elapsed >= config.waitDuration) {
-          state.phase = 'exit';
-          state.startTime = now;
-        }
-      } else if (state.phase === 'exit') {
-        const progress = Math.min(elapsed / config.exitDuration, 1.0);
-        // Ease in cubic
-        const ease = progress * progress * progress;
+        // Animate position from upper right to lower left
+        spaceshipSprite.position.lerpVectors(config.startPosition, config.targetPosition, ease);
 
-        rabbitGroup.position.lerpVectors(config.targetPosition, config.startPosition, ease);
+        // Animate scale to simulate approaching camera
+        const currentScale = THREE.MathUtils.lerp(config.startScale, config.endScale, ease);
+        const aspectRatio =
+          spaceshipSprite.material.map.image.width / spaceshipSprite.material.map.image.height;
+        const baseSize = 200;
+        spaceshipSprite.scale.set(
+          baseSize * aspectRatio * currentScale,
+          baseSize * currentScale,
+          1
+        );
 
+        // When animation is complete, deactivate
         if (progress >= 1.0) {
           state.active = false;
-          scene.remove(rabbitGroup);
-          scene.remove(ambientLight); // Cleanup light
-          // Cleanup
+          scene.remove(spaceshipSprite);
           window.removeEventListener('resize', onWindowResize);
         }
       }
