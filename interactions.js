@@ -297,7 +297,7 @@ function calculatePlanetLiveData(data) {
     // We can calculate distance and velocity directly from vectors.
 
     const helio = Astronomy.HelioVector(body, date);
-    const geo = Astronomy.GeoVector(body, date);
+    const geo = Astronomy.GeoVector(body, date, true);
 
     // Calculate velocity magnitude in AU/day, then convert to km/s
     const vAuDay = Math.sqrt(helio.vx ** 2 + helio.vy ** 2 + helio.vz ** 2);
