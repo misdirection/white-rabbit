@@ -221,7 +221,15 @@ export function createPlanets(scene, orbitGroup) {
         cloudMesh.visible = false; // Hide until loaded
         cloudMesh.layers.set(1); // Clouds also need shadows
 
-        textureManager.loadTexture(data.cloudTexture, cloudMaterial, 'Earth Clouds');
+        // Use alphaMap for transparency (white clouds on black background)
+        textureManager.loadTexture(
+          data.cloudTexture,
+          cloudMaterial,
+          'Earth Clouds',
+          false,
+          null,
+          'alphaMap'
+        );
 
         mesh.add(cloudMesh);
 

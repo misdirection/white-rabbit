@@ -292,11 +292,13 @@ function calculatePlanetLiveData(data) {
     const body = Astronomy.Body[data.body];
 
     // Live Calculations
-    const elements = Astronomy.OrbitalElements(body, date);
+    // Live Calculations
+    // Astronomy.OrbitalElements is not available in the current version or exposed differently.
+    // We can calculate distance and velocity directly from vectors.
+
     const helio = Astronomy.HelioVector(body, date);
     const geo = Astronomy.GeoVector(body, date);
 
-    const trueAnomaly = elements.nu.toFixed(1);
     // Calculate velocity magnitude in AU/day, then convert to km/s
     const vAuDay = Math.sqrt(helio.vx ** 2 + helio.vy ** 2 + helio.vz ** 2);
     const vKmS = ((vAuDay * 149597870.7) / 86400).toFixed(2); // 1 AU = 149,597,870.7 km
@@ -305,7 +307,7 @@ function calculatePlanetLiveData(data) {
     const lightTimeMin = ((distAu * 499.00478) / 60).toFixed(2);
 
     return {
-      trueAnomaly,
+      trueAnomaly: 'N/A', // Skipped as OrbitalElements is unavailable
       velocity: vKmS,
       distanceAU: distAu.toFixed(3),
       lightTime: lightTimeMin,

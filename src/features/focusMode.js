@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { config } from '../config.js';
+import { textureManager } from '../managers/TextureManager.js';
 
 const SCREEN_HIT_RADIUS = 15; // Pixels on screen for hit detection (slightly larger for double-click)
 const ANIMATION_DURATION = 2000; // ms for camera transition
@@ -133,6 +134,11 @@ export function focusOnObject(
 
   // Enable high resolution for the new target
   enableHighRes(focusedObject);
+
+  // Trigger high-resolution texture load
+  if (targetObject.data && targetObject.data.name) {
+    textureManager.loadHighRes(targetObject.data.name);
+  }
 
   // Get the world position of the target
   const worldPos = new THREE.Vector3();
