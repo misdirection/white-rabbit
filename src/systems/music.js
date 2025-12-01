@@ -176,9 +176,8 @@ export class MusicSystem {
   loadAndPlay(track) {
     // History is now managed by playNext(), not here
 
-    // Determine supported format
-    const canPlayOgg = this.audio.canPlayType('audio/ogg; codecs="vorbis"');
-    const ext = canPlayOgg ? 'ogg' : 'm4a';
+    // Only use OGG format to reduce deployed assets (no need for both OGG and M4A)
+    const ext = 'ogg';
 
     this.audio.src = `assets/music/${ext}/${encodeURIComponent(track.filename)}.${ext}`;
     this.audio.volume = config.music.volume;

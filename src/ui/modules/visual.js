@@ -1,4 +1,3 @@
-import * as Astronomy from 'astronomy-engine';
 import * as THREE from 'three';
 import { config, REAL_PLANET_SCALE_FACTOR } from '../../config.js';
 
@@ -25,7 +24,7 @@ export function updateReferencePlane(val, universeGroup) {
 
 export function updateStarBrightness(val, starsRef) {
   const stars = starsRef.value;
-  if (stars && stars.material) {
+  if (stars?.material) {
     // Piecewise logic for better control:
     // 0.0 - 0.6: Fine Opacity Control (0.0 -> 0.3) - Realistic Range
     // 0.6 - 0.8: Rapid Opacity Ramp (0.3 -> 1.0)
@@ -587,6 +586,8 @@ export function updateSunMagneticFieldScale(universeGroup, scale) {
 
   const solarWindField = universeGroup.children.find((c) => c.name === 'MagneticField');
   if (solarWindField) {
-    solarWindField.scale.setScalar(scale);
+    // User requested fixed size for solar wind (equivalent to 20x sun scale)
+    // 20x sun scale corresponds to internal scale of 1.0
+    solarWindField.scale.setScalar(1.0);
   }
 }
