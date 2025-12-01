@@ -100,9 +100,13 @@ export async function alignZodiacSigns(zodiacSignsGroup, starsData) {
     const SCALE = 10000;
     const starPositionMap = {};
     starsData.forEach((star) => {
-      if (star.x != null && star.y != null && star.z != null && star.i != null) {
+      if (star.x != null && star.y != null && star.z != null && star.id != null) {
         // Apply correct coordinate transformation: (z, x, y)
-        starPositionMap[star.i] = new THREE.Vector3(star.z * SCALE, star.x * SCALE, star.y * SCALE);
+        starPositionMap[star.id] = new THREE.Vector3(
+          star.z * SCALE,
+          star.x * SCALE,
+          star.y * SCALE
+        );
       }
     });
 

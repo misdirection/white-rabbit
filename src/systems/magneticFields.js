@@ -178,7 +178,7 @@ export function createSunMagneticFieldBasic(_sunMesh) {
 
   // --- Texture-Based Generation ---
 
-  const sunTexturePath = 'assets/textures/sun.jpg'; // Relative path
+  const sunTexturePath = `${import.meta.env.BASE_URL}assets/textures/midres/sun.jpg`;
 
   // Load texture data for CPU access
   const loadTexturePixelData = (url) => {
