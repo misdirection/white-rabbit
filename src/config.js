@@ -31,7 +31,11 @@ export const config = {
   capMagneticFields: true,
   starBrightness: 0.35,
   gamma: 1.0,
-  showOrbits: true,
+  showOrbits: true, // Deprecated, kept for safety
+  showSunOrbits: true,
+  showPlanetOrbits: true,
+  showDwarfPlanetOrbits: true,
+  showMoonOrbits: true,
   showAxes: false,
   showTooltips: true,
   coordinateSystem: 'Heliocentric', // 'Heliocentric', 'Geocentric', 'Barycentric', 'Tychonic'

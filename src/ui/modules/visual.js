@@ -124,30 +124,46 @@ export function setupVisualFolder(
   visualFolder.close(); // Close Visual folder by default
 }
 
-export function updateOrbitsVisibility(val, orbitGroup, planets, capMoonOrbitsCtrl) {
-  orbitGroup.visible = val;
+export function updateOrbitsVisibility(orbitGroup, planets, capMoonOrbitsCtrl) {
+  // 1. Update Standard Orbits (Heliocentric / Tychonic)
+  // Note: relativeOrbits.js handles the actual visibility of the group and lines for relative modes.
+  // Here we handle the "static" orbit lines attached to planets/moons.
+
+  // Sun Orbit (only relevant if it exists as a line, usually handled in relativeOrbits)
+  // ...
+
+  // Planet Orbits
   planets.forEach((p) => {
+    if (p.data.type !== 'dwarf') {
+      if (p.orbitLine) {
+        // Visible if Planet Orbits are ON AND the Planet itself is visible
+        p.orbitLine.visible = config.showPlanetOrbits && config.showPlanets;
+      }
+    } else {
+      // Dwarf Planet Orbits
+      if (p.orbitLine) {
+        p.orbitLine.visible = config.showDwarfPlanetOrbits && config.showDwarfPlanets;
+      }
+    }
+
+    // Moon Orbits
     p.moons.forEach((m) => {
       if (m.data.orbitLine) {
-        if (!val) {
-          m.data.orbitLine.visible = false;
-        } else {
-          // Only enable if category is enabled
-          let isVisible = false;
-          if (m.data.category === 'largest' && config.showLargestMoons) isVisible = true;
-          else if (m.data.category === 'major' && config.showMajorMoons) isVisible = true;
-          else if (m.data.category === 'small' && config.showSmallMoons) isVisible = true;
+        // Check category visibility
+        let isCategoryVisible = false;
+        if (m.data.category === 'largest' && config.showLargestMoons) isCategoryVisible = true;
+        else if (m.data.category === 'major' && config.showMajorMoons) isCategoryVisible = true;
+        else if (m.data.category === 'small' && config.showSmallMoons) isCategoryVisible = true;
+        if (!m.data.category) isCategoryVisible = true; // Fallback
 
-          // Fallback
-          if (!m.data.category) isVisible = true;
-
-          m.data.orbitLine.visible = isVisible;
-        }
+        // Visible if Moon Orbits are ON AND the Moon Category is visible
+        m.data.orbitLine.visible = config.showMoonOrbits && isCategoryVisible;
       }
     });
   });
+
   if (capMoonOrbitsCtrl) {
-    capMoonOrbitsCtrl.domElement.style.display = val ? '' : 'none';
+    capMoonOrbitsCtrl.domElement.style.display = config.showMoonOrbits ? '' : 'none';
   }
 }
 
@@ -314,43 +330,68 @@ export function setupOverlaysFolder(
   orbitsFolder.domElement.classList.add('orbits-folder');
   orbitsFolder.close();
 
-  const orbitsCtrl = orbitsFolder.add(config, 'showOrbits').name('Show');
-  orbitsCtrl.domElement.classList.add('checkbox-left');
-
-  const capMoonOrbitsCtrl = orbitsFolder
-    .add(config, 'capMoonOrbits')
-    .name('Cap Moon Orbits When Scaling')
+  const sunOrbitsCtrl = orbitsFolder
+    .add(config, 'showSunOrbits')
+    .name('Sun')
     .onChange(() => {
-      // Moon positions will be updated in the next animation frame
+      updateOrbitsVisibility(orbitGroup, planets, null);
     });
-  capMoonOrbitsCtrl.domElement.classList.add('checkbox-left');
+  sunOrbitsCtrl.domElement.classList.add('checkbox-left');
 
-  // Show/hide child control based on parent state
-  updateOrbitsVisibility(config.showOrbits, orbitGroup, planets, null);
+  const planetOrbitsCtrl = orbitsFolder
+    .add(config, 'showPlanetOrbits')
+    .name('Planets')
+    .onChange((val) => {
+      updateOrbitsVisibility(orbitGroup, planets, null);
+      val ? planetColorsCtrl.show() : planetColorsCtrl.hide();
+    });
+  planetOrbitsCtrl.domElement.classList.add('checkbox-left');
 
   const planetColorsCtrl = orbitsFolder
     .add(config, 'showPlanetColors')
-    .name('Planet Colors')
+    .name('Use Colors')
     .onChange(() => {
-      // Trigger update of orbit colors
-      // We need to call updateRelativeOrbits and also update standard orbits material
-      // Since standard orbits are static lines, we might need to traverse and update material color
       updateOrbitColors(orbitGroup, relativeOrbitGroup, planets);
     });
   planetColorsCtrl.domElement.classList.add('checkbox-left');
+  planetColorsCtrl.domElement.classList.add('child-control');
+  config.showPlanetOrbits ? planetColorsCtrl.show() : planetColorsCtrl.hide();
+
+  const dwarfPlanetOrbitsCtrl = orbitsFolder
+    .add(config, 'showDwarfPlanetOrbits')
+    .name('Dwarf Planets')
+    .onChange((val) => {
+      updateOrbitsVisibility(orbitGroup, planets, null);
+      val ? dwarfPlanetColorsCtrl.show() : dwarfPlanetColorsCtrl.hide();
+    });
+  dwarfPlanetOrbitsCtrl.domElement.classList.add('checkbox-left');
 
   const dwarfPlanetColorsCtrl = orbitsFolder
     .add(config, 'showDwarfPlanetColors')
-    .name('Dwarf Planet Colors')
+    .name('Use Colors')
     .onChange(() => {
       updateOrbitColors(orbitGroup, relativeOrbitGroup, planets);
     });
   dwarfPlanetColorsCtrl.domElement.classList.add('checkbox-left');
+  dwarfPlanetColorsCtrl.domElement.classList.add('child-control');
+  config.showDwarfPlanetOrbits ? dwarfPlanetColorsCtrl.show() : dwarfPlanetColorsCtrl.hide();
 
-  // Let's update the Orbits onChange to toggle visibility of orbits
-  orbitsCtrl.onChange((val) => {
-    updateOrbitsVisibility(val, orbitGroup, planets, null);
-  });
+  const moonOrbitsCtrl = orbitsFolder
+    .add(config, 'showMoonOrbits')
+    .name('Moons')
+    .onChange(() => {
+      updateOrbitsVisibility(orbitGroup, planets, capMoonOrbitsCtrl);
+    });
+  moonOrbitsCtrl.domElement.classList.add('checkbox-left');
+
+  const capMoonOrbitsCtrl = orbitsFolder
+    .add(config, 'capMoonOrbits')
+    .name('Cap When Scaling')
+    .onChange(() => {
+      // Moon positions will be updated in the next animation frame
+    });
+  capMoonOrbitsCtrl.domElement.classList.add('checkbox-left');
+  capMoonOrbitsCtrl.domElement.classList.add('child-control'); // Indent it
 
   // Magnetic Fields Folder
   const magneticFieldsFolder = overlaysFolder.addFolder('Magnetic Fields');
@@ -443,7 +484,9 @@ export function updatePlanetVisibility(val, planets) {
       if (p.data.cloudMesh) p.data.cloudMesh.visible = val;
 
       // Toggle planet orbit line
-      if (p.orbitLine) p.orbitLine.visible = val;
+      if (p.orbitLine) {
+        p.orbitLine.visible = val && config.showPlanetOrbits;
+      }
 
       // Rings should also be toggled
       p.group.children.forEach((child) => {
@@ -462,7 +505,9 @@ export function updateDwarfVisibility(val, planets) {
   planets.forEach((p) => {
     if (p.data.type === 'dwarf') {
       p.group.visible = val;
-      if (p.orbitLine) p.orbitLine.visible = val;
+      if (p.orbitLine) {
+        p.orbitLine.visible = val && config.showDwarfPlanetOrbits;
+      }
     }
   });
 }
@@ -472,7 +517,9 @@ export function updateMoonVisibility(val, planets, category) {
     p.moons.forEach((m) => {
       if (m.data.category === category) {
         m.mesh.visible = val;
-        if (m.data.orbitLine) m.data.orbitLine.visible = val;
+        if (m.data.orbitLine) {
+          m.data.orbitLine.visible = val && config.showMoonOrbits;
+        }
       }
     });
   });
