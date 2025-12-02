@@ -9,6 +9,7 @@ import { setupScaleFolder } from './modules/scale.js';
 import { setupTimeFolder } from './modules/time.js';
 import { setupObjectsFolder, setupOverlaysFolder, setupVisualFolder } from './modules/visual.js';
 import { setupSoundUI } from './modules/sound.js';
+import { setupSystemUI } from './modules/system.js';
 
 /**
  * Sets up the GUI with Scale, Visual, Time, and Navigation sections
@@ -108,6 +109,9 @@ export function setupGUI(
 
   // --- SOUND SECTION ---
   setupSoundUI(gui);
+
+  // --- SYSTEM SECTION ---
+  setupSystemUI(gui, renderer);
 
   // --- ABOUT SECTION ---
   setupAboutFolder(gui);
