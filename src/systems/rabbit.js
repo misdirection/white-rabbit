@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Logger } from '../utils/logger.js';
 
 export function createRabbit(renderer) {
   const scene = new THREE.Scene();
@@ -56,7 +57,7 @@ export function createRabbit(renderer) {
     },
     undefined,
     (error) => {
-      console.error('An error happened loading the spaceship:', error);
+      Logger.error('An error happened loading the spaceship:', error);
       state.active = false; // Disable if load fails
     }
   );

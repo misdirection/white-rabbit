@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Octree } from '../utils/Octree.js';
+import { Logger } from '../utils/logger.js';
 
 const ZODIAC_IDS = [
   'Ari',
@@ -194,7 +195,7 @@ export async function createStarfield(scene) {
 
     return { stars, rawData: processedData };
   } catch (error) {
-    console.error('Error loading stars:', error);
+    Logger.error('Error loading stars:', error);
     return null;
   }
 }
@@ -267,8 +268,8 @@ export async function createConstellations(zodiacGroup, constellationsGroup, sta
       else otherCount++;
     }
 
-    console.log(`Created ${zodiacCount} zodiacs and ${otherCount} other constellations.`);
+    Logger.log(`Created ${zodiacCount} zodiacs and ${otherCount} other constellations.`);
   } catch (error) {
-    console.error('Error loading constellations:', error);
+    Logger.error('Error loading constellations:', error);
   }
 }

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { config } from '../config.js';
+import { Logger } from '../utils/logger.js';
 import { focusOnObject } from './focusMode.js';
 
 /**
@@ -47,7 +48,7 @@ export function navigateToEvent(event, camera, controls, planets) {
     const earth = planets.find((p) => p.data.name === 'Earth');
 
     if (!earth) {
-      console.error('Earth not found');
+      Logger.error('Earth not found');
       return;
     }
 
@@ -57,7 +58,7 @@ export function navigateToEvent(event, camera, controls, planets) {
     // We must explicitly set type: 'planet' so focusOnObject uses the correct scale factor
     focusOnObject({ ...earth, type: 'planet' }, camera, controls, 2.5);
 
-    console.log(`Navigating to event: ${event.type} - ${event.date.toISOString()}`);
+    Logger.log(`Navigating to event: ${event.type} - ${event.date.toISOString()}`);
   }, 100);
 }
 

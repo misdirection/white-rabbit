@@ -1,6 +1,7 @@
 import * as Astronomy from 'astronomy-engine';
 import * as THREE from 'three';
 import { config } from './src/config.js';
+import { Logger } from './src/utils/logger.js';
 
 const SCREEN_HIT_RADIUS = 10; // Pixels on screen for hit detection
 
@@ -337,7 +338,7 @@ function calculatePlanetLiveData(data) {
       lightTime: lightTimeMin,
     };
   } catch (e) {
-    console.warn(`Error calculating live data for ${data.name}`, e);
+    Logger.warn(`Error calculating live data for ${data.name}`, e);
     return null;
   }
 }
@@ -478,7 +479,7 @@ function formatTooltip(closestObject) {
         return '';
     }
   } catch (error) {
-    console.error('Error formatting tooltip:', error);
+    Logger.error('Error formatting tooltip:', error);
     return 'Error loading data';
   }
 }

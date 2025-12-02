@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { config } from '../config.js';
+import { Logger } from '../utils/logger.js';
 
 const ZODIAC_SIGNS = [
   { name: 'Aries', index: 0 },
@@ -38,12 +39,12 @@ export function createZodiacSigns(scene, textureLoader) {
 
   // Load the sprite sheet
   const texturePath = `${import.meta.env.BASE_URL}assets/zodiac_signs_sheet.png`;
-  console.log('ZodiacSigns: Loading texture from', texturePath);
+  Logger.log('ZodiacSigns: Loading texture from', texturePath);
 
   textureLoader.load(
     texturePath,
     (texture) => {
-      console.log('ZodiacSigns: Texture loaded successfully');
+      Logger.log('ZodiacSigns: Texture loaded successfully');
       texture.colorSpace = THREE.SRGBColorSpace;
 
       const size = 5000; // Size of each sign (increased for better visibility at distance)
@@ -81,7 +82,7 @@ export function createZodiacSigns(scene, textureLoader) {
     },
     undefined,
     (err) => {
-      console.error('ZodiacSigns: Error loading texture', err);
+      Logger.error('ZodiacSigns: Error loading texture', err);
     }
   );
 
@@ -146,8 +147,8 @@ export async function alignZodiacSigns(zodiacSignsGroup, starsData) {
       }
     });
 
-    console.log('ZodiacSigns: Aligned signs to constellations');
+    Logger.log('ZodiacSigns: Aligned signs to constellations');
   } catch (error) {
-    console.error('ZodiacSigns: Error aligning signs', error);
+    Logger.error('ZodiacSigns: Error aligning signs', error);
   }
 }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Logger } from '../utils/logger.js';
 
 class TextureManager {
   constructor() {
@@ -28,9 +29,9 @@ class TextureManager {
       if (!response.ok) throw new Error('Manifest not found');
       const files = await response.json();
       this.manifest = new Set(files);
-      console.log(`TextureManager: Loaded manifest with ${this.manifest.size} files`);
+      Logger.log(`TextureManager: Loaded manifest with ${this.manifest.size} files`);
     } catch (err) {
-      console.warn(
+      Logger.warn(
         'TextureManager: Failed to load texture manifest, falling back to trial-and-error',
         err
       );
@@ -174,7 +175,7 @@ class TextureManager {
       });
 
       if (validPaths.length === 0 && paths.length > 0) {
-        console.log(
+        Logger.log(
           `TextureManager: Skipped ${item.originalPath} (Stage ${item.stage}) - No valid files in manifest`
         );
         // If all filtered out, treat as failure for this stage
@@ -184,7 +185,7 @@ class TextureManager {
     }
 
     if (validPaths.length === 0) {
-      // console.warn(
+      // Logger.warn(
       //   `TextureManager: All candidates failed for ${item.originalPath} (Stage ${item.stage})`
       // );
       // All attempts failed (or filtered out)
@@ -198,7 +199,7 @@ class TextureManager {
     this.textureLoader.load(
       currentPath,
       (texture) => {
-        console.log(`TextureManager: Loaded ${currentPath} successfully`);
+        Logger.log(`TextureManager: Loaded ${currentPath} successfully`);
         // Success
         if (
           !item.material.userData.currentStage ||
@@ -215,9 +216,9 @@ class TextureManager {
 
           item.material.needsUpdate = true;
           item.material.userData.currentStage = item.stage;
-          console.log(`TextureManager: Applied ${currentPath} to material`);
+          Logger.log(`TextureManager: Applied ${currentPath} to material`);
         } else {
-          console.log(
+          Logger.log(
             `TextureManager: Skipped applying ${currentPath} (current stage ${item.material.userData.currentStage} >= ${item.stage})`
           );
         }
@@ -227,7 +228,7 @@ class TextureManager {
       },
       undefined,
       (err) => {
-        console.warn(`TextureManager: Failed to load ${currentPath}`, err);
+        Logger.warn(`TextureManager: Failed to load ${currentPath}`, err);
         // Error - try next path
         this.tryLoadTexture(paths, item);
       }

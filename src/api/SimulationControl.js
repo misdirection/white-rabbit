@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Logger } from '../utils/logger.js';
 import { config } from '../config.js';
 import { focusOnObject, exitFocusMode } from '../features/focusMode.js';
 import {
@@ -101,7 +102,7 @@ export class SimulationControl {
         }
       }
     }
-    console.warn(`Object '${name}' not found.`);
+    Logger.warn(`Object '${name}' not found.`);
   }
 
   exitFocus() {
@@ -132,7 +133,7 @@ export class SimulationControl {
 
   setReferencePlane(plane) {
     if (plane !== 'Equatorial' && plane !== 'Ecliptic') {
-      console.warn("Invalid plane. Use 'Equatorial' or 'Ecliptic'.");
+      Logger.warn("Invalid plane. Use 'Equatorial' or 'Ecliptic'.");
       return;
     }
     config.referencePlane = plane;
@@ -218,7 +219,7 @@ export class SimulationControl {
     else if (category === 'major') config.showMajorMoons = visible;
     else if (category === 'small') config.showSmallMoons = visible;
     else {
-      console.warn("Invalid moon category. Use 'largest', 'major', or 'small'.");
+      Logger.warn("Invalid moon category. Use 'largest', 'major', or 'small'.");
       return;
     }
     updateMoonVisibility(visible, this.planets, category);

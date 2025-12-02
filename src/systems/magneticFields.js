@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Logger } from '../utils/logger.js';
 
 /**
  * Creates a magnetic field visualization for a celestial body.
@@ -192,11 +193,11 @@ export function createSunMagneticFieldBasic(_sunMesh) {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         const imgData = ctx.getImageData(0, 0, img.width, img.height);
-        console.log('Sun texture loaded for magnetic fields:', img.width, img.height);
+        Logger.log('Sun texture loaded for magnetic fields:', img.width, img.height);
         resolve(imgData);
       };
       img.onerror = (e) => {
-        console.error('Error loading sun texture:', e);
+        Logger.error('Error loading sun texture:', e);
         reject(e);
       };
       img.src = url;
@@ -209,7 +210,7 @@ export function createSunMagneticFieldBasic(_sunMesh) {
     try {
       imgData = await loadTexturePixelData(sunTexturePath);
     } catch (e) {
-      console.error('Failed to load sun texture for magnetic fields:', e);
+      Logger.error('Failed to load sun texture for magnetic fields:', e);
       return;
     }
 
@@ -232,9 +233,7 @@ export function createSunMagneticFieldBasic(_sunMesh) {
     const uvs = debugGeo.attributes.uv;
     const count = positions.count;
 
-    console.log(
-      `[MagneticFields] Starting generation. Vertices: ${count}, Threshold: ${threshold}`
-    );
+    Logger.log(`[MagneticFields] Starting generation. Vertices: ${count}, Threshold: ${threshold}`);
 
     // 1. Collect Valid Seeds (High Intensity Points)
     const validSeeds = [];
@@ -264,7 +263,7 @@ export function createSunMagneticFieldBasic(_sunMesh) {
       }
     }
 
-    console.log(`[MagneticFields] Found ${validSeeds.length} valid seeds.`);
+    Logger.log(`[MagneticFields] Found ${validSeeds.length} valid seeds.`);
 
     // Shuffle seeds to randomize connections
     for (let i = validSeeds.length - 1; i > 0; i--) {
@@ -367,7 +366,7 @@ export function createSunMagneticFieldBasic(_sunMesh) {
 
       loopsCreated++;
     }
-    console.log(
+    Logger.log(
       `[MagneticFields] Created ${loopsCreated} loops. Rejected ${rejections} due to collision.`
     );
     // 3. Generate Open Field Lines (Red/Green)

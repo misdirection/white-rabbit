@@ -73,4 +73,5 @@ export const config = {
     currentTrackName: 'None', // Display string for UI
     shuffle: false,
   },
+  debug: false,
 };

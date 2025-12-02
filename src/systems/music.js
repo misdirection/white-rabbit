@@ -4,6 +4,7 @@
  */
 
 import { config } from '../config.js';
+import { Logger } from '../utils/logger.js';
 
 export class MusicSystem {
   constructor() {
@@ -29,7 +30,7 @@ export class MusicSystem {
       const response = await fetch('assets/music/tracks.json');
       this.tracks = await response.json();
       this.initialized = true;
-      console.log('Music system initialized with tracks:', this.tracks);
+      Logger.log('Music system initialized with tracks:', this.tracks);
 
       // Initialize playlist in config if empty (select all by default)
       if (config.music.playlist.length === 0) {
@@ -38,9 +39,9 @@ export class MusicSystem {
 
       // Don't auto-start music on page load to avoid blocking with large file downloads
       // Music will start when user explicitly enables it via UI
-      console.log('Music ready. Click play button to start.');
+      Logger.log('Music ready. Click play button to start.');
     } catch (error) {
-      console.error('Failed to initialize music system:', error);
+      Logger.error('Failed to initialize music system:', error);
     }
   }
 
@@ -55,7 +56,7 @@ export class MusicSystem {
         // If we have a current track, resume or restart it.
         // If not, try to play the next one in the playlist.
         if (this.audio.src) {
-          this.audio.play().catch((e) => console.warn('Audio play failed:', e));
+          this.audio.play().catch((e) => Logger.warn('Audio play failed:', e));
           this.isPlaying = true;
         } else {
           this.playNext();
@@ -166,7 +167,7 @@ export class MusicSystem {
     }
 
     // No history available, do nothing
-    console.log('No previous track in history');
+    Logger.log('No previous track in history');
   }
 
   /**
@@ -184,7 +185,7 @@ export class MusicSystem {
 
     // Set track name immediately (before play attempt)
     config.music.currentTrackName = track.title.replace(/ \[(Lyrics|Instrumental)\]/g, '');
-    console.log(`Now playing: ${track.title}`);
+    Logger.log(`Now playing: ${track.title}`);
 
     this.audio
       .play()
@@ -192,7 +193,7 @@ export class MusicSystem {
         this.isPlaying = true;
       })
       .catch((error) => {
-        console.warn('Playback failed (likely autoplay blocked):', error);
+        Logger.warn('Playback failed (likely autoplay blocked):', error);
         this.isPlaying = false;
         // Note: Track name stays set even if autoplay is blocked
         // User can click play button to start manually

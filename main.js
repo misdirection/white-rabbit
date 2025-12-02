@@ -16,6 +16,7 @@
 
 import * as THREE from 'three';
 import { SimulationControl } from './src/api/SimulationControl.js';
+import { Logger } from './src/utils/logger.js';
 import { setupTooltipSystem } from './interactions.js';
 import { config } from './src/config.js';
 import { createPlanets, updatePlanets } from './src/core/planets.js';
@@ -39,7 +40,7 @@ import { musicSystem } from './src/systems/music.js';
 // --- Init ---
 (async () => {
   try {
-    console.log('White Rabbit Version: 1.3 (Instant Start)');
+    Logger.log('White Rabbit Version: 1.3 (Instant Start)');
     const loading = document.getElementById('loading');
     loading.textContent = 'Initializing... (Base: ' + import.meta.env.BASE_URL + ')';
 
@@ -312,9 +313,9 @@ import { musicSystem } from './src/systems/music.js';
           alignZodiacSigns(zodiacSignsGroup, rawData);
         }
       })
-      .catch((err) => console.error('Error loading stars:', err));
+      .catch((err) => Logger.error('Error loading stars:', err));
   } catch (error) {
-    console.error('Initialization error:', error);
+    Logger.error('Initialization error:', error);
     document.getElementById('loading').textContent = 'Error loading simulation: ' + error.message;
     document.getElementById('loading').style.color = 'red';
   }
