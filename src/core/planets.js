@@ -370,8 +370,7 @@ export function updatePlanets(planets, sun = null, shadowLight = null) {
     }
 
     // Update Moons
-    const planetIndex = planets.indexOf(p);
-    updateMoonPositions(p, planetIndex, planets);
+    updateMoonPositions(p, planets);
 
     // Enforce layers for moons
     p.moons.forEach((m) => {

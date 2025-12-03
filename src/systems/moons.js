@@ -250,7 +250,7 @@ export function createMoons(planetData, planetGroup, orbitLinesGroup) {
  * @param {number} planetIndex - Index of planet in planets array
  * @param {Array} allPlanets - Array of all planet objects
  */
-export function updateMoonPositions(planet, planetIndex, allPlanets) {
+export function updateMoonPositions(planet, allPlanets) {
   if (!planet.moons) return;
 
   // Calculate compound scale: slider value (0.002-5.0) × artistic factor (500x)
@@ -273,23 +273,28 @@ export function updateMoonPositions(planet, planetIndex, allPlanets) {
     const currentDist = getPlanetDistanceAU(planet.data);
 
     if (currentDist) {
-      // Check next planet
-      if (planetIndex < allPlanets.length - 1) {
-        const nextPlanet = allPlanets[planetIndex + 1];
-        const nextPlanetDist = getPlanetDistanceAU(nextPlanet.data);
-        if (nextPlanetDist) {
-          distToNext = nextPlanetDist - currentDist;
-        }
-      }
+      // Search for true neighbors by distance
+      allPlanets.forEach((otherPlanet) => {
+        if (otherPlanet === planet) return;
 
-      // Check previous planet
-      if (planetIndex > 0) {
-        const prevPlanet = allPlanets[planetIndex - 1];
-        const prevPlanetDist = getPlanetDistanceAU(prevPlanet.data);
-        if (prevPlanetDist) {
-          distToPrev = currentDist - prevPlanetDist;
+        const otherDist = getPlanetDistanceAU(otherPlanet.data);
+        if (!otherDist) return;
+
+        const diff = otherDist - currentDist;
+
+        if (diff > 0) {
+          // Outer neighbor
+          if (diff < distToNext) {
+            distToNext = diff;
+          }
+        } else {
+          // Inner neighbor
+          const absDiff = Math.abs(diff);
+          if (absDiff < distToPrev) {
+            distToPrev = absDiff;
+          }
         }
-      }
+      });
 
       // Use minimum distance
       const closestDist = Math.min(distToNext, distToPrev);
