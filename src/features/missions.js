@@ -1,159 +1,222 @@
 import * as THREE from 'three';
+import * as Astronomy from 'astronomy-engine';
 import { AU_TO_SCENE, config } from '../config.js';
+import { calculateKeplerianPosition } from '../physics/orbits.js';
 
 /**
- * Simplified Mission trajectory data
- * Positions are approximate based on known encounter dates and heliocentric orbits
- * Now includes date information for future timeline features
+ * Mission trajectory data
+ * Positions are dynamically calculated based on dates and celestial bodies.
  */
 
 // Helper to create smooth curve through waypoints
 function createSmoothPath(waypoints, segments = 100) {
-  // Extract positions from the new object structure
   const points = waypoints.map((wp) => wp.pos);
   const curve = new THREE.CatmullRomCurve3(points);
   return curve.getPoints(segments);
 }
 
-// Voyager 1 trajectory waypoints
-const voyager1Waypoints = [
-  { pos: new THREE.Vector3(1.0, 0, 0), date: '1977-09-05' }, // Earth (launch)
-  { pos: new THREE.Vector3(4.5, 0.3, 0.5), date: '1979-01-01' }, // Approaching Jupiter
-  { pos: new THREE.Vector3(5.2, 0, 0.8), date: '1979-03-05' }, // Jupiter flyby
-  { pos: new THREE.Vector3(7.0, -0.5, 1.0), date: '1980-01-01' }, // Between Jupiter and Saturn
-  { pos: new THREE.Vector3(9.5, 0, 1.2), date: '1980-11-12' }, // Saturn flyby
-  { pos: new THREE.Vector3(15, 1.5, 2.5), date: '1985-01-01' }, // Post-Saturn trajectory
-  { pos: new THREE.Vector3(25, 3.5, 5.0), date: '1995-01-01' }, // Heading to interstellar space
-  { pos: new THREE.Vector3(40, 6.0, 8.5), date: '2010-01-01' }, // Deep space
-  { pos: new THREE.Vector3(160, 24.0, 34.0), date: '2024-01-01' }, // Current approximate position
-];
+// Helper to get position of a body at a specific date
+function getBodyPosition(bodyName, dateStr, customElements = null) {
+  const date = new Date(dateStr);
 
-// Voyager 2 trajectory waypoints
-const voyager2Waypoints = [
-  { pos: new THREE.Vector3(1.0, 0, -0.1), date: '1977-08-20' }, // Earth (launch)
-  { pos: new THREE.Vector3(4.2, -0.2, 0.3), date: '1979-04-01' }, // Approaching Jupiter
-  { pos: new THREE.Vector3(5.2, 0, 0.5), date: '1979-07-09' }, // Jupiter flyby
-  { pos: new THREE.Vector3(7.5, 0.5, 0.7), date: '1980-06-01' }, // Between Jupiter and Saturn
-  { pos: new THREE.Vector3(9.5, 0, 0.9), date: '1981-08-25' }, // Saturn flyby
-  { pos: new THREE.Vector3(15, -1.0, 0.5), date: '1984-01-01' }, // Between Saturn and Uranus
-  { pos: new THREE.Vector3(19.2, 0, 0.3), date: '1986-01-24' }, // Uranus flyby
-  { pos: new THREE.Vector3(25, 0.5, -0.5), date: '1988-01-01' }, // Between Uranus and Neptune
-  { pos: new THREE.Vector3(30.1, 0, -1.0), date: '1989-08-25' }, // Neptune flyby
-  { pos: new THREE.Vector3(40, -2.0, -3.0), date: '2000-01-01' }, // Heading to interstellar space
-  { pos: new THREE.Vector3(133, -6.6, -10.0), date: '2024-01-01' }, // Current approximate position
-];
+  if (customElements) {
+    const pos = calculateKeplerianPosition(customElements, date);
+    // calculateKeplerianPosition returns {x, y, z} in HELIOCENTRIC coordinates
+    // where Z is North Ecliptic Pole.
+    // Scene coordinates: X=x, Y=z, Z=-y
+    return new THREE.Vector3(pos.x, pos.z, -pos.y);
+  }
 
-// Pioneer 10 trajectory waypoints
-const pioneer10Waypoints = [
-  { pos: new THREE.Vector3(1.0, 0, 0.05), date: '1972-03-02' }, // Earth (launch)
-  { pos: new THREE.Vector3(3.5, 0.2, 0.4), date: '1973-06-01' }, // Approaching Jupiter
-  { pos: new THREE.Vector3(5.2, 0, 0.6), date: '1973-12-04' }, // Jupiter flyby
-  { pos: new THREE.Vector3(10, 1.0, 1.5), date: '1976-01-01' }, // Continuing outward
-  { pos: new THREE.Vector3(20, 2.5, 3.0), date: '1983-01-01' }, // Far outer solar system
-  { pos: new THREE.Vector3(35, 4.5, 5.5), date: '1995-01-01' }, // Deep space
-  { pos: new THREE.Vector3(130, 16.0, 20.0), date: '2024-01-01' }, // Current approximate position
-];
+  const body = Astronomy.Body[bodyName];
+  if (!body) {
+    console.warn(`Body ${bodyName} not found in Astronomy engine`);
+    return new THREE.Vector3(0, 0, 0);
+  }
 
-// Pioneer 11 trajectory waypoints
-const pioneer11Waypoints = [
-  { pos: new THREE.Vector3(1.0, 0, -0.05), date: '1973-04-06' }, // Earth (launch)
-  { pos: new THREE.Vector3(4.0, -0.3, 0.3), date: '1974-06-01' }, // Approaching Jupiter
-  { pos: new THREE.Vector3(5.2, 0, 0.4), date: '1974-12-02' }, // Jupiter flyby
-  { pos: new THREE.Vector3(7.0, 0.4, 0.6), date: '1977-01-01' }, // Between Jupiter and Saturn
-  { pos: new THREE.Vector3(9.5, 0, 0.8), date: '1979-09-01' }, // Saturn flyby
-  { pos: new THREE.Vector3(15, -1.5, 1.5), date: '1985-01-01' }, // Continuing outward
-  { pos: new THREE.Vector3(110, -11.0, 11.0), date: '2024-01-01' }, // Current approximate position
-];
+  const vec = Astronomy.HelioVector(body, date);
+  // Convert Astronomy engine coordinates to Scene coordinates
+  // Astronomy: x=Equinox, y=90deg, z=North
+  // Scene: x=x, y=z, z=-y
+  return new THREE.Vector3(vec.x, vec.z, -vec.y);
+}
 
-// Galileo trajectory waypoints
-const galileoWaypoints = [
-  { pos: new THREE.Vector3(1.0, 0, 0), date: '1989-10-18' }, // Earth (launch)
-  { pos: new THREE.Vector3(0.7, -0.1, -0.05), date: '1990-02-10' }, // Venus flyby
-  { pos: new THREE.Vector3(1.0, 0.05, 0.1), date: '1990-12-08' }, // Earth flyby 1
-  { pos: new THREE.Vector3(2.0, 0.2, 0.2), date: '1991-10-29' }, // Gaspra flyby
-  { pos: new THREE.Vector3(1.0, -0.05, 0.15), date: '1992-12-08' }, // Earth flyby 2
-  { pos: new THREE.Vector3(3.5, 0.3, 0.4), date: '1994-01-01' }, // Approaching Jupiter
-  { pos: new THREE.Vector3(5.2, 0, 0.5), date: '1995-12-07' }, // Jupiter orbit insertion
-  // Orbital phase
-  { pos: new THREE.Vector3(5.3, 0.1, 0.5), date: '1996-06-01' },
-  { pos: new THREE.Vector3(5.2, 0, 0.6), date: '1997-01-01' },
-  { pos: new THREE.Vector3(5.1, -0.1, 0.5), date: '1998-01-01' },
-  { pos: new THREE.Vector3(5.2, 0, 0.4), date: '2003-09-21' }, // End of mission
-];
+// Helper to get exit vector for deep space missions
+function getExitVector(raHours, decDeg) {
+  const raRad = raHours * 15 * (Math.PI / 180);
+  const decRad = decDeg * (Math.PI / 180);
 
-// Cassini trajectory waypoints
-const cassiniWaypoints = [
-  { pos: new THREE.Vector3(1.0, 0, 0), date: '1997-10-15' }, // Earth (launch)
-  { pos: new THREE.Vector3(0.7, 0.1, 0), date: '1998-04-26' }, // Venus flyby 1
-  { pos: new THREE.Vector3(0.7, -0.1, 0.05), date: '1999-06-24' }, // Venus flyby 2
-  { pos: new THREE.Vector3(1.0, -0.2, 0.1), date: '1999-08-18' }, // Earth flyby
-  { pos: new THREE.Vector3(5.2, 0, 0.5), date: '2000-12-30' }, // Jupiter flyby
-  { pos: new THREE.Vector3(9.5, 0, 1.0), date: '2004-07-01' }, // Saturn orbit insertion
-  // Orbital phase
-  { pos: new THREE.Vector3(9.6, 0.2, 1.1), date: '2005-01-01' },
-  { pos: new THREE.Vector3(9.4, -0.2, 0.9), date: '2008-01-01' },
-  { pos: new THREE.Vector3(9.5, 0, 1.0), date: '2017-09-15' }, // End of mission
-];
+  // Spherical to Cartesian (Heliocentric)
+  // x = cos(dec) * cos(ra)
+  // y = cos(dec) * sin(ra)
+  // z = sin(dec)
+  const x = Math.cos(decRad) * Math.cos(raRad);
+  const y = Math.cos(decRad) * Math.sin(raRad);
+  const z = Math.sin(decRad);
 
-// New Horizons trajectory waypoints
-const newHorizonsWaypoints = [
-  { pos: new THREE.Vector3(1.0, 0, 0), date: '2006-01-19' }, // Earth (launch)
-  { pos: new THREE.Vector3(5.2, 0, 0.2), date: '2007-02-28' }, // Jupiter flyby
-  { pos: new THREE.Vector3(20.0, 0.5, 1.0), date: '2011-01-01' }, // Crossing Uranus orbit
-  { pos: new THREE.Vector3(30.0, 1.0, 1.5), date: '2014-08-01' }, // Crossing Neptune orbit
-  { pos: new THREE.Vector3(32.9, 1.5, 1.8), date: '2015-07-14' }, // Pluto flyby
-  { pos: new THREE.Vector3(43.0, 2.0, 2.2), date: '2019-01-01' }, // Arrokoth flyby
-  { pos: new THREE.Vector3(58.0, 3.0, 3.0), date: '2024-01-01' }, // Current position
-];
+  // Convert to Scene: X=x, Y=z, Z=-y
+  return new THREE.Vector3(x, z, -y);
+}
 
-// Parker Solar Probe trajectory (simplified)
-const parkerWaypoints = [
-  { pos: new THREE.Vector3(1.0, 0, 0), date: '2018-08-12' }, // Earth (launch)
-  { pos: new THREE.Vector3(0.7, 0, 0), date: '2018-10-03' }, // Venus flyby 1
-  { pos: new THREE.Vector3(0.2, 0, 0.05), date: '2018-11-06' }, // Perihelion 1
-  { pos: new THREE.Vector3(0.7, 0.1, 0), date: '2019-12-26' }, // Venus flyby 2
-  { pos: new THREE.Vector3(0.1, 0, 0.02), date: '2021-01-01' }, // Close approach
-  { pos: new THREE.Vector3(0.7, -0.1, 0), date: '2023-08-21' }, // Venus flyby 6
-  { pos: new THREE.Vector3(0.04, 0, 0.01), date: '2024-12-24' }, // Closest approach
-];
+// Custom orbital elements for bodies not in Astronomy Engine
+const customBodies = {
+  '67P': { a: 3.46, e: 0.641, i: 7.04, Omega: 50.1, w: 12.7, M: 303.7 }, // Comet 67P
+  Ulysses: { a: 3.37, e: 0.603, i: 79.1, Omega: 337.2, w: 22.4, M: 0 }, // Ulysses orbit approx
+  Arrokoth: { a: 44.58, e: 0.042, i: 2.45, Omega: 293.0, w: 323.0, M: 0 }, // Arrokoth
+};
 
-// Juno trajectory
-const junoWaypoints = [
-  { pos: new THREE.Vector3(1.0, 0, 0), date: '2011-08-05' }, // Earth (launch)
-  { pos: new THREE.Vector3(1.5, 0.1, 0), date: '2012-08-01' }, // Deep space maneuver
-  { pos: new THREE.Vector3(1.0, 0, 0.1), date: '2013-10-09' }, // Earth flyby
-  { pos: new THREE.Vector3(5.2, 0, 0.5), date: '2016-07-04' }, // Jupiter insertion
-  // Polar orbit loops (simplified)
-  { pos: new THREE.Vector3(5.2, 1.0, 0.5), date: '2017-01-01' },
-  { pos: new THREE.Vector3(5.2, -1.0, 0.5), date: '2018-01-01' },
-  { pos: new THREE.Vector3(5.2, 0.5, 0.5), date: '2024-01-01' },
-];
-
-// Rosetta trajectory
-const rosettaWaypoints = [
-  { pos: new THREE.Vector3(1.0, 0, 0), date: '2004-03-02' }, // Earth (launch)
-  { pos: new THREE.Vector3(1.0, 0.1, 0), date: '2005-03-04' }, // Earth flyby 1
-  { pos: new THREE.Vector3(1.5, 0.2, 0.1), date: '2007-02-25' }, // Mars flyby
-  { pos: new THREE.Vector3(1.0, -0.1, 0), date: '2007-11-13' }, // Earth flyby 2
-  { pos: new THREE.Vector3(2.3, 0.3, 0.2), date: '2008-09-05' }, // Steins flyby
-  { pos: new THREE.Vector3(1.0, 0, 0.1), date: '2009-11-13' }, // Earth flyby 3
-  { pos: new THREE.Vector3(3.0, 0.5, 0.4), date: '2010-07-10' }, // Lutetia flyby
-  { pos: new THREE.Vector3(3.5, 0.8, 0.6), date: '2014-08-06' }, // Comet 67P arrival
-  { pos: new THREE.Vector3(1.2, 0.2, 0.1), date: '2015-08-13' }, // Perihelion with comet
-  { pos: new THREE.Vector3(5.2, 1.0, 1.0), date: '2016-09-30' }, // End of mission
-];
-
-// Ulysses trajectory
-const ulyssesWaypoints = [
-  { pos: new THREE.Vector3(1.0, 0, 0), date: '1990-10-06' }, // Earth (launch)
-  { pos: new THREE.Vector3(5.2, 0, 0.5), date: '1992-02-08' }, // Jupiter flyby
-  // Solar polar orbit
-  { pos: new THREE.Vector3(2.0, 2.0, 0), date: '1994-06-01' }, // South pole pass
-  { pos: new THREE.Vector3(2.0, -2.0, 0), date: '1995-06-01' }, // North pole pass
-  { pos: new THREE.Vector3(5.2, 0, 0.5), date: '1998-01-01' }, // Aphelion
-  { pos: new THREE.Vector3(2.0, 2.0, 0), date: '2000-09-01' }, // South pole pass 2
-  { pos: new THREE.Vector3(2.0, -2.0, 0), date: '2001-09-01' }, // North pole pass 2
-  { pos: new THREE.Vector3(5.4, 0, 0.6), date: '2009-06-30' }, // End of mission
+// Mission Definitions
+const missionData = [
+  {
+    id: 'voyager1',
+    color: 0x00ffff,
+    exit: { ra: 17.2, dec: 12.1 }, // Ophiuchus
+    waypoints: [
+      { date: '1977-09-05', body: 'Earth' },
+      { date: '1979-03-05', body: 'Jupiter' },
+      { date: '1980-11-12', body: 'Saturn' },
+      { date: '2004-12-16', dist: 94, label: 'Termination Shock' },
+      { date: '2012-08-25', dist: 121, label: 'Heliopause' },
+      { date: '2024-01-01', dist: 162, label: 'Current' },
+    ],
+  },
+  {
+    id: 'voyager2',
+    color: 0xff00ff,
+    exit: { ra: 20.0, dec: -60.0 }, // Pavo/Telescopium
+    waypoints: [
+      { date: '1977-08-20', body: 'Earth' },
+      { date: '1979-07-09', body: 'Jupiter' },
+      { date: '1981-08-25', body: 'Saturn' },
+      { date: '1986-01-24', body: 'Uranus' },
+      { date: '1989-08-25', body: 'Neptune' },
+      { date: '2007-08-30', dist: 84, label: 'Termination Shock' },
+      { date: '2018-11-05', dist: 119, label: 'Heliopause' },
+      { date: '2024-01-01', dist: 136, label: 'Current' },
+    ],
+  },
+  {
+    id: 'pioneer10',
+    color: 0xffa500,
+    exit: { ra: 5.2, dec: 26.0 }, // Taurus
+    waypoints: [
+      { date: '1972-03-02', body: 'Earth' },
+      { date: '1973-12-04', body: 'Jupiter' },
+      { date: '1976-01-01', dist: 9.5, label: 'Saturn Orbit' }, // Approx crossing
+      { date: '1983-06-13', dist: 30.1, label: 'Neptune Orbit' }, // Approx crossing
+      { date: '2003-01-23', dist: 80, label: 'End of Comms' },
+      { date: '2024-01-01', dist: 135, label: 'Current' },
+    ],
+  },
+  {
+    id: 'pioneer11',
+    color: 0x00ff00,
+    exit: { ra: 18.8, dec: -8.0 }, // Scutum
+    waypoints: [
+      { date: '1973-04-06', body: 'Earth' },
+      { date: '1974-12-02', body: 'Jupiter' },
+      { date: '1979-09-01', body: 'Saturn' },
+      { date: '1995-11-24', dist: 44, label: 'End of Comms' },
+      { date: '2024-01-01', dist: 113, label: 'Current' },
+    ],
+  },
+  {
+    id: 'galileo',
+    color: 0xffd700,
+    waypoints: [
+      { date: '1989-10-18', body: 'Earth' },
+      { date: '1990-02-10', body: 'Venus' },
+      { date: '1990-12-08', body: 'Earth' },
+      { date: '1991-10-29', label: 'Gaspra' }, // Interpolated
+      { date: '1992-12-08', body: 'Earth' },
+      { date: '1993-08-28', label: 'Ida' }, // Interpolated
+      { date: '1995-12-07', body: 'Jupiter' },
+      { date: '2003-09-21', body: 'Jupiter' }, // End
+    ],
+  },
+  {
+    id: 'cassini',
+    color: 0x0088ff,
+    waypoints: [
+      { date: '1997-10-15', body: 'Earth' },
+      { date: '1998-04-26', body: 'Venus' },
+      { date: '1999-06-24', body: 'Venus' },
+      { date: '1999-08-18', body: 'Earth' },
+      { date: '2000-12-30', body: 'Jupiter' },
+      { date: '2004-07-01', body: 'Saturn' },
+      { date: '2017-09-15', body: 'Saturn' },
+    ],
+  },
+  {
+    id: 'newHorizons',
+    color: 0xffffff,
+    exit: { ra: 19.9, dec: -20.0 }, // Sagittarius
+    waypoints: [
+      { date: '2006-01-19', body: 'Earth' },
+      { date: '2007-02-28', body: 'Jupiter' },
+      { date: '2015-07-14', body: 'Pluto' },
+      { date: '2019-01-01', customBody: 'Arrokoth' },
+      { date: '2024-01-01', dist: 58, label: 'Current' },
+    ],
+  },
+  {
+    id: 'parkerSolarProbe',
+    color: 0xff4500,
+    waypoints: [
+      { date: '2018-08-12', body: 'Earth' },
+      { date: '2018-10-03', body: 'Venus' },
+      { date: '2018-11-06', label: 'Perihelion 1', pos: new THREE.Vector3(0.16, 0, 0) }, // ~35 solar radii
+      { date: '2019-12-26', body: 'Venus' },
+      { date: '2020-07-11', body: 'Venus' },
+      { date: '2021-02-20', body: 'Venus' },
+      { date: '2021-10-16', body: 'Venus' },
+      { date: '2023-08-21', body: 'Venus' },
+      { date: '2024-11-06', body: 'Venus' },
+      { date: '2024-12-24', label: 'Closest', pos: new THREE.Vector3(0.04, 0, 0) }, // ~9 solar radii
+    ],
+  },
+  {
+    id: 'juno',
+    color: 0xff69b4,
+    waypoints: [
+      { date: '2011-08-05', body: 'Earth' },
+      { date: '2013-10-09', body: 'Earth' },
+      { date: '2016-07-04', body: 'Jupiter' },
+      { date: '2021-06-07', body: 'Jupiter', label: 'Ganymede Flyby' }, // Simplified to Jupiter pos
+      { date: '2022-09-29', body: 'Jupiter', label: 'Europa Flyby' },
+      { date: '2023-12-30', body: 'Jupiter', label: 'Io Flyby' },
+      { date: '2024-01-01', body: 'Jupiter' },
+    ],
+  },
+  {
+    id: 'rosetta',
+    color: 0x8a2be2,
+    waypoints: [
+      { date: '2004-03-02', body: 'Earth' },
+      { date: '2005-03-04', body: 'Earth' },
+      { date: '2007-02-25', body: 'Mars' },
+      { date: '2007-11-13', body: 'Earth' },
+      { date: '2008-09-05', label: 'Steins' }, // Interpolated
+      { date: '2009-11-13', body: 'Earth' },
+      { date: '2010-07-10', label: 'Lutetia' }, // Interpolated
+      { date: '2014-08-06', customBody: '67P' },
+      { date: '2016-09-30', customBody: '67P' },
+    ],
+  },
+  {
+    id: 'ulysses',
+    color: 0xffff00,
+    waypoints: [
+      { date: '1990-10-06', body: 'Earth' },
+      { date: '1992-02-08', body: 'Jupiter' },
+      { date: '1994-06-26', customBody: 'Ulysses' }, // South pole
+      { date: '1995-06-19', customBody: 'Ulysses' }, // North pole
+      { date: '2000-09-08', customBody: 'Ulysses' }, // South pole 2
+      { date: '2001-08-31', customBody: 'Ulysses' }, // North pole 2
+      { date: '2007-02-07', customBody: 'Ulysses' }, // South pole 3
+      { date: '2008-01-14', customBody: 'Ulysses' }, // North pole 3
+      { date: '2009-06-30', customBody: 'Ulysses' },
+    ],
+  },
 ];
 
 const missionLines = {};
@@ -163,22 +226,96 @@ const missionLines = {};
  * @param {THREE.Scene} scene - The Three.js scene
  */
 export function initializeMissions(scene) {
-  const missions = [
-    { id: 'voyager1', waypoints: voyager1Waypoints, color: 0x00ffff }, // Cyan
-    { id: 'voyager2', waypoints: voyager2Waypoints, color: 0xff00ff }, // Magenta
-    { id: 'pioneer10', waypoints: pioneer10Waypoints, color: 0xffa500 }, // Orange
-    { id: 'pioneer11', waypoints: pioneer11Waypoints, color: 0x00ff00 }, // Lime Green
-    { id: 'galileo', waypoints: galileoWaypoints, color: 0xffd700 }, // Gold
-    { id: 'cassini', waypoints: cassiniWaypoints, color: 0x0088ff }, // Azure
-    { id: 'newHorizons', waypoints: newHorizonsWaypoints, color: 0xffffff }, // White
-    { id: 'parkerSolarProbe', waypoints: parkerWaypoints, color: 0xff4500 }, // OrangeRed
-    { id: 'juno', waypoints: junoWaypoints, color: 0xff69b4 }, // HotPink
-    { id: 'rosetta', waypoints: rosettaWaypoints, color: 0x8a2be2 }, // BlueViolet
-    { id: 'ulysses', waypoints: ulyssesWaypoints, color: 0xffff00 }, // Yellow
-  ];
+  missionData.forEach((mission) => {
+    // Calculate positions for all waypoints
+    const calculatedWaypoints = mission.waypoints.map((wp, index) => {
+      // 1. If it has a body, calculate position
+      if (wp.body) {
+        const pos = getBodyPosition(wp.body, wp.date);
+        return { pos, date: new Date(wp.date).getTime() };
+      }
 
-  missions.forEach((mission) => {
-    const points = createSmoothPath(mission.waypoints, 200);
+      // 2. If it has a custom body (orbital elements)
+      if (wp.customBody && customBodies[wp.customBody]) {
+        const pos = getBodyPosition(null, wp.date, customBodies[wp.customBody]);
+        return { pos, date: new Date(wp.date).getTime() };
+      }
+
+      // 3. If it has a manual position
+      if (wp.pos) {
+        return { pos: wp.pos, date: new Date(wp.date).getTime() };
+      }
+
+      // 4. If it's a Deep Space point (dist defined)
+      if (wp.dist) {
+        return { type: 'exit', dist: wp.dist, date: new Date(wp.date).getTime() };
+      }
+
+      // 5. Intermediate point without body (Gaspra, Ida)
+      return { type: 'interpolate', date: new Date(wp.date).getTime() };
+    });
+
+    // Second pass to resolve 'exit' and 'interpolate'
+    const finalPoints = [];
+
+    for (let i = 0; i < calculatedWaypoints.length; i++) {
+      const wp = calculatedWaypoints[i];
+
+      if (wp.pos) {
+        finalPoints.push({ pos: wp.pos, date: wp.date });
+      } else if (wp.type === 'exit') {
+        // For exit points, we need the direction.
+        // If mission has exit vector defined, use it.
+        if (mission.exit) {
+          const exitVec = getExitVector(mission.exit.ra, mission.exit.dec);
+          const pos = exitVec.multiplyScalar(wp.dist);
+          finalPoints.push({ pos, date: wp.date });
+        } else {
+          // If no exit vector (e.g. Pioneer 10 intermediate points), we need to be smarter.
+          // For Pioneer 10/11, the intermediate points are just distance markers along the path.
+          // We should interpolate direction from previous known points or use the final exit vector.
+          // Let's assume the exit vector applies to all "dist" points for simplicity,
+          // or interpolate if we are between known positions.
+
+          // Actually, for Pioneer 10, we have Earth -> Jupiter -> Saturn Orbit -> Neptune Orbit -> End.
+          // Saturn/Neptune orbit crossings are just distances.
+          // We can use the exit vector for all of them if they are post-Jupiter.
+          if (mission.exit) {
+            const exitVec = getExitVector(mission.exit.ra, mission.exit.dec);
+            const pos = exitVec.multiplyScalar(wp.dist);
+            finalPoints.push({ pos, date: wp.date });
+          } else {
+            finalPoints.push({ pos: new THREE.Vector3(0, 0, 0), date: wp.date });
+          }
+        }
+      } else if (wp.type === 'interpolate') {
+        // Find previous and next known points
+        let prev = finalPoints[i - 1];
+        let next = null;
+        // Search forward for next known point
+        for (let j = i + 1; j < calculatedWaypoints.length; j++) {
+          if (calculatedWaypoints[j].pos) {
+            next = calculatedWaypoints[j];
+            break;
+          }
+        }
+
+        if (prev && next) {
+          // Time-based interpolation
+          const totalTime = next.date - prev.date;
+          const elapsedTime = wp.date - prev.date;
+          const alpha = elapsedTime / totalTime;
+
+          const pos = new THREE.Vector3().lerpVectors(prev.pos, next.pos, alpha);
+          finalPoints.push({ pos, date: wp.date });
+        } else {
+          // Fallback if interpolation fails
+          finalPoints.push({ pos: new THREE.Vector3(0, 0, 0), date: wp.date });
+        }
+      }
+    }
+
+    const points = createSmoothPath(finalPoints, 200);
     const geometry = new THREE.BufferGeometry().setFromPoints(
       points.map((p) => p.multiplyScalar(AU_TO_SCENE))
     );

@@ -11,7 +11,7 @@ Just another solar system simulator - follow the white rabbit! An interactive 3D
 - **Constellations**: Toggle zodiac constellations and all 88 astronomical constellations with accurate star-to-star connections
 - **Adjustable Scaling**: Artistic (500x planets, 20x sun, 100x moon orbits) or Realistic (1x) preset modes
 - **Focus Mode**: Double-click any celestial body to follow it with the camera
-- **Mission Trajectories**: Visualize the paths of historic space missions (Voyager 1 & 2, Pioneer 10 & 11, Galileo, Cassini, New Horizons, Parker Solar Probe, Juno, Rosetta, Ulysses)
+- **Mission Trajectories**: Visualize the paths of historic space missions with **dynamically calculated trajectories** based on actual launch and encounter dates (Voyager 1 & 2, Pioneer 10 & 11, Galileo, Cassini, New Horizons, Parker Solar Probe, Juno, Rosetta, Ulysses)
 - **Axis Visualization**: Toggle rotation axes for all celestial bodies
 - **Interactive Controls**: Camera controls, time speed adjustment, orbit visualization, and dynamic scaling
 - **Moon Systems**: Detailed representation of Earth's Moon, Jupiter's Galilean moons, Saturn's major moons, and more

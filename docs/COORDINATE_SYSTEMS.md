@@ -54,3 +54,25 @@ The simulation supports toggling between two reference planes. This is achieved 
 Zodiac constellations are defined by lines connecting specific stars.
 - **Alignment**: The zodiac signs (sprites) are positioned at the centroid of their respective constellations.
 - **Visual Check**: In **Ecliptic Mode**, the Zodiac constellations should align horizontally with the grid/ground plane.
+
+## 5. Mission Trajectories
+
+Space mission trajectories are visualized by calculating the positions of spacecraft at key dates.
+
+### Waypoint Calculation
+Instead of using static 3D coordinates, mission paths are defined by a series of **Waypoints**:
+- **Date**: The specific date of the event (launch, flyby, orbit insertion).
+- **Target Body**: The celestial body being visited (e.g., Earth, Jupiter).
+
+For each waypoint:
+1. The **Heliocentric Position** of the target body is calculated for the specific date using `astronomy-engine`.
+2. This position is transformed into **Scene Coordinates** (see Section 2).
+3. A smooth 3D curve (`CatmullRomCurve3`) is generated through these points.
+
+### Deep Space & Exit Vectors
+For missions leaving the solar system (Voyager, Pioneer, New Horizons), the final trajectory is determined by an **Exit Vector**:
+- Defined by **Right Ascension (RA)** and **Declination (Dec)** of the spacecraft's asymptotic velocity vector.
+- This vector is converted to Cartesian coordinates and scaled to the current distance of the spacecraft.
+
+### Interpolation
+For intermediate points without a major planetary body (e.g., asteroid flybys like Gaspra or Ida), the position is **interpolated** based on time between the previous and next known planetary positions, ensuring a smooth path that respects the orbital mechanics of the transfer orbit.
