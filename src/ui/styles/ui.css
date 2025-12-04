@@ -1,0 +1,231 @@
+/* UI Styles */
+
+/* --- Menu Dock --- */
+.menu-dock {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  padding: 10px 20px;
+  background: rgba(10, 10, 15, 0.4);
+  backdrop-filter: none;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 2000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.dock-item {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 20px;
+  user-select: none;
+}
+
+.dock-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+  color: #fff;
+}
+
+.dock-item.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: #44aaff;
+  box-shadow: 0 0 10px rgba(68, 170, 255, 0.3);
+}
+
+/* --- Windows --- */
+/* --- Windows --- */
+.ui-window {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: rgba(10, 10, 15, 0.4); /* Much more transparent */
+  backdrop-filter: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  /* transform is set via JS for positioning */
+  transition: background 0.2s;
+  font-family: var(--font-family);
+}
+
+.ui-window:hover {
+  background: rgba(15, 15, 20, 0.6); /* Slightly less transparent on hover */
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Removed .window-header and .window-title */
+
+.window-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.3);
+  transition: color 0.2s;
+  z-index: 10;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.window-close:hover {
+  color: #ff5555;
+}
+
+.window-content {
+  padding: 20px 16px 16px 16px; /* More top padding for close button space */
+  color: #eee;
+  font-size: 13px;
+}
+
+/* --- Specific Window Styles --- */
+
+/* Time & Speed Window */
+.time-window-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.time-display {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: #aaccff;
+  text-align: center;
+  width: 100%;
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+/* Reuse existing speedometer styles but scope them if needed */
+/* The existing styles in index.css or injected by JS might need adjustment */
+/* Speedometer Styles */
+.ui-window .speedometer-container {
+  position: relative;
+  width: 200px;
+  height: 100px; /* Half circle */
+  margin: 10px 0;
+  overflow: hidden;
+  display: block; /* Ensure it's not flex centering from gui.css if that causes issues */
+}
+
+.ui-window .gauge-arc {
+  position: absolute;
+  top: 0; /* Changed from bottom: 0 to show top half */
+  left: 0;
+  width: 100%;
+  height: 200%; /* Double height for semi-circle */
+  border: 10px solid rgba(255, 255, 255, 0.1);
+  border-bottom: none;
+  border-radius: 50%; /* Full circle, clipped by container */
+  transform-origin: center center; /* Center of the circle */
+  box-sizing: border-box;
+  background: transparent;
+  box-shadow: none;
+}
+
+.ui-window .gauge-needle {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  height: 90px;
+  background: #ff5555;
+  transform-origin: center bottom;
+  transform: rotate(0deg); /* Updated by JS */
+  transition: transform 0.1s ease-out;
+  border-radius: 2px;
+  z-index: 2;
+  box-shadow: none; /* Reset gui.css */
+}
+
+.ui-window .digital-speed {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  color: #aaccff;
+  z-index: 3;
+  pointer-events: none;
+  text-shadow: none; /* Reset gui.css */
+}
+
+.ui-window .speedometer-interaction {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.control-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #eee;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  user-select: none;
+  transition: all 0.2s;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.control-btn.active {
+  background: rgba(68, 170, 255, 0.3);
+  border-color: #44aaff;
+  color: #fff;
+}
+
+/* Object Info Window */
+
+.ui-window .tooltip-container {
+  /* Reset some tooltip styles that might interfere when inside a window */
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  backdrop-filter: none;
+}
+
+.ui-window .tooltip-header {
+  color: #aaccff;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-align: left;
+}

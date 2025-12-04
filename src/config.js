@@ -37,7 +37,7 @@ export const config = {
   showDwarfPlanetOrbits: true,
   showMoonOrbits: true,
   showAxes: false,
-  showTooltips: true,
+  objectInfoMode: 'window', // 'tooltip', 'window', 'off'
   coordinateSystem: 'Heliocentric', // 'Heliocentric', 'Geocentric', 'Barycentric', 'Tychonic'
   referencePlane: 'Ecliptic', // 'Equatorial' or 'Ecliptic'
   showZodiacs: false, // Constellation lines

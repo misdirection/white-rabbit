@@ -1,0 +1,40 @@
+:root {
+  /* Colors */
+  --bg-color: #000000;
+  --panel-bg: rgba(10, 15, 20, 0.85);
+  --panel-border: rgba(0, 255, 255, 0.3);
+  --panel-border-hover: rgba(0, 255, 255, 0.6);
+
+  --text-primary: #e0f0ff;
+  --text-secondary: #88aacc;
+  --text-highlight: #ffffff;
+
+  --accent-color: #00ffff;
+  --accent-secondary: #00ccff;
+  --accent-tertiary: #0088aa;
+
+  --success-color: #44ff88;
+  --warning-color: #ffcc00;
+  --danger-color: #ff4444;
+
+  /* Typography */
+  --font-family: "Outfit", "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "Space Mono", "Consolas", "Monaco", monospace;
+  --font-size-base: 14px;
+  --font-size-sm: 12px;
+  --font-size-lg: 16px;
+
+  /* Layout */
+  --border-radius: 6px;
+  --border-radius-sm: 4px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+
+  /* Effects */
+  --backdrop-blur: blur(8px);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.5);
+  --glow-accent: 0 0 8px rgba(0, 255, 255, 0.3);
+}

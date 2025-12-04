@@ -1,16 +1,145 @@
 /* Tooltip styles */
-
 .tooltip {
   position: absolute;
-  background: rgba(0, 0, 0, 0.8);
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
+  background: var(--panel-bg);
+  color: var(--text-primary);
+  padding: 0; /* Padding handled by container */
+  border-radius: var(--border-radius);
   pointer-events: none;
   display: none;
-  font-size: 0.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: var(--font-size-base);
+  border: 1px solid var(--panel-border);
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: var(--backdrop-blur);
+  box-shadow: var(--shadow-md);
   line-height: 1.4;
+  font-family: var(--font-family);
+  min-width: 240px;
+  overflow: hidden;
+}
+
+.tooltip-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.tooltip-header {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--panel-border);
+  font-weight: 600;
+  font-size: 1.1em;
+  color: var(--accent-color);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.tooltip-content {
+  padding: 8px 12px;
+}
+
+.tooltip-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 0.9em;
+}
+
+.tooltip-row:last-child {
+  margin-bottom: 0;
+}
+
+.tooltip-label {
+  color: var(--text-secondary);
+  margin-right: 12px;
+}
+
+.tooltip-value {
+  color: var(--text-primary);
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+.tooltip-divider {
+  height: 1px;
+  background: var(--panel-border);
+  margin: 8px 0;
+  opacity: 0.5;
+}
+
+.tooltip-live-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--panel-border);
+  background: rgba(0, 255, 255, 0.05);
+  padding: 8px 12px;
+  margin: 8px -12px -8px -12px; /* Top, Right, Bottom, Left */
+}
+
+.tooltip-live-title {
+  color: var(--accent-secondary);
+  font-size: 0.85em;
+  font-weight: bold;
+  margin-bottom: 4px;
+  display: block;
+  text-transform: uppercase;
+}
+
+/* Movable Info Window */
+.info-window {
+  position: absolute;
+  top: 70px;
+  left: 20px;
+  width: 300px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  backdrop-filter: var(--backdrop-blur);
+  box-shadow: var(--shadow-md);
+  z-index: 999; /* Below tooltip but above scene */
+  display: none;
+  overflow: hidden;
+}
+
+.info-window-header {
+  background: rgba(0, 0, 0, 0.6);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--panel-border);
+  font-weight: 600;
+  color: var(--accent-color);
+  cursor: move; /* Indicates draggable */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+
+.info-window-close {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 1.2em;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.info-window-close:hover {
+  color: var(--danger-color);
+}
+
+.info-window-content {
+  padding: 0; /* Content padding handled by tooltip-container */
+}
+
+/* Reuse tooltip styles for content */
+.info-window .tooltip-container {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.info-window .tooltip-header {
+  display: none; /* Hide duplicate header if we use window header */
 }

@@ -36,6 +36,7 @@ import { alignZodiacSigns, createZodiacSigns } from './systems/zodiacSigns.js';
 import { updateCoordinateSystem } from './systems/coordinates.js';
 import { setupGUI, updateUI } from './ui/gui.js';
 import { musicSystem } from './systems/music.js';
+import './ui/styles/ui.css'; // Import UI styles
 
 // --- Init ---
 (async () => {

@@ -2,6 +2,7 @@ import * as Astronomy from 'astronomy-engine';
 import * as THREE from 'three';
 import { config } from '../config.js';
 import { Logger } from '../utils/logger.js';
+import { windowManager } from '../ui/WindowManager.js';
 
 const SCREEN_HIT_RADIUS = 10; // Pixels on screen for hit detection
 
@@ -23,6 +24,24 @@ export function setupTooltipSystem(
   constellationsGroup
 ) {
   const tooltip = document.getElementById('tooltip');
+
+  // const tooltip = document.getElementById('tooltip'); // Removed duplicate
+
+  // Create Info Window via WindowManager
+  const infoWindowObj = windowManager.createWindow('object-info', 'Object Info', {
+    x: 20,
+    y: 20,
+    width: '300px',
+    onClose: () => {
+      // Optional: Update config or dock state if needed
+      // config.objectInfoMode = 'off'; // Maybe?
+    },
+  });
+
+  // We don't need to manually append or handle drag anymore.
+  // infoWindowObj.element is the window DOM element.
+  const infoWindow = infoWindowObj.element; // Keep reference for existing logic checking .info-window class
+
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
 
@@ -35,16 +54,22 @@ export function setupTooltipSystem(
     const mouseX = event.clientX;
     const mouseY = event.clientY;
 
-    // Block tooltips if hovering over the GUI
-    if (event.target.closest('.lil-gui')) {
-      tooltip.style.display = 'none';
+    // Block tooltips if hovering over the GUI or Info Window
+    if (
+      event.target.closest('.lil-gui') ||
+      (event.target.closest('.info-window') && config.objectInfoMode === 'window')
+    ) {
+      if (config.objectInfoMode === 'tooltip') {
+        tooltip.style.display = 'none';
+      }
       document.body.style.cursor = 'default';
       return;
     }
 
-    // Check if tooltips are enabled
-    if (!config.showTooltips) {
+    // Check Mode
+    if (config.objectInfoMode === 'off') {
       tooltip.style.display = 'none';
+      infoWindow.style.display = 'none';
       document.body.style.cursor = 'default';
       return;
     }
@@ -219,38 +244,77 @@ export function setupTooltipSystem(
       });
     }
 
-    // Display tooltip based on object type
+    // Display based on mode
     if (closestObject) {
-      tooltip.innerHTML = formatTooltip(closestObject);
-      tooltip.style.display = 'block';
       document.body.style.cursor = 'pointer';
+      const content = formatTooltip(closestObject);
 
-      // Smart positioning to keep tooltip on screen
-      const tooltipWidth = tooltip.offsetWidth;
-      const tooltipHeight = tooltip.offsetHeight;
-      const margin = 15;
+      if (config.objectInfoMode === 'tooltip') {
+        tooltip.innerHTML = content;
+        tooltip.style.display = 'block';
+        infoWindow.style.display = 'none';
 
-      let left = mouseX + margin;
-      let top = mouseY + margin;
+        // Smart positioning to keep tooltip on screen
+        const tooltipWidth = tooltip.offsetWidth;
+        const tooltipHeight = tooltip.offsetHeight;
+        const margin = 15;
 
-      // Check right edge
-      if (left + tooltipWidth > window.innerWidth) {
-        left = mouseX - tooltipWidth - margin;
+        let left = mouseX + margin;
+        let top = mouseY + margin;
+
+        // Check right edge
+        if (left + tooltipWidth > window.innerWidth) {
+          left = mouseX - tooltipWidth - margin;
+        }
+
+        // Check bottom edge
+        if (top + tooltipHeight > window.innerHeight) {
+          top = mouseY - tooltipHeight - margin;
+        }
+
+        // Ensure it doesn't go off top/left
+        if (left < 0) left = margin;
+        if (top < 0) top = margin;
+
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+      } else if (config.objectInfoMode === 'window') {
+        tooltip.style.display = 'none';
+        windowManager.showWindow('object-info');
+
+        // Update window content
+        infoWindowObj.content.innerHTML = content;
+
+        // Update Title
+        let title = 'Object Info';
+        if (closestObject.type === 'planet' || closestObject.type === 'moon')
+          title = closestObject.data.name;
+        else if (closestObject.type === 'sun') title = 'Sun';
+        else if (closestObject.type === 'star')
+          title = closestObject.data.name || `HD ${closestObject.data.id}`;
+        else if (closestObject.type === 'constellation') title = closestObject.data.id;
+
+        infoWindowObj.header.querySelector('.window-title').textContent = title;
       }
-
-      // Check bottom edge
-      if (top + tooltipHeight > window.innerHeight) {
-        top = mouseY - tooltipHeight - margin;
-      }
-
-      // Ensure it doesn't go off top/left
-      if (left < 0) left = margin;
-      if (top < 0) top = margin;
-
-      tooltip.style.left = `${left}px`;
-      tooltip.style.top = `${top}px`;
     } else {
       tooltip.style.display = 'none';
+      // Don't hide window if it's open?
+      // User request: "shows what was otherwise in the tooltip".
+      // If nothing is hovered, tooltip hides.
+      // Should window hide? Or just show "No Selection"?
+      // Let's hide it for now to match tooltip behavior, or maybe keep it but empty?
+      // "Movable" implies it persists. But if it only updates on hover...
+      // Let's keep it visible but maybe dim or show "Hover an object".
+      // Actually, if it disappears, you can't move it easily.
+      // Let's keep it visible if it was already visible?
+      // No, let's hide it if nothing is hovered, similar to tooltip, BUT
+      // if the user wants a persistent window, they probably want it to stay.
+      // Let's try: Hide if nothing hovered.
+      if (config.objectInfoMode === 'window') {
+        // windowManager.hideWindow('object-info'); // Uncomment to auto-hide
+        // If we don't hide it, it shows the last hovered object. That's actually quite nice.
+        // Let's keep the last object info!
+      }
       document.body.style.cursor = 'default';
     }
   });
@@ -293,13 +357,17 @@ function getObjectData(mesh, planets, sun) {
  * @returns {string} HTML string
  */
 function buildTooltip(title, fields, liveSection = null) {
-  let html = `<div style="min-width: 200px;">`;
-  html += `<strong style="font-size: 1.1em;">${title}</strong><br>`;
+  let html = `<div class="tooltip-container">`;
+  html += `<div class="tooltip-header">${title}</div>`;
+  html += `<div class="tooltip-content">`;
 
   if (fields.length > 0) {
-    html += `<hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.2); margin: 5px 0;">`;
     fields.forEach((field) => {
-      html += `<strong>${field.label}:</strong> ${field.value}<br>`;
+      html += `
+        <div class="tooltip-row">
+          <span class="tooltip-label">${field.label}</span>
+          <span class="tooltip-value">${field.value}</span>
+        </div>`;
     });
   }
 
@@ -307,7 +375,7 @@ function buildTooltip(title, fields, liveSection = null) {
     html += liveSection;
   }
 
-  html += `</div>`;
+  html += `</div></div>`;
   return html;
 }
 
@@ -359,12 +427,24 @@ function calculatePlanetLiveData(data) {
  */
 function formatLiveDataSection(liveData) {
   return `
-        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.05); padding: 5px; border-radius: 4px;">
-            <strong style="color: #aaf;">LIVE DATA</strong><br>
-            <strong>True Anomaly:</strong> ${liveData.trueAnomaly}°<br>
-            <strong>Heliocentric Velocity:</strong> ${liveData.velocity} km/s<br>
-            <strong>Distance to Earth:</strong> ${liveData.distanceAU} AU<br>
-            <strong>Light Time:</strong> ${liveData.lightTime} min<br>
+        <div class="tooltip-live-section">
+            <span class="tooltip-live-title">Live Data</span>
+            <div class="tooltip-row">
+                <span class="tooltip-label">True Anomaly</span>
+                <span class="tooltip-value">${liveData.trueAnomaly}°</span>
+            </div>
+            <div class="tooltip-row">
+                <span class="tooltip-label">Helio Vel</span>
+                <span class="tooltip-value">${liveData.velocity} km/s</span>
+            </div>
+            <div class="tooltip-row">
+                <span class="tooltip-label">Dist to Earth</span>
+                <span class="tooltip-value">${liveData.distanceAU} AU</span>
+            </div>
+            <div class="tooltip-row">
+                <span class="tooltip-label">Light Time</span>
+                <span class="tooltip-value">${liveData.lightTime} min</span>
+            </div>
         </div>
     `;
 }

@@ -1,53 +1,26 @@
-import { addValueDisplay } from './utils.js';
+import { windowManager } from '../WindowManager.js';
 
-export function setupTimeFolder(gui, uiState, config) {
-  const timeFolder = gui.addFolder('Time & Speed');
-  timeFolder.domElement.classList.add('time-folder');
+export function setupTimeFolder(_gui, uiState, config) {
+  // Create Time Window
+  const timeWindowObj = windowManager.createWindow('time-window', 'Time & Speed', {
+    x: 20,
+    y: window.innerHeight - 280, // Position lower left, aligned with dock margin
+    width: '250px',
+    onClose: () => {
+      // Optional: toggle dock state
+    },
+  });
 
-  const dateCtrl = timeFolder
-    .add(uiState, 'date')
-    .name('Date')
-    .onChange((val) => {
-      const [year, month, day] = val.split('-').map(Number);
-      // Create new date from selected YYYY-MM-DD
-      // Maintain current time of day
-      const current = config.date;
-      config.date = new Date(
-        year,
-        month - 1,
-        day,
-        current.getHours(),
-        current.getMinutes(),
-        current.getSeconds()
-      );
-    });
-  dateCtrl.domElement.classList.add('compact-ctrl');
+  const content = timeWindowObj.content;
+  content.classList.add('time-window-content');
 
-  // Hack to make it a date input
-  const dateInput = dateCtrl.domElement.querySelector('input');
-  dateInput.type = 'date';
-  const timeCtrl = timeFolder.add(uiState, 'time').name('Time');
-  timeCtrl.disable();
-  timeCtrl.domElement.classList.add('compact-ctrl');
-
-  const stardateCtrl = timeFolder.add(uiState, 'stardate').name('Stardate');
-  stardateCtrl.disable();
-
-  uiState.setNow = () => {
-    config.date = new Date();
-  };
-  const setNowCtrl = timeFolder.add(uiState, 'setNow').name('NOW');
-  setNowCtrl.domElement.classList.add('set-now-btn');
-
-  // Add a dummy controller for the "Speed" label
-  const speedLabel = { speed: '' };
-  const speedCtrl = timeFolder.add(speedLabel, 'speed').name('Speed');
-  speedCtrl.domElement.querySelector('input').style.display = 'none'; // Hide input
-  speedCtrl.domElement.classList.add('speed-label-row');
+  // --- Date/Time Display ---
+  const dateDisplay = document.createElement('div');
+  dateDisplay.className = 'time-display';
+  dateDisplay.textContent = uiState.date; // Initial
+  content.appendChild(dateDisplay);
 
   // --- Speedometer & Controls ---
-
-  // Container for Speedometer
   const speedometerContainer = document.createElement('div');
   speedometerContainer.className = 'speedometer-container';
   speedometerContainer.innerHTML = `
@@ -56,8 +29,8 @@ export function setupTimeFolder(gui, uiState, config) {
         <div class="digital-speed">0x</div>
         <div class="speedometer-interaction"></div>
     `;
+  content.appendChild(speedometerContainer);
 
-  // Container for Buttons
   const controlsContainer = document.createElement('div');
   controlsContainer.className = 'control-buttons';
 
@@ -77,60 +50,36 @@ export function setupTimeFolder(gui, uiState, config) {
     b.onclick = () => handleControlClick(btn.action);
     controlsContainer.appendChild(b);
   });
+  content.appendChild(controlsContainer);
 
-  // Insert into DOM
-  const childrenContainer = timeFolder.domElement.querySelector('.children');
-  // Append to the end
-  childrenContainer.appendChild(speedometerContainer);
-  childrenContainer.appendChild(controlsContainer);
-
-  // --- Logic ---
-
+  // --- Logic (Reused) ---
   const needle = speedometerContainer.querySelector('.gauge-needle');
   const digitalDisplay = speedometerContainer.querySelector('.digital-speed');
   const interactionZone = speedometerContainer.querySelector('.speedometer-interaction');
 
   function formatSpeed(speed) {
     if (speed === 0) return 'PAUSED';
-
     const absSpeed = Math.abs(speed);
     let label = '';
-
-    if (absSpeed >= 1e9) {
-      // Billions - no decimals
-      label = Math.round(absSpeed / 1e9).toLocaleString() + ' b';
-    } else if (absSpeed >= 1e6) {
-      // Millions - no decimals
-      label = Math.round(absSpeed / 1e6).toLocaleString() + ' m';
-    } else if (absSpeed >= 100) {
-      // 100x and above - no decimals
-      label = Math.round(absSpeed).toLocaleString() + 'x';
-    } else if (absSpeed >= 10) {
-      // 10x to 100x - one decimal place
-      label = absSpeed.toFixed(1) + 'x';
-    } else {
-      // Below 10x - two decimal places
-      label = absSpeed.toFixed(2) + 'x';
-    }
-
+    if (absSpeed >= 1e9) label = Math.round(absSpeed / 1e9).toLocaleString() + ' b';
+    else if (absSpeed >= 1e6) label = Math.round(absSpeed / 1e6).toLocaleString() + ' m';
+    else if (absSpeed >= 100) label = Math.round(absSpeed).toLocaleString() + 'x';
+    else if (absSpeed >= 10) label = absSpeed.toFixed(1) + 'x';
+    else label = absSpeed.toFixed(2) + 'x';
     return label;
   }
 
   function updateSpeedometer() {
     const speed = config.simulationSpeed;
     let angle = 0;
-
     if (speed !== 0) {
       const sign = Math.sign(speed);
       const absSpeed = Math.abs(speed);
       const exponent = Math.log10(absSpeed);
-      const clampedExp = Math.max(0, Math.min(11, exponent));
-      angle = (clampedExp / 11) * 90 * sign;
+      const clampedExp = Math.max(0, Math.min(10, exponent));
+      angle = (clampedExp / 10) * 90 * sign;
     }
-
     needle.style.transform = `rotate(${angle}deg)`;
-
-    // Update Digital Display
     if (speed === 0) {
       digitalDisplay.textContent = 'PAUSED';
       digitalDisplay.style.color = '#ffaa88';
@@ -138,8 +87,6 @@ export function setupTimeFolder(gui, uiState, config) {
       digitalDisplay.textContent = formatSpeed(speed);
       digitalDisplay.style.color = '#aaccff';
     }
-
-    // Update active buttons
     controlsContainer.querySelectorAll('.control-btn').forEach((b) => {
       b.classList.remove('active');
       const action = b.dataset.action;
@@ -147,41 +94,28 @@ export function setupTimeFolder(gui, uiState, config) {
       if (action === 'play' && speed === 1) b.classList.add('active');
       if (action === 'reverse' && speed === -1) b.classList.add('active');
     });
+
+    // Update Date Display
+    dateDisplay.textContent = uiState.date + ' ' + uiState.time;
   }
 
-  // We no longer have a slider to hook into.
-  // We need to expose an update function or poll?
-  // The GUI update loop calls updateUI in gui.js.
-  // We can attach this update function to uiState so gui.js can call it if needed,
-  // OR we just rely on the fact that config.simulationSpeed is the source of truth
-  // and we update the UI whenever we change it here.
-  // BUT if something else changes speed (e.g. keyboard shortcut?), the UI won't update.
-  // Let's attach it to uiState.
   uiState.updateSpeedometer = updateSpeedometer;
-
-  // Initial update
   updateSpeedometer();
 
-  // --- Interaction Logic ---
-
+  // Interaction Logic
   function setSpeedFromAngle(angleDeg) {
-    // Clamp angle
     angleDeg = Math.max(-90, Math.min(90, angleDeg));
-
-    // Snap to 0 if close to center
-    if (Math.abs(angleDeg) < 5) {
+    if (Math.abs(angleDeg) < 1) {
       config.simulationSpeed = 0;
       uiState.speedFactor = '0x';
     } else {
       const sign = Math.sign(angleDeg);
       const ratio = Math.abs(angleDeg) / 90;
-      const exponent = ratio * 11;
+      const exponent = ratio * 10;
       const speed = sign * 10 ** exponent;
-
       config.simulationSpeed = speed;
       uiState.speedFactor = formatSpeed(speed);
     }
-
     updateSpeedometer();
   }
 
@@ -189,41 +123,30 @@ export function setupTimeFolder(gui, uiState, config) {
     const rect = interactionZone.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const bottomY = rect.bottom;
-
     const x = e.clientX - centerX;
-    const y = bottomY - e.clientY; // Y goes up from bottom
-
+    const y = bottomY - e.clientY;
     const angleRad = Math.atan2(y, x);
     const angleDeg = 90 - (angleRad * 180) / Math.PI;
-
     setSpeedFromAngle(angleDeg);
   }
 
   let isDragging = false;
-
   interactionZone.addEventListener('mousedown', (e) => {
     isDragging = true;
     handleInteraction(e);
   });
-
   window.addEventListener('mousemove', (e) => {
-    if (isDragging) {
-      handleInteraction(e);
-    }
+    if (isDragging) handleInteraction(e);
   });
-
   window.addEventListener('mouseup', () => {
     isDragging = false;
   });
 
-  // --- Button Logic ---
-
   function handleControlClick(action) {
     const currentSpeed = config.simulationSpeed;
-    // Handle 0 case for log math
     const mag = currentSpeed === 0 ? 0 : Math.log10(Math.abs(currentSpeed));
-    let sign = Math.sign(currentSpeed);
-    if (currentSpeed === 0) sign = 1; // Default to forward if paused
+    // let sign = Math.sign(currentSpeed); // Unused
+    // if (currentSpeed === 0) sign = 1;
 
     switch (action) {
       case 'pause':
@@ -236,60 +159,42 @@ export function setupTimeFolder(gui, uiState, config) {
         config.simulationSpeed = -1;
         break;
       case 'forward':
-        // Snap to next power of 10
         if (currentSpeed < 0) {
-          // Moving towards 0 (e.g. -100 -> -10)
-          // Current mag is 2. Target is 1.
           const targetMag = Math.floor(mag) - 1;
-          // If we cross 0, flip to positive
-          if (targetMag < 0) {
-            config.simulationSpeed = 1; // Start forward
-          } else {
-            config.simulationSpeed = -(10 ** targetMag);
-          }
+          if (targetMag < 0) config.simulationSpeed = 1;
+          else config.simulationSpeed = -(10 ** targetMag);
         } else {
-          // Moving away from 0 (e.g. 10 -> 100)
-          // If 0, go to 1
-          if (currentSpeed === 0) {
-            config.simulationSpeed = 1;
-          } else {
-            const targetMag = Math.floor(mag) + 1;
+          if (currentSpeed === 0) config.simulationSpeed = 1;
+          else {
+            const targetMag = Math.min(10, Math.floor(mag) + 1);
             config.simulationSpeed = 10 ** targetMag;
           }
         }
         break;
       case 'rewind':
-        // Snap to previous power of 10 (more negative)
         if (currentSpeed > 0) {
-          // Moving towards 0 (e.g. 100 -> 10)
           const targetMag = Math.floor(mag) - 1;
-          if (targetMag < 0) {
-            config.simulationSpeed = -1; // Start reverse
-          } else {
-            config.simulationSpeed = 10 ** targetMag;
-          }
+          if (targetMag < 0) config.simulationSpeed = -1;
+          else config.simulationSpeed = 10 ** targetMag;
         } else {
-          // Moving away from 0 (e.g. -10 -> -100)
-          if (currentSpeed === 0) {
-            config.simulationSpeed = -1;
-          } else {
-            const targetMag = Math.floor(mag) + 1;
+          if (currentSpeed === 0) config.simulationSpeed = -1;
+          else {
+            const targetMag = Math.min(10, Math.floor(mag) + 1);
             config.simulationSpeed = -(10 ** targetMag);
           }
         }
         break;
     }
-
     uiState.speedFactor = formatSpeed(config.simulationSpeed);
     updateSpeedometer();
   }
 
-  timeFolder.close(); // Close Time folder by default
-
+  // Return controls for gui.js to update
+  // We mock the updateDisplay methods since we don't use lil-gui controllers anymore
   return {
-    dateCtrl,
-    timeCtrl,
-    stardateCtrl,
+    dateCtrl: { updateDisplay: () => {}, domElement: { querySelector: () => null } },
+    timeCtrl: { updateDisplay: () => {} },
+    stardateCtrl: { updateDisplay: () => {} },
     speedDisplay: { update: updateSpeedometer },
   };
 }

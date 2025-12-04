@@ -117,9 +117,15 @@ export function setupVisualFolder(
   gammaSlider.domElement.classList.add('hide-value');
   gammaSlider.domElement.classList.add('full-width');
 
-  // Tooltips
-  const tooltipsCtrl = visualFolder.add(config, 'showTooltips').name('Tooltips');
-  tooltipsCtrl.domElement.classList.add('checkbox-left');
+  // Object Info Mode
+  const objectInfoCtrl = visualFolder
+    .add(config, 'objectInfoMode', {
+      Tooltips: 'tooltip',
+      Window: 'window',
+      Off: 'off',
+    })
+    .name('Object Info');
+  objectInfoCtrl.domElement.classList.add('full-width');
 
   visualFolder.close(); // Close Visual folder by default
 }

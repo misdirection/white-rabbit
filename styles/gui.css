@@ -1,16 +1,77 @@
 /* Global Section Headings */
 .lil-gui .title {
-  color: #aaccff;
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-weight: 600;
+  border-bottom: 1px solid var(--panel-border);
 }
 
 .lil-gui .orbits-folder .title,
 .lil-gui .constellations-folder .title,
 .lil-gui .magnetic-fields-folder .title {
-  color: #ffdbb5;
+  color: var(--accent-secondary);
 }
 
+/* Lil-GUI Overrides for Gaia Sky Theme */
+.lil-gui {
+  --background-color: var(--panel-bg);
+  --text-color: var(--text-primary);
+  --title-background-color: rgba(0, 0, 0, 0.5);
+  --widget-color: #333;
+  --hover-color: #444;
+  --focus-color: var(--accent-color);
+  --number-color: var(--accent-secondary);
+  --string-color: var(--success-color);
+
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--panel-border);
+  backdrop-filter: var(--backdrop-blur);
+  box-shadow: var(--shadow-md);
+}
+
+.lil-gui .controller {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.lil-gui .controller:last-child {
+  border-bottom: none;
+}
+
+.lil-gui .controller:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.lil-gui input[type="text"],
+.lil-gui input[type="number"],
+.lil-gui select {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--panel-border);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-sm);
+}
+
+.lil-gui input[type="text"]:focus,
+.lil-gui input[type="number"]:focus,
+.lil-gui select:focus {
+  border-color: var(--accent-color);
+  box-shadow: var(--glow-accent);
+}
+
+.lil-gui input[type="checkbox"] {
+  border: 1px solid var(--panel-border);
+  border-radius: 2px;
+}
+
+.lil-gui input[type="checkbox"]:checked {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+/* Custom Panels */
 .find-container {
-  padding: 4px 0;
+  padding: 8px 0;
 }
 
 .find-input-wrapper {
@@ -21,7 +82,7 @@
 }
 
 .find-input-wrapper label {
-  color: #ffffff;
+  color: var(--text-secondary);
   font-size: 0.9em;
   margin-right: 10px;
   white-space: nowrap;
@@ -30,18 +91,19 @@
 #find-search {
   flex: 1;
   max-width: 70%;
-  padding: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border-radius: 4px;
-  box-sizing: border-box;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--panel-border);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family);
 }
 
 #find-search:focus {
   outline: none;
-  border-color: #88ccff;
-  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--accent-color);
+  box-shadow: var(--glow-accent);
+  background: rgba(0, 0, 0, 0.5);
 }
 
 .find-results {
@@ -49,24 +111,29 @@
   top: 100%;
   left: 0;
   width: 100%;
-  max-height: 150px;
+  max-height: 200px;
   overflow-y: auto;
-  background: #1a1a1a;
-  border: 1px solid #444;
-  border-radius: 4px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius-sm);
   z-index: 999999 !important;
   display: none;
+  backdrop-filter: var(--backdrop-blur);
+  box-shadow: var(--shadow-md);
 }
 
 .find-result-item {
-  padding: 6px 10px;
+  padding: 8px 12px;
   cursor: pointer;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  transition: all 0.2s;
 }
 
 .find-result-item:hover {
-  background: #333;
-  color: #88ccff;
+  background: rgba(0, 255, 255, 0.1);
+  color: var(--accent-color);
+  padding-left: 16px;
 }
 
 .find-actions {
@@ -80,31 +147,34 @@
 .find-actions button {
   flex: 1;
   padding: 6px 12px;
-  background: #333;
-  border: 1px solid #555;
-  color: #fff;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--panel-border);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
+  font-family: var(--font-family);
 }
 
 .find-actions button:hover:not(:disabled) {
-  background: #444;
-  border-color: #88ccff;
+  background: rgba(0, 255, 255, 0.1);
+  border-color: var(--accent-color);
+  box-shadow: var(--glow-accent);
 }
 
 .find-actions button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  border-color: #444;
 }
 
 #find-status {
   font-size: 0.85em;
-  color: #88ccff;
+  color: var(--accent-secondary);
   min-height: 1.2em;
   white-space: nowrap;
   overflow: hidden;
@@ -116,8 +186,8 @@
 .speed-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
-  margin-top: 4px;
+  gap: 4px;
+  margin-top: 8px;
   padding: 0 4px;
 }
 
@@ -125,34 +195,39 @@
   flex: 1;
   min-width: 40px;
   text-align: center;
-  padding: 4px;
-  background: #2c2c2c;
-  border: 1px solid #444;
-  border-radius: 2px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
-  font-size: 0.8em;
-  color: #aaa;
+  font-size: 0.85em;
+  color: var(--text-secondary);
   user-select: none;
+  transition: all 0.2s;
 }
 
 .speed-btn:hover {
-  background: #3c3c3c;
-  color: #fff;
+  background: rgba(0, 255, 255, 0.1);
+  color: var(--text-primary);
+  border-color: var(--accent-color);
 }
 
 .speed-btn.active {
-  background: #4a4a4a;
-  color: #fff;
-  border-color: #666;
+  background: rgba(0, 255, 255, 0.2);
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  box-shadow: var(--glow-accent);
 }
 
 .speed-btn.pause {
-  color: #ffaa88;
+  color: var(--warning-color);
+  border-color: rgba(255, 204, 0, 0.3);
 }
 
 .speed-btn.pause.active {
-  background: #5a3a3a;
-  border-color: #ff8866;
+  background: rgba(255, 204, 0, 0.2);
+  border-color: var(--warning-color);
+  color: #fff;
 }
 
 /* Custom Value Display */
@@ -167,11 +242,11 @@
   justify-content: flex-end;
   padding-right: 5px;
   font-size: 0.8em;
-  color: #aaccff;
+  color: var(--accent-secondary);
   pointer-events: none;
-  background: #1a1a1a;
+  background: transparent;
   /* Match GUI background to cover slider */
-  border-left: 1px solid #333;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Fix for Planet Slider Layout */
@@ -204,11 +279,11 @@
 
 /* Time Folder */
 .time-folder .title {
-  color: #aaccff;
+  color: var(--accent-secondary);
 }
 
 .compact-ctrl .widget {
-  height: 20px;
+  height: 24px;
 }
 
 .set-now-btn .widget {
@@ -258,9 +333,10 @@
   width: 140px;
   height: 70px;
   border-radius: 70px 70px 0 0;
-  background: radial-gradient(circle at 50% 100%, #222 40%, #444 41%, #333 100%);
-  border: 1px solid #555;
+  background: transparent; /* Make invisible */
+  border: 1px solid var(--panel-border);
   border-bottom: none;
+  box-shadow: none; /* Remove shadow too if it creates a box look */
 }
 
 .gauge-needle {
@@ -269,12 +345,13 @@
   left: 50%;
   width: 4px;
   height: 65px;
-  background: #ff4444;
+  background: var(--danger-color);
   transform-origin: bottom center;
   transform: rotate(0deg);
   transition: transform 0.2s cubic-bezier(0.4, 2.5, 0.6, 0.8);
   pointer-events: none;
   z-index: 2;
+  box-shadow: 0 0 5px var(--danger-color);
 }
 
 .gauge-needle::after {
@@ -286,6 +363,7 @@
   height: 10px;
   background: #fff;
   border-radius: 50%;
+  box-shadow: 0 0 5px #fff;
 }
 
 .digital-speed {
@@ -293,11 +371,11 @@
   bottom: 5px;
   width: 100%;
   text-align: center;
-  font-family: monospace;
-  color: #aaccff;
+  font-family: var(--font-mono);
+  color: var(--accent-color);
   font-size: 1.1em;
   font-weight: bold;
-  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
   pointer-events: none;
   z-index: 3;
 }
@@ -316,56 +394,57 @@
 .control-buttons {
   display: flex;
   justify-content: center;
-  gap: 4px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 12px;
   padding: 0 10px;
 }
 
 .control-btn {
   flex: 1;
   max-width: 40px;
-  height: 30px;
-  background: #333;
-  border: 1px solid #555;
-  border-radius: 4px;
-  color: #fff;
-  font-family: monospace;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
   font-size: 1.2em;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.1s;
+  transition: all 0.2s;
   user-select: none;
 }
 
 .control-btn:hover {
-  background: #444;
-  border-color: #88ccff;
-  color: #aaccff;
+  background: rgba(0, 255, 255, 0.1);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  box-shadow: var(--glow-accent);
 }
 
 .control-btn:active {
-  background: #222;
+  background: rgba(0, 255, 255, 0.2);
   transform: translateY(1px);
 }
 
 .control-btn.active {
-  background: #4a4a4a;
-  border-color: #88ccff;
+  background: rgba(0, 255, 255, 0.2);
+  border-color: var(--accent-color);
   color: #fff;
-  box-shadow: 0 0 5px rgba(136, 204, 255, 0.3);
+  box-shadow: var(--glow-accent);
 }
 
 /* Child Control Indentation */
 .lil-gui .controller.child-control {
   padding-left: 20px;
-  border-left: 2px solid #555;
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
   margin-left: 10px;
 }
 
 .lil-gui .controller.child-control .name {
-  color: #999;
+  color: var(--text-secondary);
   font-size: 0.95em;
 }
 
@@ -389,7 +468,7 @@
 
 /* Events Section */
 .events-container {
-  padding: 4px 0;
+  padding: 8px 0;
 }
 
 .events-input-wrapper {
@@ -400,7 +479,7 @@
 }
 
 .events-input-wrapper label {
-  color: #ffffff;
+  color: var(--text-secondary);
   font-size: 0.9em;
   margin-right: 10px;
   white-space: nowrap;
@@ -409,18 +488,19 @@
 #events-search {
   flex: 1;
   max-width: 70%;
-  padding: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border-radius: 4px;
-  box-sizing: border-box;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--panel-border);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-family);
 }
 
 #events-search:focus {
   outline: none;
-  border-color: #88ccff;
-  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--accent-color);
+  box-shadow: var(--glow-accent);
+  background: rgba(0, 0, 0, 0.5);
 }
 
 .events-results {
@@ -430,45 +510,50 @@
   width: 100%;
   max-height: 200px;
   overflow-y: auto;
-  background: #1a1a1a;
-  border: 1px solid #444;
-  border-radius: 4px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--border-radius-sm);
   z-index: 999999 !important;
   display: none;
+  backdrop-filter: var(--backdrop-blur);
+  box-shadow: var(--shadow-md);
 }
 
 .events-result-item {
-  padding: 4px 8px;
+  padding: 6px 10px;
   cursor: pointer;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   align-items: center;
   justify-content: space-between;
   font-size: 0.85em;
+  color: var(--text-secondary);
+  transition: all 0.2s;
 }
 
 .events-result-item:hover {
-  background: #333;
-  color: #88ccff;
+  background: rgba(0, 255, 255, 0.1);
+  color: var(--accent-color);
+  padding-left: 14px;
 }
 
 .events-result-item .event-type {
   font-weight: bold;
-  padding: 1px 4px;
+  padding: 2px 6px;
   border-radius: 3px;
   font-size: 0.9em;
 }
 
 .events-result-item .event-type.total-eclipse {
-  background: rgba(255, 100, 100, 0.3);
-  color: #ffaaaa;
-  border: 1px solid rgba(255, 100, 100, 0.5);
+  background: rgba(255, 68, 68, 0.2);
+  color: #ff8888;
+  border: 1px solid rgba(255, 68, 68, 0.4);
 }
 
 .events-result-item .event-type.annular-eclipse {
-  background: rgba(255, 200, 100, 0.3);
-  color: #ffddaa;
-  border: 1px solid rgba(255, 200, 100, 0.5);
+  background: rgba(255, 204, 0, 0.2);
+  color: #ffdd88;
+  border: 1px solid rgba(255, 204, 0, 0.4);
 }
 
 .events-result-item .event-date {
@@ -487,31 +572,34 @@
 .events-actions button {
   flex: 1;
   padding: 6px 12px;
-  background: #333;
-  border: 1px solid #555;
-  color: #fff;
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--panel-border);
+  color: var(--text-primary);
+  border-radius: var(--border-radius-sm);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
+  font-family: var(--font-family);
 }
 
 .events-actions button:hover:not(:disabled) {
-  background: #444;
-  border-color: #88ccff;
+  background: rgba(0, 255, 255, 0.1);
+  border-color: var(--accent-color);
+  box-shadow: var(--glow-accent);
 }
 
 .events-actions button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  border-color: #444;
 }
 
 #events-status {
   font-size: 0.85em;
-  color: #88ccff;
+  color: var(--accent-secondary);
   min-height: 1.2em;
   white-space: nowrap;
   overflow: hidden;

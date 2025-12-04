@@ -23,6 +23,21 @@ import { setupSystemUI } from './modules/system.js';
  *
  * - Navigation: Help text for camera and focus controls
  */
+import { menuDock } from './MenuDock.js';
+import { windowManager } from './WindowManager.js';
+
+/**
+ * Sets up the GUI with Scale, Visual, Time, and Navigation sections
+ *
+ * @param {Array} planets - Array of planet objects with mesh, moons, etc.
+ * @param {THREE.Mesh} sun - The sun mesh
+ * @param {THREE.Group} orbitGroup - Group containing planet orbit lines
+ * @param {THREE.Group} zodiacGroup - Group containing zodiac constellation lines
+ * @param {THREE.Points} stars - The starfield points object
+ * @returns {Object} Object containing uiState and control references for updates
+ *
+ * - Navigation: Help text for camera and focus controls
+ */
 export function setupGUI(
   planets,
   sun,
@@ -41,6 +56,8 @@ export function setupGUI(
 ) {
   const gui = new GUI({ title: 'Menu' });
   gui.domElement.classList.add('main-gui');
+  // gui.close(); // Start closed or maybe open? Let's keep it closed as we have the dock now.
+  gui.close();
 
   const uiState = {
     speedExponent: 0,
@@ -57,12 +74,36 @@ export function setupGUI(
     focusExit: 'Escape Key',
     fullScreen: 'F11',
     scalePreset: 'Artistic',
+    timeWindow: true,
+    objectInfo: true,
+    dock: true,
   };
+
+  // --- SETUP DOCK ---
+  menuDock.addItem('time', '⏱️', 'Time & Speed', () => {
+    windowManager.toggleWindow('time-window');
+  });
+
+  menuDock.addItem('objects', '🪐', 'Objects', () => {
+    // For now, we don't have a dedicated Objects window, maybe we can toggle the Objects folder in lil-gui?
+    // Or just open the "Object Info" window?
+    // Let's open Object Info window for now as a placeholder or "Inspector"
+    windowManager.toggleWindow('object-info');
+  });
+
+  menuDock.addItem('settings', '⚙️', 'Settings', () => {
+    if (gui._closed) gui.open();
+    else gui.close();
+  });
 
   // --- FIND SECTION ---
   setupFindFolder(gui, planets, sun, starsRef, camera, controls);
 
   // --- TIME SECTION ---
+  // We still call this to setup the window, but we don't pass 'gui' if we don't want it in the menu.
+  // Actually setupTimeFolder in our refactor DOES NOT use 'gui' anymore except maybe to close it?
+  // Let's check time.js... it doesn't use gui.addFolder anymore.
+  // It returns controls.
   const { dateCtrl, timeCtrl, stardateCtrl, speedDisplay } = setupTimeFolder(gui, uiState, config);
 
   // --- OBJECTS SECTION ---
@@ -110,13 +151,40 @@ export function setupGUI(
   // --- SOUND SECTION ---
   setupSoundUI(gui);
 
+  // --- WINDOWS SECTION ---
+  const windowsFolder = gui.addFolder('Windows');
+
+  windowsFolder
+    .add(uiState, 'timeWindow')
+    .name('Time & Speed')
+    .listen()
+    .onChange((v) => {
+      if (v) windowManager.showWindow('time-window');
+      else windowManager.hideWindow('time-window');
+    });
+
+  windowsFolder
+    .add(uiState, 'objectInfo')
+    .name('Object Info')
+    .listen()
+    .onChange((v) => {
+      if (v) windowManager.showWindow('object-info');
+      else windowManager.hideWindow('object-info');
+    });
+
+  windowsFolder
+    .add(uiState, 'dock')
+    .name('Dock')
+    .listen()
+    .onChange((v) => {
+      menuDock.dock.style.display = v ? 'flex' : 'none';
+    });
+
   // --- SYSTEM SECTION ---
   setupSystemUI(gui, renderer);
 
   // --- ABOUT SECTION ---
   setupAboutFolder(gui);
-
-  gui.close();
 
   return { uiState, dateCtrl, timeCtrl, stardateCtrl, speedDisplay };
 }
@@ -165,4 +233,19 @@ export function updateUI(uiState, controls) {
 
   // Update custom value displays
   if (controls.speedDisplay) controls.speedDisplay.update();
+
+  // Sync Window States
+  const timeWin = windowManager.getWindow('time-window');
+  if (timeWin) {
+    uiState.timeWindow = timeWin.element.style.display !== 'none';
+  }
+
+  const infoWin = windowManager.getWindow('object-info');
+  if (infoWin) {
+    uiState.objectInfo = infoWin.element.style.display !== 'none';
+  }
+
+  if (menuDock.dock) {
+    uiState.dock = menuDock.dock.style.display !== 'none';
+  }
 }

@@ -21,4 +21,11 @@ The following attributions apply to textures used in this application, sourced f
 *   **Earth**: Surface texture derived from [Earth Starts Beating](https://www.earthstartsbeating.com/2019/01/16/mappamondo/) and improved by Tom Patterson's Natural Earth II.
 *   **Titan**: Surface texture is a composite of Cassini ISS and Radar maps from USGS, created by FarGetaNik and modified by Askaniy.
 
+### Fonts
+
+*   **Outfit**: Copyright (c) 2021 The Outfit Project Authors. Licensed under the SIL Open Font License, Version 1.1.
+*   **Space Mono**: Copyright (c) 2016 Google Inc. Licensed under the SIL Open Font License, Version 1.1.
+
+See `public/fonts/OFL.txt` for the full license text.
+
 For full license details and additional credits, please refer to the [Celestia Content README](https://github.com/CelestiaProject/CelestiaContent/blob/master/README).
