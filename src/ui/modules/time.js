@@ -20,6 +20,13 @@ export function setupTimeFolder(_gui, uiState, config) {
   dateDisplay.textContent = uiState.date; // Initial
   content.appendChild(dateDisplay);
 
+  dateDisplay.style.cursor = 'pointer';
+  dateDisplay.title = 'Click to change date';
+
+  dateDisplay.onclick = () => {
+    openDateModal(config, uiState, updateSpeedometer);
+  };
+
   // --- Speedometer & Controls ---
   const speedometerContainer = document.createElement('div');
   speedometerContainer.className = 'speedometer-container';
@@ -197,4 +204,84 @@ export function setupTimeFolder(_gui, uiState, config) {
     stardateCtrl: { updateDisplay: () => {} },
     speedDisplay: { update: updateSpeedometer },
   };
+}
+
+/**
+ * Opens the date picker modal.
+ */
+function openDateModal(config, uiState, updateSpeedometer) {
+  let overlay = document.querySelector('.date-modal-overlay');
+
+  if (!overlay) {
+    createDateModal(config, uiState, updateSpeedometer);
+    overlay = document.querySelector('.date-modal-overlay');
+  }
+
+  // Update input with current time
+  const input = overlay.querySelector('input[type="datetime-local"]');
+  if (input) {
+    const d = new Date(config.date);
+    const offset = d.getTimezoneOffset() * 60000;
+    const localISOTime = new Date(d - offset).toISOString().slice(0, 16);
+    input.value = localISOTime;
+  }
+
+  overlay.classList.add('active');
+}
+
+/**
+ * Creates the DOM elements for the date picker modal.
+ */
+function createDateModal(config, uiState, updateSpeedometer) {
+  const overlay = document.createElement('div');
+  overlay.className = 'date-modal-overlay';
+
+  const modal = document.createElement('div');
+  modal.className = 'date-modal';
+
+  const title = document.createElement('h3');
+  title.textContent = 'Set Simulation Time';
+
+  const input = document.createElement('input');
+  input.type = 'datetime-local';
+
+  const buttons = document.createElement('div');
+  buttons.className = 'date-modal-buttons';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'date-modal-btn';
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.onclick = () => {
+    overlay.classList.remove('active');
+  };
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.className = 'date-modal-btn confirm';
+  confirmBtn.textContent = 'Set Time';
+  confirmBtn.onclick = () => {
+    if (input.value) {
+      const newDate = new Date(input.value);
+      config.date = newDate;
+      config.simulationSpeed = 0; // Pause
+      uiState.speedFactor = 'PAUSED';
+      updateSpeedometer();
+      overlay.classList.remove('active');
+    }
+  };
+
+  buttons.appendChild(cancelBtn);
+  buttons.appendChild(confirmBtn);
+
+  modal.appendChild(title);
+  modal.appendChild(input);
+  modal.appendChild(buttons);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  // Close on click outside
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.classList.remove('active');
+    }
+  });
 }

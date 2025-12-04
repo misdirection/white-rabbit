@@ -117,7 +117,16 @@ export function setupMusicWindow() {
   // Shuffle
   const shuffleBtn = document.createElement('div');
   shuffleBtn.className = 'control-btn';
-  shuffleBtn.textContent = '🔀';
+  const shuffleIcon = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events: none;">
+      <polyline points="16 3 21 3 21 8"></polyline>
+      <line x1="4" y1="20" x2="21" y2="3"></line>
+      <polyline points="21 16 21 21 16 21"></polyline>
+      <line x1="15" y1="15" x2="21" y2="21"></line>
+      <line x1="4" y1="4" x2="9" y2="9"></line>
+    </svg>
+  `;
+  shuffleBtn.innerHTML = shuffleIcon;
   shuffleBtn.title = config.music.shuffle ? 'Shuffle: ON' : 'Shuffle: OFF';
   if (config.music.shuffle) shuffleBtn.classList.add('active');
 
@@ -152,7 +161,7 @@ export function setupMusicWindow() {
   // Since it's appended to body, offsetHeight should be available if not display:none.
   // WindowManager creates it with default display (flex).
   const height = win.element.offsetHeight;
-  const width = win.element.offsetWidth; // Should be 240px as set
+  // const width = win.element.offsetWidth; // Unused
 
   // Snap to bottom-right with 20px padding
   const padding = 20;
