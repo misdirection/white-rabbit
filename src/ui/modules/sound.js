@@ -18,8 +18,8 @@ import { windowManager } from '../WindowManager.js';
 export function setupMusicWindow() {
   const win = windowManager.createWindow('music-window', 'Music', {
     width: '240px',
-    x: window.innerWidth / 2 + 160, // Right of center (dock is ~300px wide)
-    y: window.innerHeight - 200, // Bottom area
+    x: 290, // Right of Time Window (20px + 250px width + 20px gap)
+    y: window.innerHeight - 280, // Align with Time Window
     onClose: () => {
       // Optional: Update UI state if needed, but windowManager handles display:none
     },
@@ -163,9 +163,10 @@ export function setupMusicWindow() {
   const height = win.element.offsetHeight;
   // const width = win.element.offsetWidth; // Unused
 
-  // Snap to bottom-right with 20px padding
+  // Snap to bottom-left relative to Time Window
   const padding = 20;
-  win.x = window.innerWidth / 2 + 160; // Keep x relative to dock
+  // win.x = window.innerWidth / 2 + 160; 
+  win.x = 290;
   win.y = window.innerHeight - height - padding;
 
   win.element.style.transform = `translate3d(${win.x}px, ${win.y}px, 0)`;

@@ -370,4 +370,53 @@
     display: none; /* Double check hiding main title */
 }
 
+/* Custom Object Menu Styles */
+.object-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* Compact gap */
+  padding: 8px 12px;
+}
+
+.object-item {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px; /* Compact padding */
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  border: 1px solid transparent;
+}
+
+.object-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(2px);
+}
+
+.object-item.active {
+  background: rgba(68, 170, 255, 0.15);
+  border-color: rgba(68, 170, 255, 0.3);
+  color: #fff;
+}
+
+.object-icon {
+  font-size: 18px;
+  margin-right: 12px;
+  width: 24px;
+  text-align: center;
+}
+
+.object-label {
+  font-size: 13px;
+  color: #ccc;
+  flex: 1;
+}
+
+.object-item.active .object-label {
+  color: #fff;
+  font-weight: 500;
+}
+
 

@@ -8,7 +8,7 @@ import { setupNavigationFolder } from './modules/navigation.js';
 import { setupScaleFolder } from './modules/scale.js';
 import { setupTimeFolder } from './modules/time.js';
 import {
-  setupObjectsControls,
+  setupObjectsControlsCustom,
   setupConstellationsControls,
   setupOrbitsControls,
   setupMagneticFieldsControls,
@@ -103,15 +103,15 @@ export function setupGUI(
   };
 
   // --- SETUP DOCK ---
-  menuDock.addItem('time', '⏱️', 'Time & Speed', () => {
-    windowManager.toggleWindow('time-window');
-  });
-
-  menuDock.addItem('objects', '🪐', 'Objects', () => {
+  menuDock.addItem('objects', '🔭', 'Object Info', () => {
     // For now, we don't have a dedicated Objects window, maybe we can toggle the Objects folder in lil-gui?
     // Or just open the "Object Info" window?
     // Let's open Object Info window for now as a placeholder or "Inspector"
     windowManager.toggleWindow('object-info');
+  });
+
+  menuDock.addItem('time', '⏱️', 'Time & Speed', () => {
+    windowManager.toggleWindow('time-window');
   });
 
   menuDock.addItem('music', '🎵', 'Music', () => {
@@ -138,8 +138,8 @@ export function setupGUI(
 
   // --- VISUAL TOOLS WINDOW (Tabbed) ---
   const visualWindow = new TabbedWindow('visual-tools', 'Visual Tools', {
-    x: 60,
-    y: 100, // Positioned below time window usually
+    x: window.innerWidth - 340,
+    y: window.innerHeight - 500,
     width: '320px',
   });
 
@@ -165,7 +165,17 @@ export function setupGUI(
     return tabGui;
   };
 
-  createGuiTab('objects', 'Objects', (g) => setupObjectsControls(g, planets, sun));
+  // Helper to create a tab with custom content
+  const createCustomTab = (id, title, setupFn) => {
+    const container = document.createElement('div');
+    container.style.width = '100%';
+    // container.classList.add('custom-tab-container');
+    setupFn(container);
+    visualWindow.addTab(id, title, container);
+  };
+
+  // createGuiTab('objects', 'Objects', (g) => setupObjectsControls(g, planets, sun));
+  createCustomTab('objects', 'Objects', (container) => setupObjectsControlsCustom(container, planets, sun));
   createGuiTab('constellations', 'Constellations', (g) => setupConstellationsControls(g, zodiacGroup, constellationsGroup, zodiacSignsGroup));
   createGuiTab('orbits', 'Orbits', (g) => setupOrbitsControls(g, orbitGroup, planets, relativeOrbitGroup));
   createGuiTab('magnetic', 'Magnetism', (g) => setupMagneticFieldsControls(g, magneticFieldsGroup, planets, universeGroup));

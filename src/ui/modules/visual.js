@@ -549,56 +549,76 @@ export function updateMoonVisibility(val, planets, category) {
   });
 }
 
-export function setupObjectsControls(gui, planets, sun) {
-  // Directly add to the passed gui instance (which is already specific to this context)
-  
-  const sunCtrl = gui
-    .add(config, 'showSun')
-    .name('Sun')
-    .onChange((val) => updateSunVisibility(val, sun));
-  sunCtrl.domElement.classList.add('checkbox-left');
+export function setupObjectsControlsCustom(container, planets, sun) {
+  const items = [
+    {
+      configKey: 'showSun',
+      label: 'Sun',
+      icon: '☀️',
+      updateFn: (val) => updateSunVisibility(val, sun),
+    },
+    {
+      configKey: 'showPlanets',
+      label: 'Planets',
+      icon: '🪐',
+      updateFn: (val) => updatePlanetVisibility(val, planets),
+    },
+    {
+      configKey: 'showDwarfPlanets',
+      label: 'Dwarf Planets',
+      icon: '🪨',
+      updateFn: (val) => updateDwarfVisibility(val, planets),
+    },
+    {
+      configKey: 'showLargestMoons',
+      label: 'Largest Moons',
+      icon: '🌕',
+      updateFn: (val) => updateMoonVisibility(val, planets, 'largest'),
+    },
+    {
+      configKey: 'showMajorMoons',
+      label: 'Major Moons',
+      icon: '🌖',
+      updateFn: (val) => updateMoonVisibility(val, planets, 'major'),
+    },
+    {
+      configKey: 'showSmallMoons',
+      label: 'Small Moons',
+      icon: '🥔',
+      updateFn: (val) => updateMoonVisibility(val, planets, 'small'),
+    },
+  ];
 
-  const planetsCtrl = gui
-    .add(config, 'showPlanets')
-    .name('Planets')
-    .onChange((val) => updatePlanetVisibility(val, planets));
-  planetsCtrl.domElement.classList.add('checkbox-left');
-  updatePlanetVisibility(config.showPlanets, planets);
+  const list = document.createElement('div');
+  list.className = 'object-list';
 
-  const dwarfCtrl = gui
-    .add(config, 'showDwarfPlanets')
-    .name('Dwarf Planets')
-    .onChange((val) => updateDwarfVisibility(val, planets));
-  dwarfCtrl.domElement.classList.add('checkbox-left');
-  updateDwarfVisibility(config.showDwarfPlanets, planets);
+  items.forEach((item) => {
+    const el = document.createElement('div');
+    el.className = 'object-item';
+    if (config[item.configKey]) el.classList.add('active');
 
-  const largestMoonsCtrl = gui
-    .add(config, 'showLargestMoons')
-    .name('Largest Moons')
-    .onChange((val) => updateMoonVisibility(val, planets, 'largest'));
-  largestMoonsCtrl.domElement.classList.add('checkbox-left');
-  updateMoonVisibility(config.showLargestMoons, planets, 'largest');
+    el.innerHTML = `
+        <div class="object-icon">${item.icon}</div>
+        <div class="object-label">${item.label}</div>
+    `;
 
-  const majorMoonsCtrl = gui
-    .add(config, 'showMajorMoons')
-    .name('Major Moons')
-    .onChange((val) => updateMoonVisibility(val, planets, 'major'));
-  majorMoonsCtrl.domElement.classList.add('checkbox-left');
-  updateMoonVisibility(config.showMajorMoons, planets, 'major');
+    el.addEventListener('click', () => {
+      // Toggle config
+      config[item.configKey] = !config[item.configKey];
+      const isActive = config[item.configKey];
 
-  const smallMoonsCtrl = gui
-    .add(config, 'showSmallMoons')
-    .name('Small Moons')
-    .onChange((val) => updateMoonVisibility(val, planets, 'small'));
-  smallMoonsCtrl.domElement.classList.add('checkbox-left');
-  updateMoonVisibility(config.showSmallMoons, planets, 'small');
-}
+      // Update UI
+      if (isActive) el.classList.add('active');
+      else el.classList.remove('active');
 
-// Deprecated wrapper for backward compatibility if needed, or remove.
-export function setupObjectsFolder(gui, planets, sun) {
-    const folder = gui.addFolder('Objects');
-    setupObjectsControls(folder, planets, sun);
-    folder.close();
+      // Trigger update
+      item.updateFn(isActive);
+    });
+
+    list.appendChild(el);
+  });
+
+  container.appendChild(list);
 }
 
 export function updateOrbitColors(orbitGroup, relativeOrbitGroup, planets) {
