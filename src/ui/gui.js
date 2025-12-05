@@ -11,6 +11,7 @@ import {
   setupObjectsControlsCustom,
   setupAsterismsControlsCustom,
   setupOrbitsControlsCustom,
+  setupMagneticFieldsControlsCustom,
   setupConstellationsControls,
   setupOrbitsControls,
   setupMagneticFieldsControls,
@@ -184,7 +185,8 @@ export function setupGUI(
   createCustomTab('orbits', 'Orbits', (container) => setupOrbitsControlsCustom(container, orbitGroup, planets, relativeOrbitGroup));
   console.log('[DEBUG] Orbits Custom Tab Setup Initiated.');
   // createGuiTab('orbits', 'Orbits', (g) => setupOrbitsControls(g, orbitGroup, planets, relativeOrbitGroup));
-  createGuiTab('magnetic', 'Magnetism', (g) => setupMagneticFieldsControls(g, magneticFieldsGroup, planets, universeGroup));
+  createCustomTab('magnetic', 'Magnetism', (container) => setupMagneticFieldsControlsCustom(container, magneticFieldsGroup, planets, universeGroup));
+  // createGuiTab('magnetic', 'Magnetism', (g) => setupMagneticFieldsControls(g, magneticFieldsGroup, planets, universeGroup));
 
   menuDock.addItem('visuals', '👁️', 'Visual Tools', () => {
     visualWindow.toggle();

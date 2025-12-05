@@ -785,6 +785,109 @@ export function setupOrbitsControlsCustom(container, orbitGroup, planets, relati
   container.appendChild(list);
 }
 
+export function setupMagneticFieldsControlsCustom(container, magneticFieldsGroup, planets, universeGroup) {
+  const items = [
+    {
+      configKey: 'showSunMagneticFieldBasic',
+      label: 'Sun',
+      icon: '🔆',
+      updateFn: () => {
+        if (universeGroup) {
+          const field = universeGroup.children.find((c) => c.name === 'SunMagneticFieldBasic');
+          if (field) field.visible = config.showSunMagneticFieldBasic;
+        }
+      },
+    },
+    {
+      configKey: 'showSunMagneticField',
+      label: 'Solar Wind',
+      icon: '🌀',
+      updateFn: () => {
+        if (universeGroup) {
+          const field = universeGroup.children.find((c) => c.name === 'MagneticField');
+          if (field) field.visible = config.showSunMagneticField;
+        }
+      },
+    },
+    {
+      configKey: 'showMagneticFields',
+      label: 'Planets, Moons',
+      icon: '🧲',
+      updateFn: () => updateMagneticFieldsVisibility(config.showMagneticFields, magneticFieldsGroup, planets, null),
+      childToggle: {
+        configKey: 'capMagneticFields',
+        label: 'Cap',
+        updateFn: () => updateMagneticFieldScales(planets),
+      }
+    },
+  ];
+
+  const list = document.createElement('div');
+  list.className = 'object-list';
+
+  items.forEach((item) => {
+    const el = document.createElement('div');
+    el.className = 'object-item';
+    if (config[item.configKey]) el.classList.add('active');
+
+    // Main Content
+    const leftPart = document.createElement('div');
+    leftPart.style.display = 'flex';
+    leftPart.style.alignItems = 'center';
+    leftPart.style.flexGrow = '1';
+    leftPart.innerHTML = `
+        <div class="object-icon">${item.icon}</div>
+        <div class="object-label">${item.label}</div>
+    `;
+    el.appendChild(leftPart);
+
+    // Child Toggle (if any)
+    let toggleEl = null;
+
+    if (item.childToggle) {
+      toggleEl = document.createElement('div');
+      toggleEl.className = 'object-toggle';
+      if (config[item.childToggle.configKey]) toggleEl.classList.add('active');
+      toggleEl.textContent = item.childToggle.label;
+      
+      toggleEl.style.display = config[item.configKey] ? 'flex' : 'none';
+
+      toggleEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        config[item.childToggle.configKey] = !config[item.childToggle.configKey];
+        const isToggleActive = config[item.childToggle.configKey];
+        
+        if (isToggleActive) toggleEl.classList.add('active');
+        else toggleEl.classList.remove('active');
+
+        if (item.childToggle.updateFn) item.childToggle.updateFn();
+      });
+
+      el.appendChild(toggleEl);
+    }
+
+    // Main Click
+    leftPart.addEventListener('click', () => {
+      config[item.configKey] = !config[item.configKey];
+      const isActive = config[item.configKey];
+
+      if (isActive) {
+        el.classList.add('active');
+        if (toggleEl) toggleEl.style.display = 'flex';
+      } else {
+        el.classList.remove('active');
+        if (toggleEl) toggleEl.style.display = 'none';
+      }
+
+      item.updateFn();
+    });
+
+    list.appendChild(el);
+  });
+
+  container.appendChild(list);
+}
+
 export function updateOrbitColors(orbitGroup, relativeOrbitGroup, planets) {
   const showColors = config.showPlanetColors;
   const showDwarfColors = config.showDwarfPlanetColors;

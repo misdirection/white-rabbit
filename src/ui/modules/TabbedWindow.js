@@ -115,12 +115,45 @@ export class TabbedWindow {
     // Check if tab already exists
     if (this.tabs.find((t) => t.id === id)) return;
 
+    // Ordered list of tab IDs
+    const TAB_ORDER = ['objects', 'constellations', 'orbits', 'magnetic'];
+    
     // Prepare content element
     contentElement.classList.add('tab-content'); // Add class for styling
     this.tabContentArea.appendChild(contentElement);
 
     const tab = { id, title, contentElement };
-    this.tabs.push(tab);
+    
+    // Find correct insertion index
+    let insertIndex = this.tabs.length;
+    const orderIndex = TAB_ORDER.indexOf(id);
+    
+    if (orderIndex !== -1) {
+        // If this tab is in our known list, try to place it correctly
+        for (let i = 0; i < this.tabs.length; i++) {
+            const existingId = this.tabs[i].id;
+            const existingOrderIndex = TAB_ORDER.indexOf(existingId);
+            
+            // If existing tab is "after" us (or unknown, pushing it back), insert here
+            // Unknown tabs (index -1) go to the end, i.e., larger than any known index?
+            // Let's say unknown tabs go to the end.
+            
+            if (existingOrderIndex === -1) {
+                // Determine policy for unknown tabs. Let's put known tabs first.
+                // So if we are known, we come before unknown.
+                insertIndex = i;
+                break; 
+            } else if (existingOrderIndex > orderIndex) {
+                insertIndex = i;
+                break;
+            }
+        }
+    } else {
+        // We are unknown. We go to the end.
+        insertIndex = this.tabs.length;
+    }
+
+    this.tabs.splice(insertIndex, 0, tab);
 
     this.renderTabs();
 
