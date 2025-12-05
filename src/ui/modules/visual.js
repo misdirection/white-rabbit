@@ -290,53 +290,31 @@ export function updateMagneticFieldScales(planets) {
   });
 }
 
-export function setupOverlaysFolder(
-  gui,
-  orbitGroup,
-  zodiacGroup,
-  constellationsGroup,
-  planets,
-  sun,
-  zodiacSignsGroup,
-  habitableZone,
-  magneticFieldsGroup,
-  relativeOrbitGroup, // Added
-  universeGroup // Added
-) {
-  const overlaysFolder = gui.addFolder('Overlays');
-
-  // Constellations Folder
-  const constellationsFolder = overlaysFolder.addFolder('Constellations');
-  constellationsFolder.domElement.classList.add('constellations-folder');
-  constellationsFolder.close();
-
+export function setupConstellationsControls(gui, zodiacGroup, constellationsGroup, zodiacSignsGroup) {
   // Constellations (All 88)
-  const constellationsCtrl = constellationsFolder
+  const constellationsCtrl = gui
     .add(config, 'showConstellations')
     .name('Constellations (All)')
     .onChange(() => updateConstellationsVisibility(zodiacGroup, constellationsGroup));
   constellationsCtrl.domElement.classList.add('checkbox-left');
 
   // Zodiacs
-  const zodiacsCtrl = constellationsFolder
+  const zodiacsCtrl = gui
     .add(config, 'showZodiacs')
     .name('Zodiacs')
     .onChange(() => updateConstellationsVisibility(zodiacGroup, constellationsGroup));
   zodiacsCtrl.domElement.classList.add('checkbox-left');
 
   // Zodiac Signs
-  const zodiacSignsCtrl = constellationsFolder
+  const zodiacSignsCtrl = gui
     .add(config, 'showZodiacSigns')
     .name('Zodiac Signs')
     .onChange((val) => updateZodiacSignsVisibility(val, zodiacSignsGroup));
   zodiacSignsCtrl.domElement.classList.add('checkbox-left');
+}
 
-  // Orbits Folder
-  const orbitsFolder = overlaysFolder.addFolder('Orbits');
-  orbitsFolder.domElement.classList.add('orbits-folder');
-  orbitsFolder.close();
-
-  const sunOrbitsCtrl = orbitsFolder
+export function setupOrbitsControls(gui, orbitGroup, planets, relativeOrbitGroup) {
+  const sunOrbitsCtrl = gui
     .add(config, 'showSunOrbits')
     .name('Sun')
     .onChange(() => {
@@ -344,7 +322,8 @@ export function setupOverlaysFolder(
     });
   sunOrbitsCtrl.domElement.classList.add('checkbox-left');
 
-  const planetOrbitsCtrl = orbitsFolder
+  // Planet Orbits
+  const planetOrbitsCtrl = gui
     .add(config, 'showPlanetOrbits')
     .name('Planets')
     .onChange((val) => {
@@ -353,7 +332,7 @@ export function setupOverlaysFolder(
     });
   planetOrbitsCtrl.domElement.classList.add('checkbox-left');
 
-  const planetColorsCtrl = orbitsFolder
+  const planetColorsCtrl = gui
     .add(config, 'showPlanetColors')
     .name('Use Colors')
     .onChange(() => {
@@ -363,7 +342,8 @@ export function setupOverlaysFolder(
   planetColorsCtrl.domElement.classList.add('child-control');
   config.showPlanetOrbits ? planetColorsCtrl.show() : planetColorsCtrl.hide();
 
-  const dwarfPlanetOrbitsCtrl = orbitsFolder
+  // Dwarf Planet Orbits
+  const dwarfPlanetOrbitsCtrl = gui
     .add(config, 'showDwarfPlanetOrbits')
     .name('Dwarf Planets')
     .onChange((val) => {
@@ -372,7 +352,7 @@ export function setupOverlaysFolder(
     });
   dwarfPlanetOrbitsCtrl.domElement.classList.add('checkbox-left');
 
-  const dwarfPlanetColorsCtrl = orbitsFolder
+  const dwarfPlanetColorsCtrl = gui
     .add(config, 'showDwarfPlanetColors')
     .name('Use Colors')
     .onChange(() => {
@@ -382,7 +362,8 @@ export function setupOverlaysFolder(
   dwarfPlanetColorsCtrl.domElement.classList.add('child-control');
   config.showDwarfPlanetOrbits ? dwarfPlanetColorsCtrl.show() : dwarfPlanetColorsCtrl.hide();
 
-  const moonOrbitsCtrl = orbitsFolder
+  // Moon Orbits
+  const moonOrbitsCtrl = gui
     .add(config, 'showMoonOrbits')
     .name('Moons')
     .onChange(() => {
@@ -390,7 +371,7 @@ export function setupOverlaysFolder(
     });
   moonOrbitsCtrl.domElement.classList.add('checkbox-left');
 
-  const capMoonOrbitsCtrl = orbitsFolder
+  const capMoonOrbitsCtrl = gui
     .add(config, 'capMoonOrbits')
     .name('Cap When Scaling')
     .onChange(() => {
@@ -398,14 +379,11 @@ export function setupOverlaysFolder(
     });
   capMoonOrbitsCtrl.domElement.classList.add('checkbox-left');
   capMoonOrbitsCtrl.domElement.classList.add('child-control'); // Indent it
+}
 
-  // Magnetic Fields Folder
-  const magneticFieldsFolder = overlaysFolder.addFolder('Magnetic Fields');
-  magneticFieldsFolder.domElement.classList.add('magnetic-fields-folder');
-  magneticFieldsFolder.close();
-
+export function setupMagneticFieldsControls(gui, magneticFieldsGroup, planets, universeGroup) {
   // Sun basic field (dipole without solar wind)
-  const sunMagneticFieldBasicCtrl = magneticFieldsFolder
+  const sunMagneticFieldBasicCtrl = gui
     .add(config, 'showSunMagneticFieldBasic')
     .name('Sun')
     .onChange((val) => {
@@ -421,7 +399,7 @@ export function setupOverlaysFolder(
   sunMagneticFieldBasicCtrl.domElement.classList.add('checkbox-left');
 
   // Sun with solar wind (Parker Spiral)
-  const sunMagneticFieldCtrl = magneticFieldsFolder
+  const sunMagneticFieldCtrl = gui
     .add(config, 'showSunMagneticField')
     .name('Solar Wind')
     .onChange((val) => {
@@ -437,7 +415,7 @@ export function setupOverlaysFolder(
   // Initialize visibility of child control
   config.showSunMagneticFieldBasic ? sunMagneticFieldCtrl.show() : sunMagneticFieldCtrl.hide();
 
-  const magneticFieldsCtrl = magneticFieldsFolder
+  const magneticFieldsCtrl = gui
     .add(config, 'showMagneticFields')
     .name('Planets, Moons')
     .onChange((val) =>
@@ -445,7 +423,7 @@ export function setupOverlaysFolder(
     );
   magneticFieldsCtrl.domElement.classList.add('checkbox-left');
 
-  const capMagneticFieldsCtrl = magneticFieldsFolder
+  const capMagneticFieldsCtrl = gui
     .add(config, 'capMagneticFields')
     .name('Cap When Scaling')
     .onChange(() => {
@@ -461,22 +439,62 @@ export function setupOverlaysFolder(
     planets,
     capMagneticFieldsCtrl
   );
+}
 
+// Deprecated wrapper or kept for Axes/Habitable Zone if those stay in Main? 
+// User asked for "Magnetic Field" section specifically.
+// Axes and Habitable Zone are "Overlays" but maybe they can stay or go to "Orbits" or "Constellations"?
+// Or a new "General" tab?
+// Let's create a misc "Overlays" setup for the remaining items if needed.
+export function setupExtraOverlaysControls(gui, sun, planets, habitableZone) {
   // Axes
-  const axesCtrl = overlaysFolder
+  const axesCtrl = gui
     .add(config, 'showAxes')
     .name('Axes')
     .onChange((val) => updateAxesVisibility(val, sun, planets));
   axesCtrl.domElement.classList.add('checkbox-left');
 
   // Habitable Zone
-  const habitableZoneCtrl = overlaysFolder
+  const habitableZoneCtrl = gui
     .add(config, 'showHabitableZone')
     .name('Habitable Zone')
     .onChange((val) => updateHabitableZoneVisibility(val, habitableZone));
   habitableZoneCtrl.domElement.classList.add('checkbox-left');
+}
 
-  overlaysFolder.close(); // Close Overlays folder by default
+export function setupOverlaysFolder(
+  gui,
+  orbitGroup,
+  zodiacGroup,
+  constellationsGroup,
+  planets,
+  sun,
+  zodiacSignsGroup,
+  habitableZone,
+  magneticFieldsGroup,
+  relativeOrbitGroup,
+  universeGroup
+) {
+  const overlaysFolder = gui.addFolder('Overlays');
+
+  const constellationsFolder = overlaysFolder.addFolder('Constellations');
+  constellationsFolder.domElement.classList.add('constellations-folder');
+  setupConstellationsControls(constellationsFolder, zodiacGroup, constellationsGroup, zodiacSignsGroup);
+  constellationsFolder.close();
+
+  const orbitsFolder = overlaysFolder.addFolder('Orbits');
+  orbitsFolder.domElement.classList.add('orbits-folder');
+  setupOrbitsControls(orbitsFolder, orbitGroup, planets, relativeOrbitGroup);
+  orbitsFolder.close();
+
+  const magneticFieldsFolder = overlaysFolder.addFolder('Magnetic Fields');
+  magneticFieldsFolder.domElement.classList.add('magnetic-fields-folder');
+  setupMagneticFieldsControls(magneticFieldsFolder, magneticFieldsGroup, planets, universeGroup);
+  magneticFieldsFolder.close();
+
+  setupExtraOverlaysControls(overlaysFolder, sun, planets, habitableZone);
+
+  overlaysFolder.close();
 }
 
 export function updateSunVisibility(val, sun) {
@@ -531,51 +549,56 @@ export function updateMoonVisibility(val, planets, category) {
   });
 }
 
-export function setupObjectsFolder(gui, planets, sun) {
-  const objectsFolder = gui.addFolder('Objects');
-
-  const sunCtrl = objectsFolder
+export function setupObjectsControls(gui, planets, sun) {
+  // Directly add to the passed gui instance (which is already specific to this context)
+  
+  const sunCtrl = gui
     .add(config, 'showSun')
     .name('Sun')
     .onChange((val) => updateSunVisibility(val, sun));
   sunCtrl.domElement.classList.add('checkbox-left');
 
-  const planetsCtrl = objectsFolder
+  const planetsCtrl = gui
     .add(config, 'showPlanets')
     .name('Planets')
     .onChange((val) => updatePlanetVisibility(val, planets));
   planetsCtrl.domElement.classList.add('checkbox-left');
   updatePlanetVisibility(config.showPlanets, planets);
 
-  const dwarfCtrl = objectsFolder
+  const dwarfCtrl = gui
     .add(config, 'showDwarfPlanets')
     .name('Dwarf Planets')
     .onChange((val) => updateDwarfVisibility(val, planets));
   dwarfCtrl.domElement.classList.add('checkbox-left');
   updateDwarfVisibility(config.showDwarfPlanets, planets);
 
-  const largestMoonsCtrl = objectsFolder
+  const largestMoonsCtrl = gui
     .add(config, 'showLargestMoons')
     .name('Largest Moons')
     .onChange((val) => updateMoonVisibility(val, planets, 'largest'));
   largestMoonsCtrl.domElement.classList.add('checkbox-left');
   updateMoonVisibility(config.showLargestMoons, planets, 'largest');
 
-  const majorMoonsCtrl = objectsFolder
+  const majorMoonsCtrl = gui
     .add(config, 'showMajorMoons')
     .name('Major Moons')
     .onChange((val) => updateMoonVisibility(val, planets, 'major'));
   majorMoonsCtrl.domElement.classList.add('checkbox-left');
   updateMoonVisibility(config.showMajorMoons, planets, 'major');
 
-  const smallMoonsCtrl = objectsFolder
+  const smallMoonsCtrl = gui
     .add(config, 'showSmallMoons')
     .name('Small Moons')
     .onChange((val) => updateMoonVisibility(val, planets, 'small'));
   smallMoonsCtrl.domElement.classList.add('checkbox-left');
   updateMoonVisibility(config.showSmallMoons, planets, 'small');
+}
 
-  objectsFolder.close();
+// Deprecated wrapper for backward compatibility if needed, or remove.
+export function setupObjectsFolder(gui, planets, sun) {
+    const folder = gui.addFolder('Objects');
+    setupObjectsControls(folder, planets, sun);
+    folder.close();
 }
 
 export function updateOrbitColors(orbitGroup, relativeOrbitGroup, planets) {

@@ -7,7 +7,14 @@ import { setupMissionsFolder } from './modules/missions.js';
 import { setupNavigationFolder } from './modules/navigation.js';
 import { setupScaleFolder } from './modules/scale.js';
 import { setupTimeFolder } from './modules/time.js';
-import { setupObjectsFolder, setupOverlaysFolder, setupVisualFolder } from './modules/visual.js';
+import {
+  setupObjectsControls,
+  setupConstellationsControls,
+  setupOrbitsControls,
+  setupMagneticFieldsControls,
+  setupExtraOverlaysControls,
+  setupVisualFolder,
+} from './modules/visual.js';
 import { setupMusicWindow } from './modules/sound.js';
 import { setupSystemUI } from './modules/system.js';
 
@@ -25,6 +32,20 @@ import { setupSystemUI } from './modules/system.js';
  */
 import { menuDock } from './MenuDock.js';
 import { windowManager } from './WindowManager.js';
+
+/**
+ * Sets up the GUI with Scale, Visual, Time, and Navigation sections
+ *
+ * @param {Array} planets - Array of planet objects with mesh, moons, etc.
+ * @param {THREE.Mesh} sun - The sun mesh
+ * @param {THREE.Group} orbitGroup - Group containing planet orbit lines
+ * @param {THREE.Group} zodiacGroup - Group containing zodiac constellation lines
+ * @param {THREE.Points} stars - The starfield points object
+ * @returns {Object} Object containing uiState and control references for updates
+ *
+ * - Navigation: Help text for camera and focus controls
+ */
+import { TabbedWindow } from './modules/TabbedWindow.js'; // Import TabbedWindow
 
 /**
  * Sets up the GUI with Scale, Visual, Time, and Navigation sections
@@ -78,6 +99,7 @@ export function setupGUI(
     objectInfo: true,
     musicWindow: false,
     dock: true,
+    visualWindow: false,
   };
 
   // --- SETUP DOCK ---
@@ -96,6 +118,9 @@ export function setupGUI(
     windowManager.toggleWindow('music-window');
   });
 
+
+
+
   menuDock.addItem('settings', '⚙️', 'Settings', () => {
     if (gui._closed) gui.open();
     else gui.close();
@@ -111,23 +136,48 @@ export function setupGUI(
   // It returns controls.
   const { dateCtrl, timeCtrl, stardateCtrl, speedDisplay } = setupTimeFolder(gui, uiState, config);
 
-  // --- OBJECTS SECTION ---
-  setupObjectsFolder(gui, planets, sun);
+  // --- VISUAL TOOLS WINDOW (Tabbed) ---
+  const visualWindow = new TabbedWindow('visual-tools', 'Visual Tools', {
+    x: 60,
+    y: 100, // Positioned below time window usually
+    width: '320px',
+  });
 
-  // --- OVERLAYS SECTION ---
-  setupOverlaysFolder(
-    gui,
-    orbitGroup,
-    zodiacGroup,
-    constellationsGroup,
-    planets,
-    sun,
-    zodiacSignsGroup,
-    habitableZone,
-    magneticFieldsGroup,
-    relativeOrbitGroup, // Added
-    universeGroup // Added for Sun Magnetic Field lookup
-  );
+  // Helper to create a tab with an embedded lil-gui
+  const createGuiTab = (id, title, setupFn) => {
+    const container = document.createElement('div');
+    container.style.width = '100%';
+    // lil-gui container adjustments
+    container.classList.add('gui-tab-container');
+    
+    const tabGui = new GUI({ container: container, width: '100%' });
+    tabGui.domElement.style.position = 'relative';
+    tabGui.domElement.style.top = '0';
+    tabGui.domElement.style.right = 'auto'; // Reset default absolute positioning
+    // Remove the title bar of the embedded gui if desired, or keep it. 
+    // Usually embedded guis don't need a main title bar if the tab is the title.
+    tabGui.title(''); 
+    tabGui.domElement.querySelector('.title').style.display = 'none';
+
+    setupFn(tabGui);
+    
+    visualWindow.addTab(id, title, container);
+    return tabGui;
+  };
+
+  createGuiTab('objects', 'Objects', (g) => setupObjectsControls(g, planets, sun));
+  createGuiTab('constellations', 'Constellations', (g) => setupConstellationsControls(g, zodiacGroup, constellationsGroup, zodiacSignsGroup));
+  createGuiTab('orbits', 'Orbits', (g) => setupOrbitsControls(g, orbitGroup, planets, relativeOrbitGroup));
+  createGuiTab('magnetic', 'Magnetism', (g) => setupMagneticFieldsControls(g, magneticFieldsGroup, planets, universeGroup));
+
+  menuDock.addItem('visuals', '👁️', 'Visual Tools', () => {
+    visualWindow.toggle();
+  });
+
+  // --- OVERLAYS SECTION (Remaining items) ---
+  const overlaysFolder = gui.addFolder('Guides'); // Renamed from Overlays
+  setupExtraOverlaysControls(overlaysFolder, sun, planets, habitableZone);
+  overlaysFolder.close();
 
   // --- SCALE SECTION ---
   const scaleCtrl = setupScaleFolder(gui, uiState, planets, sun, universeGroup);
@@ -266,6 +316,11 @@ export function updateUI(uiState, controls) {
   if (musicWin) {
     uiState.musicWindow = musicWin.element.style.display !== 'none';
     if (musicWin.update) musicWin.update();
+  }
+
+  const visualWin = windowManager.getWindow('visual-tools');
+  if (visualWin) {
+    uiState.visualWindow = visualWin.element.style.display !== 'none';
   }
 
   if (menuDock.dock) {

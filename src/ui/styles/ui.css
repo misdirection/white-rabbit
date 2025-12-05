@@ -60,6 +60,7 @@
   /* transform is set via JS for positioning */
   transition: background 0.2s;
   font-family: var(--font-family);
+  user-select: none; /* Prevent accidental text selection */
 }
 
 .ui-window:hover {
@@ -85,6 +86,12 @@
   align-items: center;
   justify-content: center;
 }
+
+.ui-window input {
+  user-select: auto; /* Allow text selection in inputs */
+  cursor: text;
+}
+
 
 .window-close:hover {
   color: #ff5555;
@@ -222,6 +229,7 @@
   backdrop-filter: none;
 }
 
+
 .ui-window .tooltip-header {
   color: #aaccff;
   font-size: 16px;
@@ -229,3 +237,137 @@
   margin-bottom: 8px;
   text-align: left;
 }
+
+/* Tabbed Window Styles */
+.tab-header {
+  display: flex;
+  gap: 2px;
+  align-items: center; /* Center arrows vertically */
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0;
+  position: relative;
+}
+
+.tab-scroll-container {
+  flex: 1;
+  overflow: hidden; /* Hide scrollbar */
+  position: relative;
+  margin: 0 4px; /* Space from arrows */
+}
+
+.tab-list {
+  display: flex;
+  gap: 2px;
+  transition: transform 0.3s ease; /* Smooth scroll if we use transform, or just scroll behavior */
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE */
+  scroll-behavior: smooth;
+}
+
+.tab-list::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.scroll-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #aaa;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 16px; /* Larger arrow */
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  height: 28px; /* Match tab height roughly */
+  user-select: none;
+}
+
+.scroll-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.scroll-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+
+.tab-item {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  color: #aaa;
+  font-size: 12px;
+  user-select: none;
+  transition: all 0.2s;
+  position: relative;
+  white-space: nowrap; /* Keep this */
+  flex-shrink: 0; /* Prevent shrinking now that we scroll */
+}
+
+.tab-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.tab-item.active {
+  background: rgba(255, 255, 255, 0.15);
+  color: #44aaff;
+  font-weight: 600;
+}
+
+.tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #44aaff;
+}
+
+.tab-content-area {
+  padding: 16px 0 0 0;
+  flex: 1;
+  display: grid;
+  grid-template-areas: "stack";
+}
+
+.tab-content {
+  grid-area: stack;
+  visibility: hidden; /* Hide generally... */
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+
+.tab-content.active-content {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 1;
+}
+
+/* Embedded lil-gui in tabs */
+.gui-tab-container {
+  width: 100%;
+}
+
+.gui-tab-container .lil-gui {
+  --width: 100%;
+  box-shadow: none; /* Remove shadows inside window */
+}
+
+/* Ensure controls fit */
+.gui-tab-container .lil-gui .title {
+    display: none; /* Double check hiding main title */
+}
+
+
