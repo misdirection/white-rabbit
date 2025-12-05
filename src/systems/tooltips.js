@@ -485,32 +485,55 @@ function calculatePlanetLiveData(data) {
 }
 
 /**
+ * Calculates live astronomical data for the Sun
+ * @returns {Object|null} Live data object or null if not available
+ */
+function calculateSunLiveData() {
+  try {
+    const date = config.date instanceof Date ? config.date : new Date();
+    
+    // GeoVector('Sun') gives vector from Earth to Sun
+    // But wait, Astronomy.Body.Sun is defined.
+    // Astronomy.GeoVector(Body.Sun, date, aberration)
+    const geo = Astronomy.GeoVector(Astronomy.Body.Sun, date, true);
+    
+    const distAu = Math.sqrt(geo.x ** 2 + geo.y ** 2 + geo.z ** 2);
+    // Light travel time: 1 AU = 499.00478 seconds
+    const lightTimeMin = ((distAu * 499.00478) / 60).toFixed(2);
+    
+    return {
+      distanceAU: distAu.toFixed(3),
+      lightTime: lightTimeMin
+    };
+  } catch (e) {
+    Logger.warn('Error calculating live data for Sun', e);
+    return null;
+  }
+}
+
+/**
  * Formats live data section HTML
- * @param {Object} liveData - Live data object with trueAnomaly, velocity, distanceAU, lightTime
+ * @param {Object} liveData - Live data object
  * @returns {string} HTML string
  */
 function formatLiveDataSection(liveData) {
-  return `
-        <div class="tooltip-live-section">
-            <span class="tooltip-live-title">Live Data</span>
-            <div class="tooltip-row">
-                <span class="tooltip-label">True Anomaly</span>
-                <span class="tooltip-value">${liveData.trueAnomaly}°</span>
-            </div>
-            <div class="tooltip-row">
-                <span class="tooltip-label">Helio Velocity</span>
-                <span class="tooltip-value">${liveData.velocity} km/s</span>
-            </div>
-            <div class="tooltip-row">
-                <span class="tooltip-label">Dist to Earth</span>
-                <span class="tooltip-value">${liveData.distanceAU} AU</span>
-            </div>
-            <div class="tooltip-row">
-                <span class="tooltip-label">Light Time</span>
-                <span class="tooltip-value">${liveData.lightTime} min</span>
-            </div>
-        </div>
-    `;
+  let html = `<div class="tooltip-live-section"><span class="tooltip-live-title">Live Data</span>`;
+
+  if (liveData.trueAnomaly) {
+      html += `<div class="tooltip-row"><span class="tooltip-label">True Anomaly</span><span class="tooltip-value">${liveData.trueAnomaly}°</span></div>`;
+  }
+  if (liveData.velocity) {
+      html += `<div class="tooltip-row"><span class="tooltip-label">Helio Velocity</span><span class="tooltip-value">${liveData.velocity} km/s</span></div>`;
+  }
+  if (liveData.distanceAU) {
+      html += `<div class="tooltip-row"><span class="tooltip-label">Dist to Earth</span><span class="tooltip-value">${liveData.distanceAU} AU</span></div>`;
+  }
+  if (liveData.lightTime) {
+      html += `<div class="tooltip-row"><span class="tooltip-label">Light Time</span><span class="tooltip-value">${liveData.lightTime} min</span></div>`;
+  }
+  
+  html += `</div>`;
+  return html;
 }
 
 // --- Type-Specific Formatters ---
@@ -520,7 +543,7 @@ function formatLiveDataSection(liveData) {
  * @returns {string} HTML string
  */
 function formatSunTooltip() {
-  return buildTooltip('Sun', [
+  const fields = [
     { label: 'Type', value: 'G-type Main Sequence Star (G2V)' },
     { label: 'Radius', value: '696,340 km (109 x Earth)' },
     { label: 'Mass', value: '1.989 × 10³⁰ kg (333,000 x Earth)' },
@@ -530,7 +553,34 @@ function formatSunTooltip() {
     { label: 'Core Temp', value: '15,000,000°C' },
     { label: 'Rotation', value: '~27 days (Differential)' },
     { label: 'Age', value: '4.6 Billion Years' },
-  ]);
+  ];
+  
+  const liveData = calculateSunLiveData();
+  const liveSection = liveData ? formatLiveDataSection(liveData) : null;
+  
+  return buildTooltip('Sun', fields, liveSection);
+}
+
+/**
+ * Smart number formatter
+ * - value >= 1000: No decimals
+ * - value >= 10: 1 decimal
+ * - value < 10: up to 3 decimals
+ */
+function formatDecimal(value) {
+  if (typeof value !== 'number') return value;
+  
+  const absVal = Math.abs(value);
+  
+  if (absVal >= 1000) {
+    return value.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  } else if (absVal >= 10) {
+     return value.toLocaleString('en-US', { maximumFractionDigits: 1 });
+  } else {
+    // For very small numbers, up to 3 significant digits or fixed decimals?
+    // Let's go with max 3 decimals for consistency with "0.38" etc.
+    return value.toLocaleString('en-US', { maximumFractionDigits: 3 });
+  }
 }
 
 /**
@@ -541,17 +591,43 @@ function formatSunTooltip() {
 function formatPlanetTooltip(data) {
   const fields = [{ label: 'Type', value: data.type === 'dwarf' ? 'Dwarf Planet' : 'Planet' }];
 
+  // Calculate Radius in km (1 Earth Radius = 6371 km)
+  const radiusKm = data.radius * 6371;
+  const radiusStr = `${formatDecimal(radiusKm)} km (${formatDecimal(data.radius)} x Earth)`;
+
+  // Calculate Mass in Earths (1 Earth Mass = 5.97e24 kg)
+  // Check if mass is a number (it should be now)
+  let massStr = data.details.mass;
+  if (typeof data.details.mass === 'number') {
+    const earthMass = 5.97e24;
+    const massInEarths = data.details.mass / earthMass;
+    const massInKg = data.details.mass.toExponential(2).replace('e+', ' × 10^');
+    
+    // For small masses, showing "0.00 x Earth" is not useful, but we can verify.
+    let relativeStr = `${formatDecimal(massInEarths)} x Earth`;
+    if (massInEarths < 0.01) {
+        relativeStr = `${massInEarths.toExponential(2)} x Earth`;
+    }
+    
+    massStr = `${massInKg} kg (${relativeStr})`;
+  }
+
   // Add detailed fields if available
   if (data.details) {
     fields.push(
-      { label: 'Year', value: `${data.period.toFixed(1)} days` },
-      { label: 'Radius', value: `${data.radius} Earths` },
-      { label: 'Mass', value: data.details.mass },
+      { label: 'Year', value: `${formatDecimal(data.period)} days` },
+      { label: 'Radius', value: radiusStr },
+      { label: 'Mass', value: massStr },
       { label: 'Density', value: data.details.density },
       { label: 'Gravity', value: data.details.gravity },
       { label: 'Albedo', value: data.details.albedo },
-      { label: 'Surface Temp', value: data.details.temp },
-      { label: 'Surface Pressure', value: data.details.pressure },
+      { label: 'Surface Temp', value: data.details.temp }
+    );
+    
+    // Only show Pressure if not "Unknown (Gas Giant)"
+    fields.push({ label: 'Surface Pressure', value: data.details.pressure });
+
+    fields.push(
       { label: 'Solar Day', value: data.details.solarDay },
       { label: 'Sidereal Day', value: data.details.siderealDay },
       { label: 'Axial Tilt', value: `${data.axialTilt}°` },
