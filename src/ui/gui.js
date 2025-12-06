@@ -16,9 +16,9 @@ import GUI from 'lil-gui';
 import { config, REAL_PLANET_SCALE_FACTOR, REAL_SUN_SCALE_FACTOR } from '../config.js';
 import { menuDock } from './MenuDock.js';
 import { setupAboutFolder } from './modules/about.js';
-import { setupEventsFolder } from './modules/events.js';
-import { setupFindFolder } from './modules/find.js';
-import { setupMissionsFolder } from './modules/missions.js';
+import { setupEventsControlsCustom } from './modules/events.js';
+import { setupFindControlsCustom } from './modules/find.js';
+import { setupMissionsControlsCustom } from './modules/missions.js';
 import { setupNavigationFolder } from './modules/navigation.js';
 import { setupScaleFolder } from './modules/scale.js';
 import { setupMusicWindow } from './modules/sound.js';
@@ -64,7 +64,7 @@ export function setupGUI(
   universeGroup,
   constellationsGroup
 ) {
-  const gui = new GUI({ title: 'Menu' });
+  const gui = new GUI({ title: '⚙️' });
   gui.domElement.classList.add('main-gui');
   // gui.close(); // Start closed or maybe open? Let's keep it closed as we have the dock now.
   gui.close();
@@ -89,6 +89,7 @@ export function setupGUI(
     musicWindow: false,
     dock: true,
     visualWindow: false,
+    explorerWindow: false,
   };
 
   // --- SETUP DOCK ---
@@ -108,7 +109,7 @@ export function setupGUI(
   });
 
   // --- FIND SECTION ---
-  setupFindFolder(gui, planets, sun, starsRef, camera, controls);
+  // setupFindFolder removed from here
 
   // --- TIME SECTION ---
   // We still call this to setup the window, but we don't pass 'gui' if we don't want it in the menu.
@@ -121,7 +122,7 @@ export function setupGUI(
   const visualWindow = new TabbedWindow('visual-tools', 'Visual Tools', {
     width: '320px',
     height: 'auto',
-    snap: { x: 'right', y: 'bottom' },
+    snap: { x: 'right', y: 'top' }, // Changed to top
   });
 
   // Helper to create a tab with an embedded lil-gui
@@ -167,12 +168,65 @@ export function setupGUI(
     setupGuidesControlsCustom(container, sun, planets, habitableZone)
   );
 
+  // --- SCALE SECTION ---
+  const scaleCtrl = setupScaleFolder(gui, uiState, planets, sun, universeGroup);
+
+  // --- EXPLORER WINDOW (Tabbed) ---
+  const explorerWindow = new TabbedWindow('explorer-window', 'Explorer', {
+    width: '320px', // Matches Visual Window
+    height: 'auto',
+    snap: { x: 'right', y: 'bottom' },
+  });
+
+  // Helper for Explorer tabs (reused logic)
+  const createExplorerTab = (id, title, icon, setupFn) => {
+    const container = document.createElement('div');
+    container.style.width = '100%';
+    setupFn(container);
+    explorerWindow.addTab(id, title, container, icon);
+  };
+
+  createExplorerTab('find', 'Find', '🔍', (container) =>
+    setupFindControlsCustom(container, planets, sun, starsRef, camera, controls)
+  );
+  createExplorerTab('missions', 'Missions', '🚀', (container) =>
+    setupMissionsControlsCustom(container, config)
+  );
+  createExplorerTab('events', 'Events', '📅', (container) =>
+    setupEventsControlsCustom(container, camera, controls, planets, scaleCtrl.setScalePreset)
+  );
+
+  // Swapped order: Explorer icon first, then Visuals
+  // Actually, user just said "Swap the icons". Currently 'visuals' was first (line 190ish in original logic implied), but let's see current file state.
+  // In the file read, line 171 was 'visuals', then Explorer window creation, then Explorer icon.
+  // So 'visuals' was first. Swapping means 'explorer' should come before 'visuals'.
+  
+  menuDock.addItem('explorer', '🧭', 'Explorer', () => {
+    explorerWindow.toggle();
+  });
+
   menuDock.addItem('visuals', '👁️', 'Visual Tools', () => {
     visualWindow.toggle();
   });
 
+  menuDock.addItem('fullscreen', '⛶', 'Full Screen', () => {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen();
+      } else if (document.documentElement.webkitRequestFullscreen) {
+        document.documentElement.webkitRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      }
+    }
+  });
+
   // --- SCALE SECTION ---
-  const scaleCtrl = setupScaleFolder(gui, uiState, planets, sun, universeGroup);
+  // Moved up
 
   // --- VISUAL SECTION ---
   setupVisualFolder(
@@ -183,14 +237,15 @@ export function setupGUI(
     planets,
     sun,
     orbitGroup,
-    relativeOrbitGroup
+    relativeOrbitGroup,
+    uiState // Pass uiState
   );
 
   // --- MISSIONS SECTION ---
-  setupMissionsFolder(gui, config);
+  // setupMissionsFolder(gui, config); // Removed
 
   // --- EVENTS SECTION ---
-  setupEventsFolder(gui, camera, controls, planets, scaleCtrl.setScalePreset);
+  // setupEventsFolder(gui, camera, controls, planets, scaleCtrl.setScalePreset); // Removed
 
   // --- NAVIGATION SECTION ---
   setupNavigationFolder(gui, uiState);
@@ -200,44 +255,8 @@ export function setupGUI(
   setupMusicWindow();
 
   // --- WINDOWS SECTION ---
-  const windowsFolder = gui.addFolder('Windows');
-
-  windowsFolder
-    .add(uiState, 'timeWindow')
-    .name('Time & Speed')
-    .listen()
-    .onChange((v) => {
-      if (v) windowManager.showWindow('time-window');
-      else windowManager.hideWindow('time-window');
-    });
-
-  windowsFolder
-    .add(uiState, 'objectInfo')
-    .name('Object Info')
-    .listen()
-    .onChange((v) => {
-      if (v) windowManager.showWindow('object-info');
-      else windowManager.hideWindow('object-info');
-    });
-
-  windowsFolder
-    .add(uiState, 'musicWindow')
-    .name('Music')
-    .listen()
-    .onChange((v) => {
-      if (v) windowManager.showWindow('music-window');
-      else windowManager.hideWindow('music-window');
-    });
-
-  windowsFolder
-    .add(uiState, 'dock')
-    .name('Dock')
-    .listen()
-    .onChange((v) => {
-      menuDock.dock.style.display = v ? 'flex' : 'none';
-    });
-
-  windowsFolder.close();
+  // Removed as per request (Time & Speed, Object Info, Music handled via Dock)
+  // Dock toggle moved to Visual section.
 
   // --- SYSTEM SECTION ---
   setupSystemUI(gui, renderer);
@@ -317,5 +336,10 @@ export function updateUI(uiState, controls) {
 
   if (menuDock.dock) {
     uiState.dock = menuDock.dock.style.display !== 'none';
+  }
+  
+  const explorerWin = windowManager.getWindow('explorer-window');
+  if (explorerWin) {
+    uiState.explorerWindow = explorerWin.element.style.display !== 'none';
   }
 }

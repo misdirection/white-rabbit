@@ -51,6 +51,8 @@ export function updateReferencePlane(val, universeGroup) {
 import { updateCoordinateSystem } from '../../systems/coordinates.js';
 import { updateRelativeOrbits } from '../../systems/relativeOrbits.js';
 
+import { menuDock } from '../MenuDock.js';
+
 export function setupVisualFolder(
   gui,
   starsRef,
@@ -59,7 +61,8 @@ export function setupVisualFolder(
   planets,
   sun,
   orbitGroup,
-  relativeOrbitGroup
+  relativeOrbitGroup,
+  uiState // Added uiState
 ) {
   const visualFolder = gui.addFolder('Visual');
 
@@ -141,6 +144,16 @@ export function setupVisualFolder(
     })
     .name('Object Info');
   // objectInfoCtrl.domElement.classList.add('full-width'); // Removed to fix visibility issue
+
+  // Dock Visibility
+  if (uiState) {
+    visualFolder
+    .add(uiState, 'dock')
+    .name('Show Dock')
+    .onChange((v) => {
+      menuDock.dock.style.display = v ? 'flex' : 'none';
+    });
+  }
 
   visualFolder.close(); // Close Visual folder by default
 }

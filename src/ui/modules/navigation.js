@@ -1,5 +1,5 @@
 export function setupNavigationFolder(gui, uiState) {
-  const navFolder = gui.addFolder('Navigation');
+  const navFolder = gui.addFolder('Mouse & Keys');
   const rotateCtrl = navFolder.add(uiState, 'rotate').name('Rotate');
   rotateCtrl.disable();
   const panCtrl = navFolder.add(uiState, 'pan').name('Pan');

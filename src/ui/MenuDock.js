@@ -20,6 +20,13 @@ export class MenuDock {
    * @param {function} onClick - Click handler
    */
   addItem(id, icon, label, onClick) {
+    if (this.items.has(id)) {
+      // Remove existing item to prevent duplicates
+      const existingItem = this.items.get(id);
+      this.dock.removeChild(existingItem);
+      this.items.delete(id);
+    }
+
     const item = document.createElement('div');
     item.className = 'dock-item';
     item.title = label;

@@ -1,8 +1,7 @@
 import { events, formatEventName, navigateToEvent } from '../../features/events.js';
 
-export function setupEventsFolder(gui, camera, controls, planets, setScalePreset) {
-  const eventsFolder = gui.addFolder('Events');
-  eventsFolder.domElement.classList.add('events-folder');
+export function setupEventsControlsCustom(container, camera, controls, planets, setScalePreset) {
+  // We use custom HTML directly.
 
   const eventsState = {
     query: '',
@@ -22,7 +21,9 @@ export function setupEventsFolder(gui, camera, controls, planets, setScalePreset
         </div>
         <div id="events-status"></div>
     `;
-  eventsFolder.domElement.querySelector('.children').appendChild(eventsContainer);
+  
+  // Directly append to the container provided
+  container.appendChild(eventsContainer);
 
   // Create results dropdown appended to BODY to avoid overflow issues
   let resultsDiv = document.getElementById('events-results-dropdown');
@@ -94,8 +95,8 @@ export function setupEventsFolder(gui, camera, controls, planets, setScalePreset
     }
   });
 
-  // Handle scroll to keep dropdown positioned (if gui is scrolled)
-  eventsFolder.domElement.closest('.lil-gui').addEventListener(
+  // Handle scroll to keep dropdown positioned (if container is scrolled)
+  container.addEventListener(
     'scroll',
     () => {
       if (resultsDiv.style.display === 'block') {
@@ -114,27 +115,8 @@ export function setupEventsFolder(gui, camera, controls, planets, setScalePreset
 
   goToBtn.onclick = () => {
     if (eventsState.selectedEvent && camera && controls) {
-      // User requested to keep current scale mode
-      // if (setScalePreset) {
-      //   setScalePreset('Realistic');
-      // }
       navigateToEvent(eventsState.selectedEvent, camera, controls, planets);
       statusDiv.textContent = `Navigating to ${formatEventName(eventsState.selectedEvent)}...`;
     }
   };
-
-  // Add a dummy controller to prevent "Empty" message
-  eventsFolder
-    .add({ dummy: '' }, 'dummy')
-    .name('Hidden')
-    .onChange(() => {}).domElement.style.display = 'none';
-
-  // Close results when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!eventsContainer.contains(e.target)) {
-      resultsDiv.style.display = 'none';
-    }
-  });
-
-  eventsFolder.close(); // Close Events folder by default
 }

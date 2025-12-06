@@ -1,8 +1,6 @@
-import * as THREE from 'three';
+export function setupFindControlsCustom(container, planets, sun, starsRef, camera, controls) {
+  // We use custom HTML directly.
 
-export function setupFindFolder(gui, planets, sun, starsRef, camera, controls) {
-  const findFolder = gui.addFolder('Find');
-  findFolder.domElement.classList.add('find-folder');
 
   const findState = {
     query: '',
@@ -23,7 +21,12 @@ export function setupFindFolder(gui, planets, sun, starsRef, camera, controls) {
         </div>
         <div id="find-status"></div>
     `;
-  findFolder.domElement.querySelector('.children').appendChild(findContainer);
+  
+  // For custom HTML, we can append it directly to the container provided by the TabbedWindow
+  // But since we created a local GUI, we can append to that or just the main container.
+  // The original appended to `findFolder.domElement.querySelector('.children')`.
+  // Here we can just append to the container.
+  container.appendChild(findContainer);
 
   // Create results dropdown appended to BODY to avoid overflow issues
   let resultsDiv = document.getElementById('find-results-dropdown');
@@ -149,8 +152,9 @@ export function setupFindFolder(gui, planets, sun, starsRef, camera, controls) {
     }
   });
 
-  // Handle scroll to keep dropdown positioned (if gui is scrolled)
-  findFolder.domElement.closest('.lil-gui').addEventListener(
+  // We don't have a 'scroll' event listener on lil-gui anymore since we aren't in a scrolling container necessarily
+  // But the window content might scroll.
+  container.addEventListener(
     'scroll',
     () => {
       if (resultsDiv.style.display === 'block') {
@@ -201,19 +205,4 @@ export function setupFindFolder(gui, planets, sun, starsRef, camera, controls) {
       });
     }
   };
-
-  // Add a dummy controller to prevent "Empty" message
-  findFolder
-    .add({ dummy: '' }, 'dummy')
-    .name('Hidden')
-    .onChange(() => {}).domElement.style.display = 'none';
-
-  // Close results when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!findContainer.contains(e.target)) {
-      resultsDiv.style.display = 'none';
-    }
-  });
-
-  findFolder.close(); // Close Find folder by default
 }
