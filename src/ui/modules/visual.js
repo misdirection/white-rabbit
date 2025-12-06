@@ -225,13 +225,14 @@ export function updateAsterismsVisibility(zodiacGroup, asterismsGroup) {
   if (zodiacGroup) {
     zodiacGroup.visible = showZ || showC;
 
-    // Zodiac Group Color: Distinct (Blue) if Zodiac switch is ON, else same as others (Grey)
-    const color = showZ ? 0x446688 : 0xcccccc;
+    // Zodiac Group Color: Distinct (Blue) if Zodiac switch is ON, else same as others
+    // Use brighter colors with low opacity for ethereal halo effect
+    const color = showZ ? 0x77aaee : 0xbbccee;
     zodiacGroup.children.forEach((child) => {
       if (child.material) {
         child.material.color.setHex(color);
-        // Adjust opacity if needed, but keeping it simple for now
-        child.material.opacity = showZ ? 0.6 : 0.4;
+        // Lower opacity for ethereal halo look
+        child.material.opacity = showZ ? 0.45 : 0.35;
       }
     });
   }
@@ -334,7 +335,7 @@ export function setupAsterismsControls(
   // Asterisms (All)
   const asterismsCtrl = gui
     .add(config, 'showAsterisms')
-    .name('Asterisms (All)')
+    .name('Asterisms')
     .onChange(() => updateAsterismsVisibility(zodiacGroup, asterismsGroup));
   asterismsCtrl.domElement.classList.add('checkbox-left');
 
@@ -682,7 +683,7 @@ export function setupAsterismsControlsCustom(
     },
     {
       configKey: 'showAsterisms',
-      label: 'Asterisms (All)',
+      label: 'Asterisms',
       icon: '✨',
       updateFn: () => updateAsterismsVisibility(zodiacGroup, asterismsGroup),
     },
@@ -1016,7 +1017,7 @@ export function setupGuidesControlsCustom(container, sun, planets, habitableZone
 export function updateOrbitColors(orbitGroup, relativeOrbitGroup, planets) {
   const showColors = config.showPlanetColors;
   const showDwarfColors = config.showDwarfPlanetColors;
-  const defaultColor = 0x7799aa; // Slight cyan-tinted gray for default orbits
+  const defaultColor = 0x88bbdd; // Boosted cyan for better visibility
 
   // 1. Update Standard Orbits (Heliocentric / Tychonic)
   orbitGroup.children.forEach((line) => {

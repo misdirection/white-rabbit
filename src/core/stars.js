@@ -8,7 +8,7 @@
 import * as THREE from 'three';
 import { Logger } from '../utils/logger.js';
 import { Octree } from '../utils/Octree.js';
-import { config } from '../config.js';
+import { config, PARSEC_TO_SCENE } from '../config.js';
 
 const ZODIAC_IDS = [
   'Ari',
@@ -113,7 +113,7 @@ class StarManager {
       const chunkData = [];
 
       // [x, y, z, r, g, b, lum, rad, mass, temp, mag]
-      const SCALE = 10000;
+      // Use PARSEC_TO_SCENE for realistic stellar distances
 
       for (let i = 0; i < metaData.length; i++) {
         const offset = i * STRIDE;
@@ -160,9 +160,9 @@ class StarManager {
         const [id, name, bayer, flam, hip, hd, spect, con] = metaData[i];
 
         // Coordinate align: x->x, y->z, z->-y to match Planets (Y-up is North)
-        const x = xRaw * SCALE;
-        const y = zRaw * SCALE;
-        const z = -yRaw * SCALE;
+        const x = xRaw * PARSEC_TO_SCENE;
+        const y = zRaw * PARSEC_TO_SCENE;
+        const z = -yRaw * PARSEC_TO_SCENE;
 
         positions.push(x, y, z);
         colors.push(r, g, b);
@@ -268,12 +268,12 @@ class StarManager {
   buildOctree(data) {
     const min = new THREE.Vector3(Infinity, Infinity, Infinity);
     const max = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
-    const SCALE = 10000;
+    // Use PARSEC_TO_SCENE for realistic stellar distances
 
     data.forEach((star) => {
-      const x = star.x * SCALE;
-      const y = star.z * SCALE;
-      const z = -star.y * SCALE;
+      const x = star.x * PARSEC_TO_SCENE;
+      const y = star.z * PARSEC_TO_SCENE;
+      const z = -star.y * PARSEC_TO_SCENE;
       min.min(new THREE.Vector3(x, y, z));
       max.max(new THREE.Vector3(x, y, z));
     });
@@ -283,9 +283,9 @@ class StarManager {
 
     const octree = new Octree(new THREE.Box3(min, max), 64);
     data.forEach((star, i) => {
-      const x = star.x * SCALE;
-      const y = star.z * SCALE;
-      const z = -star.y * SCALE;
+      const x = star.x * PARSEC_TO_SCENE;
+      const y = star.z * PARSEC_TO_SCENE;
+      const z = -star.y * PARSEC_TO_SCENE;
       octree.insert({ position: new THREE.Vector3(x, y, z), data: star, index: i });
     });
     return octree;
@@ -439,28 +439,35 @@ export async function createAsterisms(zodiacGroup, asterismsGroup, starsData) {
     const allAsterisms = await response.json();
 
     // Map ID -> Position
-    const SCALE = 10000;
+    // Use PARSEC_TO_SCENE for realistic stellar distances
     const starPositionMap = new Map();
 
     // Loop through whatever data we have (Chunk 0 usually)
     starsData.forEach((star) => {
-      const x = star.x * SCALE;
-      const y = star.z * SCALE;
-      const z = -star.y * SCALE;
+      const x = star.x * PARSEC_TO_SCENE;
+      const y = star.z * PARSEC_TO_SCENE;
+      const z = -star.y * PARSEC_TO_SCENE;
       starPositionMap.set(star.id, new THREE.Vector3(x, y, z));
     });
 
-    // Materials
+    // Materials with subtle halo effect:
+    // - Brighter colors for glow
+    // - Lower opacity for ethereal/subtle appearance
+    // - Additive blending creates the halo where lines overlap with stars
     const zodiacMaterial = new THREE.LineBasicMaterial({
-      color: 0x446688,
+      color: 0x77aaee, // Brighter blue for visible halo
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.45, // Lower opacity for subtle ethereal look
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
     });
 
     const starMaterial = new THREE.LineBasicMaterial({
-      color: 0xcccccc,
+      color: 0xbbccee, // Brighter blue-grey for visible halo
       transparent: true,
-      opacity: 0.4,
+      opacity: 0.35, // Lower opacity for subtle ethereal look
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
     });
 
     let zodiacCount = 0;
@@ -504,13 +511,15 @@ export async function createConstellations(group) {
     const json = await response.json();
 
     const material = new THREE.LineBasicMaterial({
-      color: 0x445566, // Subtle slate blue/grey
+      color: 0x556677, // Subtle slate blue/grey with slight glow
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.4,
+      blending: THREE.AdditiveBlending,
       depthWrite: false, // Don't block stars
     });
 
-    const RADIUS = 10000000; // 10M units (1000pc approx) - Push behind most visible stars
+    // Match zodiac sign distance: 100 parsecs
+    const RADIUS = PARSEC_TO_SCENE * 100;
 
     json.features.forEach((feature) => {
       if (!feature.geometry) return;

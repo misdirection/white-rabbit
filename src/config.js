@@ -22,6 +22,11 @@ export const REAL_SUN_SCALE_FACTOR = 20;
 // Conversion factor from Astronomical Units to Three.js scene units
 export const AU_TO_SCENE = 50;
 
+// Conversion factor from Parsecs to Three.js scene units
+// 1 parsec = 206,265 AU, so this gives realistic stellar distances
+// Stars will now be ~1000x farther than before (matching true scale)
+export const PARSEC_TO_SCENE = AU_TO_SCENE * 206265; // ~10,313,250
+
 export const config = {
   speedExponent: 0,
   simulationSpeed: 1,

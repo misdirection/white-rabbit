@@ -155,7 +155,7 @@ export function setupGUI(
   createCustomTab('objects', 'Bodies', '🪐', (container) =>
     setupObjectsControlsCustom(container, planets, sun)
   );
-  createCustomTab('asterisms', 'Asterisms', '✨', (container) =>
+  createCustomTab('asterisms', 'Asterisms', '<span style="font-size:1.5em;font-weight:bold">☆</span>', (container) =>
     setupAsterismsControlsCustom(container, zodiacGroup, asterismsGroup, zodiacSignsGroup, constellationsGroup)
   );
   createCustomTab('orbits', 'Orbits', '💫', (container) =>

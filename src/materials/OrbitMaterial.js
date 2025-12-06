@@ -92,10 +92,10 @@ const orbitFragmentShader = `
  */
 export function createOrbitMaterial(options = {}) {
   const {
-    color = 0x7799aa,
-    opacity = 0.8,
+    color = 0x88bbdd, // Boosted cyan for better visibility
+    opacity = 0.85,
     useGradient = true,
-    glowIntensity = 0.3,
+    glowIntensity = 0.4, // Increased glow to match constellation/asterism visuals
   } = options;
 
   const threeColor = new THREE.Color(color);

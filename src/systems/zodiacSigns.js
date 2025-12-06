@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { config } from '../config.js';
+import { config, PARSEC_TO_SCENE } from '../config.js';
 import { Logger } from '../utils/logger.js';
 
 const ZODIAC_SIGNS = [
@@ -90,65 +90,45 @@ export function createZodiacSigns(scene, textureLoader) {
 }
 
 export async function alignZodiacSigns(zodiacSignsGroup, starsData) {
-  if (!zodiacSignsGroup || !starsData) return;
+  if (!zodiacSignsGroup) return;
 
-  try {
-    // Load zodiac lines to get star IDs for each constellation
-    const response = await fetch(`${import.meta.env.BASE_URL}assets/zodiac_lines.json`);
-    const zodiacLines = await response.json();
+  // Place zodiac signs in a perfect circle at 30° intervals on the ecliptic
+  // This is more intuitive for users than star-centroid-based placement
+  
+  // Position at ~100 parsecs (a reasonable distance for zodiac signs, consistent with stars)
+  const RADIUS = PARSEC_TO_SCENE * 100; // ~100 parsecs in scene units
+  const SIZE = RADIUS * 0.08; // Size proportional to distance
+  
+  // Ecliptic tilt (23.44 degrees)
+  const eclipticTilt = (23.44 * Math.PI) / 180;
+  
+  // Starting angle: Aries begins at the vernal equinox (0° ecliptic longitude)
+  // In our coordinate system, we need to offset to align with the celestial sphere
+  const startAngle = 0; // Radians, adjust if needed for alignment
+  
+  zodiacSignsGroup.children.forEach((sprite, i) => {
+    if (!sprite.isSprite) return;
+    
+    // Each sign occupies 30° (π/6 radians)
+    // Place at the center of each 30° segment (offset by 15°)
+    const angle = startAngle + (i * Math.PI / 6) + (Math.PI / 12);
+    
+    // Calculate position on the ecliptic plane (tilted relative to equatorial)
+    // First calculate position on ecliptic plane (XY plane)
+    const eclipticX = RADIUS * Math.cos(angle);
+    const eclipticY = RADIUS * Math.sin(angle);
+    const eclipticZ = 0;
+    
+    // Rotate around X-axis by ecliptic tilt to transform to equatorial coordinates
+    const x = eclipticX;
+    const y = eclipticY * Math.cos(eclipticTilt) - eclipticZ * Math.sin(eclipticTilt);
+    const z = eclipticY * Math.sin(eclipticTilt) + eclipticZ * Math.cos(eclipticTilt);
+    
+    // Apply our scene coordinate transform (X, Z, -Y for scene coordinates)
+    sprite.position.set(x, z, -y);
+    sprite.scale.set(SIZE, SIZE, 1);
+    sprite.visible = true;
+  });
 
-    // Map star IDs to positions
-    const SCALE = 10000;
-    const starPositionMap = {};
-    starsData.forEach((star) => {
-      if (star.x != null && star.y != null && star.z != null && star.id != null) {
-        // Apply correct coordinate transformation: (z, x, y)
-        starPositionMap[star.id] = new THREE.Vector3(
-          star.x * SCALE,
-          star.z * SCALE,
-          -star.y * SCALE
-        );
-      }
-    });
-
-    // Update each sprite position
-    zodiacSignsGroup.children.forEach((sprite) => {
-      if (!sprite.isSprite) return;
-
-      const zodiacId = sprite.userData.zodiacId;
-      const starIds = zodiacLines[zodiacId];
-
-      if (starIds && starIds.length > 0) {
-        // Calculate centroid
-        const centroid = new THREE.Vector3();
-        let count = 0;
-
-        starIds.forEach((id) => {
-          const pos = starPositionMap[id];
-          if (pos) {
-            centroid.add(pos);
-            count++;
-          }
-        });
-
-        if (count > 0) {
-          centroid.divideScalar(count);
-
-          // Position sprite at centroid
-          sprite.position.copy(centroid);
-          sprite.visible = true;
-
-          // Scale based on distance
-          const distance = centroid.length();
-          const scaleFactor = 0.15;
-          const newSize = distance * scaleFactor;
-          sprite.scale.set(newSize, newSize, 1);
-        }
-      }
-    });
-
-    Logger.log('ZodiacSigns: Aligned signs to constellations');
-  } catch (error) {
-    Logger.error('ZodiacSigns: Error aligning signs', error);
-  }
+  Logger.log('ZodiacSigns: Aligned signs in perfect circle on ecliptic');
 }

@@ -128,7 +128,7 @@ function getOrCreateMaterial(data, line) {
   const isDwarf = data.type === 'dwarf';
   const useColor = isDwarf ? showDwarfColors : showColors;
   
-  const defaultColor = 0x7799aa;
+  const defaultColor = 0x88bbdd; // Boosted cyan for better visibility
   const color = isSun ? (data.color || 0xffff00) : (useColor ? (data.color || defaultColor) : defaultColor);
   const opacity = isSun ? 0.8 : (useColor ? 0.9 : 0.7);
   const glowIntensity = isSun ? 0.5 : (useColor ? 0.4 : 0.2);

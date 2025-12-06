@@ -36,7 +36,7 @@
 import * as Astronomy from 'astronomy-engine';
 import * as THREE from 'three';
 import { Logger } from '../utils/logger.js';
-import { config } from '../config.js';
+import { config, PARSEC_TO_SCENE } from '../config.js';
 import { windowManager } from '../ui/WindowManager.js';
 import { CONSTELLATION_NAMES } from '../data/constellationNames.js';
 
@@ -202,8 +202,7 @@ export function setupTooltipSystem(
           if (candidate.position) {
             starPos = candidate.position.clone();
           } else {
-            const SCALE = 10000;
-            starPos = new THREE.Vector3(star.x * SCALE, star.z * SCALE, -star.y * SCALE);
+            starPos = new THREE.Vector3(star.x * PARSEC_TO_SCENE, star.z * PARSEC_TO_SCENE, -star.y * PARSEC_TO_SCENE);
           }
 
           starPos.applyMatrix4(starsGroup.matrixWorld);

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { PARSEC_TO_SCENE } from '../../config.js';
 
 export function setupFindControlsCustom(container, planets, sun, starsRef, camera, controls) {
   // We use custom HTML directly.
@@ -103,7 +104,6 @@ export function setupFindControlsCustom(container, planets, sun, starsRef, camer
       console.log('Star data found, count:', stars.length);
       // Limit star search to avoid performance hit
       let starCount = 0;
-      const SCALE = 10000;
 
       for (let i = 0; i < stars.length && starCount < 20; i++) {
         const s = stars[i];
@@ -132,9 +132,9 @@ export function setupFindControlsCustom(container, planets, sun, starsRef, camer
         if (match) {
           // Reconstruct star object for focus
           // Coordinate align: x->x, y->z, z->-y to match Planets
-          const x = s.x * SCALE;
-          const y = s.z * SCALE;
-          const z = -s.y * SCALE;
+          const x = s.x * PARSEC_TO_SCENE;
+          const y = s.z * PARSEC_TO_SCENE;
+          const z = -s.y * PARSEC_TO_SCENE;
 
           // Create a dummy mesh for the focus system to target
           const dummyMesh = new THREE.Mesh();

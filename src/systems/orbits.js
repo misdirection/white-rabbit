@@ -61,7 +61,7 @@ export function createOrbitLine(data, orbitGroup) {
   const showDwarfColors = config.showDwarfPlanetColors;
   const isDwarf = data.type === 'dwarf';
   const useColor = isDwarf ? showDwarfColors : showColors;
-  const color = useColor ? data.color || 0x7799aa : 0x7799aa;
+  const color = useColor ? data.color || 0x88bbdd : 0x88bbdd;
 
   // Create custom shader material with gradient and glow
   const orbitMat = createOrbitMaterial({

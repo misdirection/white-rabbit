@@ -162,7 +162,7 @@ function createJovianOrbitLine(moonData, orbitLinesGroup) {
   
   // Use gradient shader material for visual appeal
   const orbitMat = createOrbitMaterial({
-    color: 0x7799aa,
+    color: 0x88bbdd,
     opacity: 0.6,
     useGradient: true,
     glowIntensity: 0.2,
@@ -212,7 +212,7 @@ function createSimpleOrbitLine(moonData, orbitLinesGroup) {
   
   // Use gradient shader material for visual appeal
   const orbitMat = createOrbitMaterial({
-    color: 0x7799aa,
+    color: 0x88bbdd,
     opacity: 0.6,
     useGradient: true,
     glowIntensity: 0.2,
@@ -234,7 +234,7 @@ function createRealOrbitLine(moonData, orbitLinesGroup) {
   
   // Use gradient shader material for visual appeal
   const orbitMat = createOrbitMaterial({
-    color: 0x7799aa,
+    color: 0x88bbdd,
     opacity: 0.6,
     useGradient: true,
     glowIntensity: 0.2,

@@ -197,7 +197,7 @@ export class TabbedWindow {
       // Icon + Title structure
       const iconSpan = document.createElement('span');
       iconSpan.className = 'tab-icon';
-      iconSpan.textContent = tab.icon || ''; // Fallback if no icon
+      iconSpan.innerHTML = tab.icon || ''; // Use innerHTML to support styled icons
 
       const titleSpan = document.createElement('span');
       titleSpan.className = 'tab-title';
