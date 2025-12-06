@@ -20,9 +20,10 @@ import { setupEventsControlsCustom } from './modules/events.js';
 import { setupFindControlsCustom } from './modules/find.js';
 import { setupMissionsControlsCustom } from './modules/missions.js';
 import { setupNavigationFolder } from './modules/navigation.js';
-import { setupScaleFolder } from './modules/scale.js';
+
 import { setupMusicWindow } from './modules/sound.js';
 import { setupSystemUI } from './modules/system.js';
+import { setupSystemTab } from './modules/systemTab.js';
 import { TabbedWindow } from './modules/TabbedWindow.js';
 import { setupTimeFolder } from './modules/time.js';
 import {
@@ -92,6 +93,8 @@ export function setupGUI(
     explorerWindow: false,
   };
 
+  let scaleCtrl = { setScalePreset: () => {} }; // Placeholder
+
   // --- SETUP DOCK ---
   menuDock.addItem('objects', '👆', 'Object Info', () => {
     // For now, we don't have a dedicated Objects window, maybe we can toggle the Objects folder in lil-gui?
@@ -146,15 +149,27 @@ export function setupGUI(
 
     const container = document.createElement('div');
     container.style.width = '100%';
-    // container.classList.add('custom-tab-container');
+
     setup(container);
     visualWindow.addTab(id, title, container, icon);
   };
 
   // createGuiTab('objects', 'Objects', (g) => setupObjectsControls(g, planets, sun));
+
   createCustomTab('objects', 'Bodies', '🪐', (container) =>
     setupObjectsControlsCustom(container, planets, sun)
   );
+
+  createCustomTab('orbits', 'Orbits', '💫', (container) =>
+    setupOrbitsControlsCustom(container, orbitGroup, planets, relativeOrbitGroup)
+  );
+  createCustomTab('magnetic', 'Magnetism', '🧲', (container) =>
+    setupMagneticFieldsControlsCustom(container, magneticFieldsGroup, planets, universeGroup)
+  );
+  createCustomTab('guides', 'Guides', '📐', (container) =>
+    setupGuidesControlsCustom(container, sun, planets, habitableZone)
+  );
+
   createCustomTab(
     'asterisms',
     'Asterisms',
@@ -168,18 +183,39 @@ export function setupGUI(
         constellationsGroup
       )
   );
-  createCustomTab('orbits', 'Orbits', '💫', (container) =>
-    setupOrbitsControlsCustom(container, orbitGroup, planets, relativeOrbitGroup)
-  );
-  createCustomTab('magnetic', 'Magnetism', '🧲', (container) =>
-    setupMagneticFieldsControlsCustom(container, magneticFieldsGroup, planets, universeGroup)
-  );
-  createCustomTab('guides', 'Guides', '📐', (container) =>
-    setupGuidesControlsCustom(container, sun, planets, habitableZone)
-  );
+
+  createCustomTab('system', 'System', '☀️', (container) => {
+    const ctrl = setupSystemTab(
+      container,
+      uiState,
+      planets,
+      sun,
+      universeGroup,
+      orbitGroup,
+      relativeOrbitGroup
+    );
+    scaleCtrl = ctrl;
+  });
 
   // --- SCALE SECTION ---
-  const scaleCtrl = setupScaleFolder(gui, uiState, planets, sun, universeGroup);
+  // Scale controls moved to System tab in Visual Tools
+  // const scaleCtrl = setupScaleFolder(gui, uiState, planets, sun, universeGroup);
+  // We need to provide the `setScalePreset` function to uiState or other modules if they use it.
+  // The setupSystemTab returns { setScalePreset }. We should capture it.
+  // However, setupSystemTab is called inside the createCustomTab callback, which is delayed?
+  // No, createCustomTab executes the setup immediately when building?
+  // Wait, standard createCustomTab implementation (checked earlier) calls setup(container) immediately.
+  // So we can capture the return value if we modify createCustomTab or the callback.
+
+  // We need to re-define the callback to capture the result
+  // But setupSystemTab returns the object.
+  // We can do:
+  /*
+  createCustomTab('system', 'System', '☀️', (container) => {
+    const ctrl = setupSystemTab(container, uiState, planets, sun, universeGroup, orbitGroup, relativeOrbitGroup);
+    scaleCtrl = ctrl;
+  });
+  */
 
   // --- EXPLORER WINDOW (Tabbed) ---
   const explorerWindow = new TabbedWindow('explorer-window', 'Explorer', {

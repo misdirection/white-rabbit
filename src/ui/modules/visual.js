@@ -66,28 +66,7 @@ export function setupVisualFolder(
 ) {
   const visualFolder = gui.addFolder('Visual');
 
-  // Coordinate System (Origin)
-  visualFolder
-    .add(config, 'coordinateSystem', {
-      'Center of Mass (Barycentric)': 'Barycentric',
-      'Earth (Geocentric)': 'Geocentric',
-      'Earth (Tychonic)': 'Tychonic',
-      'Sun (Heliocentric)': 'Heliocentric',
-    })
-    .name('Origin')
-    .onChange(() => {
-      updateCoordinateSystem(universeGroup, planets, sun);
-      updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, sun);
-    });
-
-  // Reference Plane Control
-  visualFolder
-    .add(config, 'referencePlane', ['Equatorial', 'Ecliptic'])
-    .name('Reference Plane')
-    .onChange((val) => updateReferencePlane(val, universeGroup));
-
-  // Initialize Reference Plane state
-  updateReferencePlane(config.referencePlane, universeGroup);
+  // Coordinate System and Reference Plane moved to System Tab
 
   const starSlider = visualFolder
     .add(config, 'starBrightness', 0.0, 1.0)
@@ -673,7 +652,7 @@ export function setupAsterismsControlsCustom(
     {
       configKey: 'showAsterisms',
       label: 'Asterisms',
-      icon: '✨',
+      icon: '☆',
       updateFn: () => updateAsterismsVisibility(zodiacGroup, asterismsGroup),
     },
     {
