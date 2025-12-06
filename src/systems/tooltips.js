@@ -439,7 +439,7 @@ function calculatePlanetLiveData(data) {
   try {
     const date = config.date instanceof Date ? config.date : new Date();
 
-    if (isNaN(date.getTime())) {
+    if (Number.isNaN(date.getTime())) {
       return {
         trueAnomaly: 'Invalid Date',
         velocity: '---',
@@ -815,18 +815,50 @@ function formatMoonTooltip(data, parentName) {
  * @param {Object} data - Star data object
  * @returns {string} HTML string
  */
+/**
+ * Formats tooltip for a star
+ * @param {Object} data - Star data object
+ * @returns {string} HTML string
+ */
+/**
+ * Formats tooltip for a star
+ * @param {Object} data - Star data object
+ * @returns {string} HTML string
+ */
 function formatStarTooltip(data) {
   const distance = data.distance ? (data.distance * 3.26156).toFixed(1) : 'N/A';
-  const luminosity = data.radius ? data.radius.toFixed(1) : 'N/A';
+  const luminosity = data.luminosity ? data.luminosity.toFixed(2) : 'N/A';
   const name = data.name || `HD ${data.id}`;
   const type = data.spectralType || 'Unknown';
 
-  return buildTooltip(name, [
+  const fields = [
     { label: 'Distance', value: `${distance} LY` },
     { label: 'Type', value: type },
-    { label: 'Luminosity', value: luminosity },
-    { label: 'Catalog ID', value: data.id },
-  ]);
+    { label: 'Luminosity', value: `${luminosity} L☉` },
+  ];
+
+  // Calculate Apparent Magnitude
+  // M = 4.83 - 2.5 * log10(L)
+  // m = M + 5 * (log10(d) - 1)  (where d is in parsecs)
+  if (data.luminosity && data.distance) {
+    const M = 4.83 - 2.5 * Math.log10(data.luminosity);
+    const m = M + 5 * (Math.log10(data.distance) - 1);
+    fields.push({ label: 'Apparent Mag', value: m.toFixed(2) });
+  }
+
+  if (data.hip) {
+    fields.push({ label: 'Hipparcos ID', value: data.hip });
+  }
+  if (data.hd) {
+    fields.push({ label: 'HD ID', value: data.hd });
+  }
+
+  // Fallback if no standard IDs
+  if (!data.hip && !data.hd) {
+    fields.push({ label: 'Catalog ID', value: data.id });
+  }
+
+  return buildTooltip(name, fields);
 }
 
 /**

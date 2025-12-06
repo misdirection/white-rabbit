@@ -138,7 +138,7 @@ export async function createStarfield(scene) {
         hip: hip,
         hd: hd,
         distance: p,
-        radius: nVal,
+        luminosity: nVal,
         x: xRaw,
         y: yRaw,
         z: zRaw,
