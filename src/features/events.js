@@ -54,9 +54,9 @@ export function navigateToEvent(event, camera, controls, planets) {
 
     // Use existing focus mode to center on Earth
     // This handles camera positioning, high-res texture swapping, and controls target
-    // Use a smaller distance multiplier (2.5 instead of default 5) to get closer for eclipse viewing
+    // Use a larger screen fraction (0.75 instead of default 0.35) to get closer for eclipse viewing
     // We must explicitly set type: 'planet' so focusOnObject uses the correct scale factor
-    focusOnObject({ ...earth, type: 'planet' }, camera, controls, 2.5);
+    focusOnObject({ ...earth, type: 'planet' }, camera, controls, 0.75);
 
     Logger.log(`Navigating to event: ${event.type} - ${event.date.toISOString()}`);
   }, 100);

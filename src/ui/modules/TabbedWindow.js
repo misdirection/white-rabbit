@@ -269,7 +269,17 @@ export class TabbedWindow {
       y: y - 20, // Offset slightly
       width: '300px', // Default width
       height: 'auto',
+      onClose: () => {
+        // Restore tab to the main window when the detached window is closed
+        this.addTab(tab.id, tab.title, tab.contentElement, tab.icon);
+      },
     });
+
+    // Force update position because createWindow might return a recycled window with old coordinates
+    newWin.x = x - 150;
+    newWin.y = y - 20;
+    newWin.snapState = { x: 'none', y: 'none' };
+    newWin.element.style.transform = `translate3d(${newWin.x}px, ${newWin.y}px, 0)`;
 
     // Add specific class to identify it as a dockable window
     newWin.element.classList.add('dockable-window');

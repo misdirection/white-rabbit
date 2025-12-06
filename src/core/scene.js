@@ -19,7 +19,7 @@
  * realistic shadows while other planets remain illuminated by the point light at the Sun.
  */
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
 
 /**
  * Creates and initializes the Three.js scene with camera, renderer, and controls
@@ -37,7 +37,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
  * @returns {THREE.Scene} returns.scene - The main Three.js scene
  * @returns {THREE.PerspectiveCamera} returns.camera - Perspective camera (60° FOV)
  * @returns {THREE.WebGLRenderer} returns.renderer - WebGL renderer with tone mapping
- * @returns {OrbitControls} returns.controls - Camera orbit controls with damping
+ * @returns {ArcballControls} returns.controls - Camera arcball controls with damping
  * @returns {THREE.Group} returns.orbitGroup - Group for planet orbit lines
  * @returns {THREE.Group} returns.zodiacGroup - Group for zodiac constellation lines
  */
@@ -61,9 +61,10 @@ export function createScene() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.body.appendChild(renderer.domElement);
 
-  const controls = new OrbitControls(camera, renderer.domElement);
+  const controls = new ArcballControls(camera, renderer.domElement, scene);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
+  controls.setGizmosVisible(false); // Hide the gizmo by default
 
   // --- Lighting ---
   const ambientLight = new THREE.AmbientLight(0x333333, 0.5); // Reduced intensity

@@ -42,7 +42,10 @@ import { createRing } from '../systems/rings.js';
  * @returns {THREE.Mesh} Sun mesh
  */
 function createSun(scene) {
-  const sunGeometry = new THREE.SphereGeometry(5, 64, 64);
+  // Precise radius for 1x scale to equal realistic size (0.00465 AU * 50 = ~0.2325 units)
+  // At 20x slider (1.0 scale), size is 4.65 units (20x real).
+  // At 1x slider (0.05 scale), size is 0.2325 units (1x real).
+  const sunGeometry = new THREE.SphereGeometry(4.65, 64, 64);
 
   // Custom uniforms container
   const customUniforms = {
@@ -64,7 +67,7 @@ function createSun(scene) {
   sun.userData.customUniforms = customUniforms;
 
   // Create sun axis line
-  const sunAxisLength = 5 * 2.5;
+  const sunAxisLength = 4.65 * 2.5;
   const sunAxisGeo = new THREE.BufferGeometry().setFromPoints([
     new THREE.Vector3(0, -sunAxisLength, 0),
     new THREE.Vector3(0, sunAxisLength, 0),

@@ -1,6 +1,7 @@
+import * as THREE from 'three';
+
 export function setupFindControlsCustom(container, planets, sun, starsRef, camera, controls) {
   // We use custom HTML directly.
-
 
   const findState = {
     query: '',
@@ -19,9 +20,8 @@ export function setupFindControlsCustom(container, planets, sun, starsRef, camer
             <button id="btn-look-at" disabled>Look At</button>
             <button id="btn-go-to" disabled>Go To</button>
         </div>
-        <div id="find-status"></div>
     `;
-  
+
   // For custom HTML, we can append it directly to the container provided by the TabbedWindow
   // But since we created a local GUI, we can append to that or just the main container.
   // The original appended to `findFolder.domElement.querySelector('.children')`.
@@ -40,7 +40,6 @@ export function setupFindControlsCustom(container, planets, sun, starsRef, camer
   const searchInput = findContainer.querySelector('#find-search');
   const lookAtBtn = findContainer.querySelector('#btn-look-at');
   const goToBtn = findContainer.querySelector('#btn-go-to');
-  const statusDiv = findContainer.querySelector('#find-status');
 
   // Update dropdown position
   function updateDropdownPosition() {
@@ -52,6 +51,12 @@ export function setupFindControlsCustom(container, planets, sun, starsRef, camer
 
   // Search Logic
   searchInput.addEventListener('input', (e) => {
+    // Clear selection state on new input
+    searchInput.classList.remove('valid-selection');
+    findState.selectedObject = null;
+    lookAtBtn.disabled = true;
+    goToBtn.disabled = true;
+
     const query = e.target.value.toLowerCase();
     if (query.length < 2) {
       resultsDiv.style.display = 'none';
@@ -92,31 +97,55 @@ export function setupFindControlsCustom(container, planets, sun, starsRef, camer
     });
 
     // 3. Search Stars
+    console.log('Searching stars...', starsRef);
     if (starsRef.value && starsRef.value.userData.starData) {
       const stars = starsRef.value.userData.starData;
+      console.log('Star data found, count:', stars.length);
       // Limit star search to avoid performance hit
       let starCount = 0;
-      for (let i = 0; i < stars.length && starCount < 5; i++) {
+      const SCALE = 10000;
+
+      for (let i = 0; i < stars.length && starCount < 20; i++) {
         const s = stars[i];
-        const name = s.name || `HD ${s.id}`;
-        if (name.toLowerCase().includes(query) || s.id.toString().includes(query)) {
+
+        // Build searchable strings
+        const name = s.name || '';
+        const bayer = s.bayer || '';
+        const flam = s.flamsteed ? s.flamsteed.toString() : '';
+        const hip = s.hip ? `hip ${s.hip}` : ''; // Search "hip 123"
+        const hd = s.hd ? `hd ${s.hd}` : ''; // Search "hd 123"
+
+        let match = false;
+
+        // Check primary name
+        if (name && name.toLowerCase().includes(query)) match = true;
+        // Check IDs
+        else if (hip.includes(query) || hd.includes(query)) match = true;
+        // Check Bayer/Flamsteed (e.g. "Alpha Cen" or "Alp Cen")
+        // Bayer is usually "Alp CMa" format in data? Let's assume standard abbreviations
+        else if (bayer.toLowerCase().includes(query)) match = true;
+        else if (flam && query.includes(flam))
+          match = true; // Weak check for simple numbers, maybe strict equality?
+        // Fallback for simple ID search if user just types a number
+        else if (s.hip == query || s.hd == query) match = true;
+
+        if (match) {
           // Reconstruct star object for focus
-          // We need the position from the geometry
-          const positions = starsRef.value.geometry.attributes.position.array;
-          const x = positions[i * 3];
-          const y = positions[i * 3 + 1];
-          const z = positions[i * 3 + 2];
+          // Coordinate align: x->x, y->z, z->-y to match Planets
+          const x = s.x * SCALE;
+          const y = s.z * SCALE;
+          const z = -s.y * SCALE;
 
           // Create a dummy mesh for the focus system to target
           const dummyMesh = new THREE.Mesh();
           dummyMesh.position.set(x, y, z);
 
           matches.push({
-            name: name,
+            name: name || bayer || `HD ${s.hd}` || `HIP ${s.hip}`,
             type: 'Star',
             object: {
               mesh: dummyMesh,
-              data: { name: name, radius: s.radius || 1 },
+              data: { name: name || bayer || `Star`, radius: s.radius || 1 },
               type: 'star',
             },
           });
@@ -167,9 +196,9 @@ export function setupFindControlsCustom(container, planets, sun, starsRef, camer
   function selectObject(match) {
     findState.selectedObject = match.object;
     searchInput.value = match.name;
+    searchInput.classList.add('valid-selection'); // Visual feedback
     lookAtBtn.disabled = false;
     goToBtn.disabled = false;
-    statusDiv.textContent = `Selected: ${match.name}`;
   }
 
   lookAtBtn.onclick = () => {

@@ -1,0 +1,97 @@
+/* Find Window Styles */
+.find-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 10px;
+}
+
+.find-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.find-input-wrapper label {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.find-input-wrapper input {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 8px;
+  border-radius: 4px;
+  outline: none;
+  font-family: inherit;
+}
+
+.find-input-wrapper input:focus {
+  border-color: #44aaff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.find-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.find-actions button {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #eee;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.find-actions button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #fff;
+}
+
+.find-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+#find-status {
+  font-size: 12px;
+  color: #44aaff;
+  min-height: 1.2em;
+}
+
+/* Find Results Dropdown */
+.find-results {
+  position: absolute; /* Set via JS but good backup */
+  background: rgba(15, 15, 20, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0 0 6px 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10000; /* High z-index to sit on top of everything */
+  display: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+}
+
+.find-result-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  color: #eee;
+  font-size: 13px;
+  transition: background 0.1s;
+}
+
+.find-result-item:last-child {
+  border-bottom: none;
+}
+
+.find-result-item:hover {
+  background: rgba(68, 170, 255, 0.2);
+  color: #fff;
+}
