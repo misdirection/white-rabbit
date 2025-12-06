@@ -6,9 +6,9 @@
  * Manages multiple THREE.Points objects and Octrees.
  */
 import * as THREE from 'three';
+import { config, PARSEC_TO_SCENE } from '../config.js';
 import { Logger } from '../utils/logger.js';
 import { Octree } from '../utils/Octree.js';
-import { config, PARSEC_TO_SCENE } from '../config.js';
 
 const ZODIAC_IDS = [
   'Ari',
@@ -150,7 +150,7 @@ class StarManager {
         } else {
           // Brighter stars: Exponential growth
           const t = logFlux + 8;
-          size = 1.0 + Math.pow(t, 1.4) * 0.3;
+          size = 1.0 + t ** 1.4 * 0.3;
         }
 
         // Strict Cap to prevent "blobs"
@@ -172,10 +172,12 @@ class StarManager {
             `[DEBUG Chunk ${chunkId}] First Star Pos: ${x}, ${y}, ${z} | RGB: ${r}, ${g}, ${b}`
           );
         }
-        
+
         // Debug Polaris Position (HIP 11767)
         if (hip === 11767) {
-             console.warn(`[DEBUG] Polaris Found! Raw(x,y,z): [${xRaw}, ${yRaw}, ${zRaw}]. Scene(x,y,z): [${x}, ${y}, ${z}]`);
+          console.warn(
+            `[DEBUG] Polaris Found! Raw(x,y,z): [${xRaw}, ${yRaw}, ${zRaw}]. Scene(x,y,z): [${x}, ${y}, ${z}]`
+          );
         }
 
         chunkData.push({
@@ -507,7 +509,7 @@ export async function createConstellations(group) {
   try {
     const response = await fetch(`${import.meta.env.BASE_URL}assets/constellations.bounds.geojson`);
     if (!response.ok) throw new Error('Failed to fetch constellation boundaries');
-    
+
     const json = await response.json();
 
     const material = new THREE.LineBasicMaterial({
@@ -532,7 +534,7 @@ export async function createConstellations(group) {
         allRings.push(...feature.geometry.coordinates);
       } else if (type === 'MultiPolygon') {
         // [ [ [ [ra, dec], ... ] ], ... ]
-        feature.geometry.coordinates.forEach(polygon => {
+        feature.geometry.coordinates.forEach((polygon) => {
           allRings.push(...polygon);
         });
       }
@@ -542,9 +544,9 @@ export async function createConstellations(group) {
         ring.forEach(([ra, dec]) => {
           // RA is usually 0-360 or 0-24h (GeoJSON usually decimal degrees 0-360 or -180 to 180)
           // Dec is -90 to 90
-          
+
           // GeoJSON use [long, lat] -> [RA, Dec]
-          // Ideally RA increases Eastward. 
+          // Ideally RA increases Eastward.
           // 3D conversion:
           const raRad = THREE.MathUtils.degToRad(ra);
           const decRad = THREE.MathUtils.degToRad(dec);

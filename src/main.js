@@ -9,11 +9,11 @@ import { Simulation } from './core/Simulation.js';
 import './ui/styles/ui.css'; // Import UI styles
 
 // --- Init ---
-window.onerror = function(message, source, lineno, colno, error) {
+window.onerror = (message, source, lineno, colno, error) => {
   const loading = document.getElementById('loading');
   if (loading) {
-      loading.textContent = `Error: ${message} at ${source}:${lineno}`;
-      loading.style.color = 'red';
+    loading.textContent = `Error: ${message} at ${source}:${lineno}`;
+    loading.style.color = 'red';
   }
 };
 (async () => {

@@ -21,7 +21,7 @@ export function setupEventsControlsCustom(container, camera, controls, planets, 
         </div>
         <div id="events-status"></div>
     `;
-  
+
   // Directly append to the container provided
   container.appendChild(eventsContainer);
 

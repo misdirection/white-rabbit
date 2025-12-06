@@ -141,14 +141,14 @@ export function updateOrbitMaterialColor(material, color, opacity) {
  */
 export function createProgressAttribute(numPoints, currentIndex = 0) {
   const progress = new Float32Array(numPoints);
-  
+
   for (let i = 0; i < numPoints; i++) {
     // Calculate distance from current position, wrapping around
-    let dist = (i - currentIndex + numPoints) % numPoints;
+    const dist = (i - currentIndex + numPoints) % numPoints;
     // Normalize to 0-1 range
     progress[i] = dist / numPoints;
   }
-  
+
   return progress;
 }
 
@@ -160,14 +160,14 @@ export function createProgressAttribute(numPoints, currentIndex = 0) {
 export function updateProgressAttribute(geometry, currentIndex) {
   const progressAttr = geometry.getAttribute('progress');
   if (!progressAttr) return;
-  
+
   const numPoints = progressAttr.count;
   const progress = progressAttr.array;
-  
+
   for (let i = 0; i < numPoints; i++) {
-    let dist = (i - currentIndex + numPoints) % numPoints;
+    const dist = (i - currentIndex + numPoints) % numPoints;
     progress[i] = dist / numPoints;
   }
-  
+
   progressAttr.needsUpdate = true;
 }

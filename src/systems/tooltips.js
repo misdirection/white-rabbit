@@ -35,11 +35,10 @@
  */
 import * as Astronomy from 'astronomy-engine';
 import * as THREE from 'three';
-import { Logger } from '../utils/logger.js';
 import { config, PARSEC_TO_SCENE } from '../config.js';
-import { windowManager } from '../ui/WindowManager.js';
 import { CONSTELLATION_NAMES } from '../data/constellationNames.js';
-
+import { windowManager } from '../ui/WindowManager.js';
+import { Logger } from '../utils/logger.js';
 
 const SCREEN_HIT_RADIUS = 10; // Pixels on screen for hit detection
 
@@ -52,14 +51,7 @@ const SCREEN_HIT_RADIUS = 10; // Pixels on screen for hit detection
  * @param {THREE.Group} zodiacGroup - Group containing zodiac lines
  * @param {THREE.Group} constellationsGroup - Group containing other constellation lines
  */
-export function setupTooltipSystem(
-  camera,
-  planets,
-  sun,
-  starsRef,
-  zodiacGroup,
-  asterismsGroup
-) {
+export function setupTooltipSystem(camera, planets, sun, starsRef, zodiacGroup, asterismsGroup) {
   const tooltip = document.getElementById('tooltip');
 
   // const tooltip = document.getElementById('tooltip'); // Removed duplicate
@@ -159,13 +151,13 @@ export function setupTooltipSystem(
         // StarManager attached to userData
         const manager = starsGroup.userData.manager;
         const starData = starsGroup.userData.starData;
-        
+
         let octrees = [];
         if (manager) {
-            octrees = manager.getOctrees();
+          octrees = manager.getOctrees();
         } else if (starsGroup.userData.octree) {
-            // Legacy/Fallback support
-            octrees = [starsGroup.userData.octree];
+          // Legacy/Fallback support
+          octrees = [starsGroup.userData.octree];
         }
 
         const STAR_HIT_RADIUS = 15;
@@ -173,36 +165,40 @@ export function setupTooltipSystem(
 
         // Collect candidates from ALL octrees
         let candidates = [];
-        
-        if (octrees.length > 0) {
-           raycaster.setFromCamera(mouse, camera);
-           // Assume starsGroup is the parent for all chunks, so matrixWorld is valid for all
-           const inverseMatrix = new THREE.Matrix4().copy(starsGroup.matrixWorld).invert();
-           const localRay = raycaster.ray.clone().applyMatrix4(inverseMatrix);
 
-           octrees.forEach(octree => {
-               const results = octree.queryRay(localRay, 500);
-               candidates.push(...results);
-           });
+        if (octrees.length > 0) {
+          raycaster.setFromCamera(mouse, camera);
+          // Assume starsGroup is the parent for all chunks, so matrixWorld is valid for all
+          const inverseMatrix = new THREE.Matrix4().copy(starsGroup.matrixWorld).invert();
+          const localRay = raycaster.ray.clone().applyMatrix4(inverseMatrix);
+
+          octrees.forEach((octree) => {
+            const results = octree.queryRay(localRay, 500);
+            candidates.push(...results);
+          });
         } else if (starData) {
-            // Fallback (slow)
-             candidates = starData.map((d, i) => ({ data: d, index: i }));
+          // Fallback (slow)
+          candidates = starData.map((d, i) => ({ data: d, index: i }));
         }
 
         for (const candidate of candidates) {
           const star = candidate.data;
-          
+
           // Visibility check:
           // If star magnitude overrides the limit, it shouldn't be selectable
           if (star.mag !== undefined && config.magnitudeLimit !== undefined) {
-             if (star.mag > config.magnitudeLimit) continue;
+            if (star.mag > config.magnitudeLimit) continue;
           }
 
           let starPos;
           if (candidate.position) {
             starPos = candidate.position.clone();
           } else {
-            starPos = new THREE.Vector3(star.x * PARSEC_TO_SCENE, star.z * PARSEC_TO_SCENE, -star.y * PARSEC_TO_SCENE);
+            starPos = new THREE.Vector3(
+              star.x * PARSEC_TO_SCENE,
+              star.z * PARSEC_TO_SCENE,
+              -star.y * PARSEC_TO_SCENE
+            );
           }
 
           starPos.applyMatrix4(starsGroup.matrixWorld);
@@ -821,18 +817,22 @@ function formatMoonTooltip(data, parentName) {
  * @returns {string} HTML string
  */
 function formatStarTooltip(data) {
-  const distance = data.distance ? (data.distance * 3.26156).toLocaleString('en-US', { maximumFractionDigits: 1 }) : 'N/A';
-  const luminosity = data.luminosity ? data.luminosity.toLocaleString('en-US', { maximumFractionDigits: 2 }) : 'N/A';
-  
+  const distance = data.distance
+    ? (data.distance * 3.26156).toLocaleString('en-US', { maximumFractionDigits: 1 })
+    : 'N/A';
+  const luminosity = data.luminosity
+    ? data.luminosity.toLocaleString('en-US', { maximumFractionDigits: 2 })
+    : 'N/A';
+
   let name = data.name;
   if (!name) {
     if (data.hd) name = `HD ${data.hd}`;
     else if (data.hip) name = `HIP ${data.hip}`;
     else name = `HR ${data.id}`;
   }
-  
+
   const type = data.spectralType || 'Unknown';
-  
+
   const fields = [
     { label: 'Distance', value: `${distance} LY` },
     { label: 'Type', value: type },
@@ -845,19 +845,28 @@ function formatStarTooltip(data) {
   }
 
   if (data.temperature) {
-     fields.push({ label: 'Temp', value: `${Math.round(data.temperature).toLocaleString('en-US')} K` });
+    fields.push({
+      label: 'Temp',
+      value: `${Math.round(data.temperature).toLocaleString('en-US')} K`,
+    });
   }
 
   if (data.mass) {
-      fields.push({ label: 'Mass', value: `${data.mass.toLocaleString('en-US', { maximimumFractionDigits: 2 })} M☉` });
+    fields.push({
+      label: 'Mass',
+      value: `${data.mass.toLocaleString('en-US', { maximimumFractionDigits: 2 })} M☉`,
+    });
   }
 
   if (data.radius) {
-      fields.push({ label: 'Radius', value: `${data.radius.toLocaleString('en-US', { maximimumFractionDigits: 2 })} R☉` });
+    fields.push({
+      label: 'Radius',
+      value: `${data.radius.toLocaleString('en-US', { maximimumFractionDigits: 2 })} R☉`,
+    });
   }
 
   if (data.mag !== undefined) {
-      fields.push({ label: 'Apparent Mag', value: data.mag.toFixed(2) });
+    fields.push({ label: 'Apparent Mag', value: data.mag.toFixed(2) });
   } else if (data.luminosity && data.distance) {
     const M = 4.83 - 2.5 * Math.log10(data.luminosity);
     const m = M + 5 * (Math.log10(data.distance) - 1);
@@ -888,14 +897,14 @@ function formatAsterismTooltip(data) {
   const fullName = CONSTELLATION_NAMES[code] || code;
 
   const fields = [
-      { label: 'Code', value: code },
-      { label: 'Full Name', value: fullName }
+    { label: 'Code', value: code },
+    { label: 'Full Name', value: fullName },
   ];
 
   if (data.type === 'constellation') {
-      fields.push({label: 'Type', value: 'Constellation Boundary'});
+    fields.push({ label: 'Type', value: 'Constellation Boundary' });
   } else {
-      fields.push({label: 'Type', value: 'Asterism'});
+    fields.push({ label: 'Type', value: 'Asterism' });
   }
 
   return buildTooltip(fullName, fields);

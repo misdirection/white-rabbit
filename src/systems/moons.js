@@ -159,7 +159,7 @@ function updateOrbitGeometry(moonData, date) {
 function createJovianOrbitLine(moonData, orbitLinesGroup) {
   // Create empty geometry initially - will be populated by updateOrbitGeometry
   const orbitGeo = new THREE.BufferGeometry();
-  
+
   // Use gradient shader material for visual appeal
   const orbitMat = createOrbitMaterial({
     color: 0x88bbdd,
@@ -167,14 +167,14 @@ function createJovianOrbitLine(moonData, orbitLinesGroup) {
     useGradient: true,
     glowIntensity: 0.2,
   });
-  
+
   const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
   orbitLinesGroup.add(orbitLine);
   moonData.orbitLine = orbitLine;
 
   // Populate with initial points
   updateOrbitGeometry(moonData, new Date());
-  
+
   // Add progress attribute after geometry is populated
   if (orbitLine.geometry.attributes.position) {
     const numPoints = orbitLine.geometry.attributes.position.count;
@@ -205,11 +205,11 @@ function createSimpleOrbitLine(moonData, orbitLinesGroup) {
 
   // Create geometry at 1x scale
   const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-  
+
   // Add progress attribute for gradient effect
   const progress = createProgressAttribute(steps, 0);
   orbitGeo.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
-  
+
   // Use gradient shader material for visual appeal
   const orbitMat = createOrbitMaterial({
     color: 0x88bbdd,
@@ -217,7 +217,7 @@ function createSimpleOrbitLine(moonData, orbitLinesGroup) {
     useGradient: true,
     glowIntensity: 0.2,
   });
-  
+
   const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
   orbitLinesGroup.add(orbitLine);
   moonData.orbitLine = orbitLine;
@@ -231,7 +231,7 @@ function createSimpleOrbitLine(moonData, orbitLinesGroup) {
 function createRealOrbitLine(moonData, orbitLinesGroup) {
   // Create empty geometry initially - will be populated by updateOrbitGeometry
   const orbitGeo = new THREE.BufferGeometry();
-  
+
   // Use gradient shader material for visual appeal
   const orbitMat = createOrbitMaterial({
     color: 0x88bbdd,
@@ -239,14 +239,14 @@ function createRealOrbitLine(moonData, orbitLinesGroup) {
     useGradient: true,
     glowIntensity: 0.2,
   });
-  
+
   const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
   orbitLinesGroup.add(orbitLine);
   moonData.orbitLine = orbitLine;
 
   // Populate with initial points
   updateOrbitGeometry(moonData, new Date());
-  
+
   // Add progress attribute after geometry is populated
   if (orbitLine.geometry.attributes.position) {
     const numPoints = orbitLine.geometry.attributes.position.count;
@@ -510,7 +510,7 @@ export function updateMoonPositions(planet, allPlanets) {
         updateOrbitGeometry(m.data, config.date);
       }
     }
-    
+
     // Update orbit gradient for the tail effect
     updateMoonOrbitGradient(m.data.orbitLine, m.mesh.position, planet.mesh.position);
   });
@@ -524,50 +524,50 @@ export function updateMoonPositions(planet, allPlanets) {
  */
 function updateMoonOrbitGradient(orbitLine, moonPosition, planetPosition) {
   if (!orbitLine || !orbitLine.geometry) return;
-  
+
   const geometry = orbitLine.geometry;
   const positionAttr = geometry.getAttribute('position');
   const progressAttr = geometry.getAttribute('progress');
-  
+
   if (!positionAttr || !progressAttr) return;
-  
+
   const numPoints = positionAttr.count;
   const progress = progressAttr.array;
-  
+
   // Calculate moon's local position relative to planet
   const localMoonX = moonPosition.x - planetPosition.x;
   const localMoonY = moonPosition.y - planetPosition.y;
   const localMoonZ = moonPosition.z - planetPosition.z;
-  
+
   // Get the orbit line's scale (used for moon orbit capping)
   const scale = orbitLine.scale.x || 1;
-  
+
   // Find the closest point on the orbit to the moon's current position
   let minDist = Infinity;
   let closestIndex = 0;
-  
+
   for (let i = 0; i < numPoints; i++) {
     const x = positionAttr.getX(i) * scale;
     const y = positionAttr.getY(i) * scale;
     const z = positionAttr.getZ(i) * scale;
-    
+
     const dx = x - localMoonX;
     const dy = y - localMoonY;
     const dz = z - localMoonZ;
     const dist = dx * dx + dy * dy + dz * dz;
-    
+
     if (dist < minDist) {
       minDist = dist;
       closestIndex = i;
     }
   }
-  
+
   // Update progress values - brightest BEHIND the moon (trail/tail), fading AHEAD
   for (let i = 0; i < numPoints; i++) {
-    let dist = (closestIndex - i + numPoints) % numPoints;
+    const dist = (closestIndex - i + numPoints) % numPoints;
     progress[i] = dist / numPoints;
   }
-  
+
   progressAttr.needsUpdate = true;
 }
 
@@ -578,7 +578,7 @@ function updateMoonOrbitGradient(orbitLine, moonPosition, planetPosition) {
 export function updateAllMoonOrbitGradients(planets) {
   planets.forEach((planet) => {
     if (!planet.moons) return;
-    
+
     planet.moons.forEach((moon) => {
       if (moon.data.orbitLine) {
         updateMoonOrbitGradient(moon.data.orbitLine, moon.mesh.position, planet.mesh.position);

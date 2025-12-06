@@ -1,0 +1,14 @@
+Verifying binary output...
+Checking stars_data_0.bin: 8797 stars
+[BAD STAR] Chunk stars_data_0.bin Index 433: ID=6812 Name="" HIP=89341 Dist=9091
+[BAD STAR] Chunk stars_data_0.bin Index 484: ID=4337 Name="" HIP=54463 Dist=1818
+[BAD STAR] Chunk stars_data_0.bin Index 489: ID=2996 Name="" HIP=37677 Dist=100000
+[BAD STAR] Chunk stars_data_0.bin Index 658: ID=8316 Name="" HIP=107259 Dist=1613
+[BAD STAR] Chunk stars_data_0.bin Index 681: ID=1542 Name="" HIP=22783 Dist=2128
+[BAD STAR] Chunk stars_data_0.bin Index 1005: ID=4352 Name="" HIP=54751 Dist=3846
+[BAD STAR] Chunk stars_data_0.bin Index 1829: ID=4338 Name="" HIP=54461 Dist=1695
+Checking stars_data_1.bin: 31716 stars
+Checking stars_data_2.bin: 62110 stars
+Total Stars: 102623
+Max Distance Found: 100000.00 pc
+Stars > 1000 pc: 7

@@ -57,14 +57,14 @@ function getHeliocentricPosition(data, time, target) {
 function calculateEpicycleLoops(periodDays) {
   const earthPeriod = 365.25;
   const planetPeriod = periodDays;
-  
+
   // Synodic period = time between similar Earth-Planet alignments
   // This tells us how often retrograde loops occur
-  const synodicPeriod = Math.abs(1 / (1/earthPeriod - 1/planetPeriod));
-  
+  const synodicPeriod = Math.abs(1 / (1 / earthPeriod - 1 / planetPeriod));
+
   // Number of loops in one full orbital period
   const loopsPerPeriod = planetPeriod / synodicPeriod;
-  
+
   return Math.max(1, loopsPerPeriod);
 }
 
@@ -74,16 +74,16 @@ function calculateEpicycleLoops(periodDays) {
  */
 function sampleKeyPoints(data, system, allBodiesData, startTimeMs, durationDays, numKeyPoints) {
   const keyPoints = [];
-  
+
   for (let i = 0; i < numKeyPoints; i++) {
     const t = new Date(startTimeMs + (i / (numKeyPoints - 1)) * durationDays * 24 * 60 * 60 * 1000);
-    
+
     if (data.name === 'Sun') {
       _targetPos.set(0, 0, 0);
     } else {
       getHeliocentricPosition(data, t, _targetPos);
     }
-    
+
     if (system === 'Geocentric' || system === 'Tychonic') {
       const earthData = allBodiesData.find((d) => d.name === 'Earth');
       getHeliocentricPosition(earthData, t, _centerPos);
@@ -91,17 +91,19 @@ function sampleKeyPoints(data, system, allBodiesData, startTimeMs, durationDays,
       const ssb = Astronomy.HelioVector(Astronomy.Body.SSB, t);
       _centerPos.set(ssb.x, ssb.y, ssb.z);
     }
-    
+
     _tempVec.subVectors(_targetPos, _centerPos);
-    
+
     // Convert to Scene Coords (X, Z, -Y)
-    keyPoints.push(new THREE.Vector3(
-      _tempVec.x * AU_TO_SCENE,
-      _tempVec.z * AU_TO_SCENE,
-      -_tempVec.y * AU_TO_SCENE
-    ));
+    keyPoints.push(
+      new THREE.Vector3(
+        _tempVec.x * AU_TO_SCENE,
+        _tempVec.z * AU_TO_SCENE,
+        -_tempVec.y * AU_TO_SCENE
+      )
+    );
   }
-  
+
   return keyPoints;
 }
 
@@ -111,10 +113,10 @@ function sampleKeyPoints(data, system, allBodiesData, startTimeMs, durationDays,
 function createSplineCurve(keyPoints, renderPointCount) {
   // Create a closed curve for full orbital paths
   const curve = new THREE.CatmullRomCurve3(keyPoints, false, 'centripetal', 0.5);
-  
+
   // Get evenly spaced points along the spline
   const renderPoints = curve.getPoints(renderPointCount - 1);
-  
+
   return renderPoints;
 }
 
@@ -127,11 +129,15 @@ function getOrCreateMaterial(data, line) {
   const showDwarfColors = config.showDwarfPlanetColors;
   const isDwarf = data.type === 'dwarf';
   const useColor = isDwarf ? showDwarfColors : showColors;
-  
+
   const defaultColor = 0x88bbdd; // Boosted cyan for better visibility
-  const color = isSun ? (data.color || 0xffff00) : (useColor ? (data.color || defaultColor) : defaultColor);
-  const opacity = isSun ? 0.8 : (useColor ? 0.9 : 0.7);
-  const glowIntensity = isSun ? 0.5 : (useColor ? 0.4 : 0.2);
+  const color = isSun
+    ? data.color || 0xffff00
+    : useColor
+      ? data.color || defaultColor
+      : defaultColor;
+  const opacity = isSun ? 0.8 : useColor ? 0.9 : 0.7;
+  const glowIntensity = isSun ? 0.5 : useColor ? 0.4 : 0.2;
 
   if (!line) {
     return createOrbitMaterial({
@@ -146,7 +152,7 @@ function getOrCreateMaterial(data, line) {
     line.material.uniforms.uGlowIntensity.value = glowIntensity;
     return line.material;
   }
-  
+
   return line.material;
 }
 
@@ -191,7 +197,7 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
 
   const allBodiesData = planets.map((p) => p.data);
   const bodiesToTrace = [...planets];
-  
+
   if (system === 'Geocentric' || system === 'Tychonic') {
     bodiesToTrace.push({ data: { name: 'Sun', body: 'Sun', color: 0xffff00, period: 365.25 } });
   } else if (system === 'Barycentric') {
@@ -231,21 +237,21 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
     }
 
     const durationDays = data.period || 730;
-    
+
     // Calculate epicycle loops to determine sampling density
     // Outer planets (Uranus=84yr, Neptune=165yr) have MANY loops as Earth laps them
     const epicycleLoops = calculateEpicycleLoops(durationDays);
-    
+
     // Sample key points: need enough per loop for smooth spline
     // Inner planets: ~30 points per loop
     // Outer planets: many loops, need ~20 points per loop minimum
     const pointsPerLoop = system === 'Geocentric' ? 25 : 15;
-    
+
     // Calculate key points - allow much higher limits for outer planets
     // Uranus (~84 loops) → ~2100 key points
     // Neptune (~165 loops) → ~4000 key points (capped)
     const keyPointCount = Math.max(50, Math.min(Math.ceil(epicycleLoops * pointsPerLoop), 3000));
-    
+
     // Render points - smooth curve resolution
     // Need ~50 render points per loop for smooth appearance
     const renderPointCount = Math.max(300, Math.min(Math.ceil(epicycleLoops * 50), 6000));
@@ -256,8 +262,9 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
     const timeDelta = Math.abs(currentSimTime - lastUpdate);
     const needsRecalc = timeDelta > UPDATE_THRESHOLD_MS;
 
-    const needsNewLine = !line || (line.geometry.attributes.position?.count || 0) < renderPointCount;
-    
+    const needsNewLine =
+      !line || (line.geometry.attributes.position?.count || 0) < renderPointCount;
+
     if (needsNewLine) {
       if (line) {
         line.geometry.dispose();
@@ -268,7 +275,7 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
       const geometry = new THREE.BufferGeometry();
       const positions = new Float32Array(renderPointCount * 3);
       const progress = new Float32Array(renderPointCount);
-      
+
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
 
@@ -281,7 +288,7 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
       line.userData.renderPointCount = renderPointCount;
       line.userData.bodyData = data;
       relativeOrbitGroup.add(line);
-      
+
       lastUpdateTimes.set(cacheKey, 0);
     } else {
       getOrCreateMaterial(data, line);
@@ -296,7 +303,12 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
 
       // STEP 1: Sample key points using Astronomy Engine (few calculations!)
       const keyPoints = sampleKeyPoints(
-        data, system, allBodiesData, startTimeMs, durationDays, keyPointCount
+        data,
+        system,
+        allBodiesData,
+        startTimeMs,
+        durationDays,
+        keyPointCount
       );
 
       // STEP 2: Create smooth spline curve and get render points (fast!)
@@ -304,7 +316,7 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
 
       // STEP 3: Update geometry with render points
       const positions = line.geometry.attributes.position.array;
-      
+
       for (let i = 0; i < renderPoints.length; i++) {
         positions[i * 3] = renderPoints[i].x;
         positions[i * 3 + 1] = renderPoints[i].y;
@@ -313,13 +325,15 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
 
       line.geometry.attributes.position.needsUpdate = true;
       lastUpdateTimes.set(cacheKey, currentSimTime);
-      
+
       // Cache the key point count for logging
       if (config.debug) {
-        console.log(`${data.name}: ${keyPointCount} key pts → ${renderPointCount} render pts (${epicycleLoops.toFixed(1)} loops)`);
+        console.log(
+          `${data.name}: ${keyPointCount} key pts → ${renderPointCount} render pts (${epicycleLoops.toFixed(1)} loops)`
+        );
       }
     }
-    
+
     // Update gradient (fast - just array operations)
     updateRelativeOrbitGradient(line, renderPointCount);
   });
@@ -335,20 +349,20 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
  */
 function updateRelativeOrbitGradient(line, renderPointCount) {
   if (!line || !line.geometry) return;
-  
+
   const progressAttr = line.geometry.getAttribute('progress');
   if (!progressAttr) return;
-  
+
   const steps = Math.min(progressAttr.count, renderPointCount);
   const progress = progressAttr.array;
-  
+
   // Center point is "now" - bright tail behind, dim ahead
   const currentTimeIndex = Math.floor(steps * 0.5);
-  
+
   for (let i = 0; i < steps; i++) {
-    let dist = (currentTimeIndex - i + steps) % steps;
+    const dist = (currentTimeIndex - i + steps) % steps;
     progress[i] = dist / steps;
   }
-  
+
   progressAttr.needsUpdate = true;
 }

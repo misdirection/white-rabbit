@@ -22,11 +22,11 @@
     <div id="loading">Loading White Rabbit...</div>
     <div id="tooltip" class="tooltip"></div>
     <script>
-        window.onerror = function(msg, url, line, col, error) {
+        window.onerror = (msg, url, line, col, error) => {
             document.getElementById('loading').innerHTML = `CRITICAL ERROR:<br>${msg}<br><small>${url}:${line}</small>`;
             document.getElementById('loading').style.color = 'red';
         };
-        window.addEventListener('unhandledrejection', function(event) {
+        window.addEventListener('unhandledrejection', (event) => {
             document.getElementById('loading').innerHTML = `UNHANDLED PROMISE:<br>${event.reason}`;
             document.getElementById('loading').style.color = 'red';
         });

@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { config } from '../config.js';
 import { exitFocusMode, focusOnObject } from '../features/focusMode.js';
 import {
-  updateAxesVisibility,
   updateAsterismsVisibility,
+  updateAxesVisibility,
   updateDwarfVisibility,
   updateHabitableZoneVisibility,
   updateMagneticFieldsVisibility,
@@ -11,7 +11,6 @@ import {
   updateOrbitsVisibility,
   updatePlanetVisibility,
   updateReferencePlane,
-
   updateSunVisibility,
   updateZodiacSignsVisibility,
 } from '../ui/modules/visual.js';
@@ -144,7 +143,7 @@ export class SimulationControl {
     config.starBrightness = Math.max(0, Math.min(1, val));
     const starsGroup = this.starsRef.value;
     if (starsGroup && starsGroup.userData.manager) {
-        starsGroup.userData.manager.setBrightness(config.starBrightness);
+      starsGroup.userData.manager.setBrightness(config.starBrightness);
     }
   }
 

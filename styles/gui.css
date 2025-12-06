@@ -34,41 +34,41 @@
 
 /* Main Menu specific overrides */
 .lil-gui.main-gui {
-    /* Remove background/border from root so title appears floating */
-    --background-color: transparent;
-    background: transparent; 
-    border: none;
-    box-shadow: none;
-    backdrop-filter: none;
+  /* Remove background/border from root so title appears floating */
+  --background-color: transparent;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 /* Apply the panel styling to the children container (the open menu) */
 .lil-gui.main-gui > .children {
-    background: rgba(10, 15, 20, 0.85); /* Restore panel bg */
-    border: 1px solid var(--panel-border);
-    backdrop-filter: var(--backdrop-blur);
-    box-shadow: var(--shadow-md);
-    border-radius: var(--border-radius);
-    margin-top: 5px; /* Spacing between icon and menu */
+  background: rgba(10, 15, 20, 0.85); /* Restore panel bg */
+  border: 1px solid var(--panel-border);
+  backdrop-filter: var(--backdrop-blur);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--border-radius);
+  margin-top: 5px; /* Spacing between icon and menu */
 }
 
 /* Make the title bar itself transparent and borderless */
 .lil-gui.main-gui > .title {
-    background: transparent;
-    border-bottom: none;
-    text-shadow: 0 0 5px rgba(0,0,0,0.5); /* Make icon pop */
+  background: transparent;
+  border-bottom: none;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.5); /* Make icon pop */
 }
 
 /* Hide the default drop arrow for the main menu, user prefers just the gear */
 .lil-gui.main-gui > .title::before {
-    display: none;
+  display: none;
 }
 
 /* Align the gear icon (title) to the right */
 .lil-gui.main-gui > .title {
-    text-align: right;
-    padding-right: 0; /* Align perfectly to right? Or keep some padding. User said "upper right corner". */
-    /* If width is wide, we want it on the right. */
+  text-align: right;
+  padding-right: 0; /* Align perfectly to right? Or keep some padding. User said "upper right corner". */
+  /* If width is wide, we want it on the right. */
 }
 
 .lil-gui .controller {

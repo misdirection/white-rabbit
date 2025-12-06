@@ -47,7 +47,6 @@ export function updateReferencePlane(val, universeGroup) {
   }
 }
 
-
 // Removed updateReferencePlane export conflict if present, but user asked for visual.js update.
 import { updateCoordinateSystem } from '../../systems/coordinates.js';
 import { updateRelativeOrbits } from '../../systems/relativeOrbits.js';
@@ -94,10 +93,10 @@ export function setupVisualFolder(
     .add(config, 'starBrightness', 0.0, 1.0)
     .name('Star Brightness')
     .onChange((val) => {
-        const starsGroup = starsRef.value;
-        if (starsGroup && starsGroup.userData.manager) {
-            starsGroup.userData.manager.setBrightness(val);
-        }
+      const starsGroup = starsRef.value;
+      if (starsGroup && starsGroup.userData.manager) {
+        starsGroup.userData.manager.setBrightness(val);
+      }
     });
   starSlider.domElement.classList.add('hide-value');
   starSlider.domElement.classList.add('full-width');
@@ -108,20 +107,20 @@ export function setupVisualFolder(
     .name('Magnitude Limit')
     .step(0.1)
     .onChange((val) => {
-        const stars = starsRef.value;
-        if (stars && stars.userData.manager) {
-            const manager = stars.userData.manager;
-            // Coarse chunk loading based on magnitude thresholds
-            // Chunk 0: <= 6.5 (Always loaded)
-            // Chunk 1: <= 8.0
-            // Chunk 2: > 8.0 (Deep space)
-            
-            if (val > 6.5) manager.loadChunk(1);
-            if (val > 8.0) manager.loadChunk(2);
-            
-            // Pass 'val' to shader to clip stars precisely
-            manager.setMagnitudeLimit(val);
-        }
+      const stars = starsRef.value;
+      if (stars && stars.userData.manager) {
+        const manager = stars.userData.manager;
+        // Coarse chunk loading based on magnitude thresholds
+        // Chunk 0: <= 6.5 (Always loaded)
+        // Chunk 1: <= 8.0
+        // Chunk 2: > 8.0 (Deep space)
+
+        if (val > 6.5) manager.loadChunk(1);
+        if (val > 8.0) manager.loadChunk(2);
+
+        // Pass 'val' to shader to clip stars precisely
+        manager.setMagnitudeLimit(val);
+      }
     });
   magSlider.domElement.classList.add('full-width');
 
@@ -149,11 +148,11 @@ export function setupVisualFolder(
   // Dock Visibility
   if (uiState) {
     visualFolder
-    .add(uiState, 'dock')
-    .name('Show Dock')
-    .onChange((v) => {
-      menuDock.dock.style.display = v ? 'flex' : 'none';
-    });
+      .add(uiState, 'dock')
+      .name('Show Dock')
+      .onChange((v) => {
+        menuDock.dock.style.display = v ? 'flex' : 'none';
+      });
   }
 
   visualFolder.close(); // Close Visual folder by default
@@ -326,12 +325,7 @@ export function updateMagneticFieldScales(planets) {
   });
 }
 
-export function setupAsterismsControls(
-  gui,
-  zodiacGroup,
-  asterismsGroup,
-  zodiacSignsGroup
-) {
+export function setupAsterismsControls(gui, zodiacGroup, asterismsGroup, zodiacSignsGroup) {
   // Asterisms (All)
   const asterismsCtrl = gui
     .add(config, 'showAsterisms')
@@ -520,12 +514,7 @@ export function setupOverlaysFolder(
 
   const asterismsFolder = overlaysFolder.addFolder('Asterisms');
   asterismsFolder.domElement.classList.add('constellations-folder');
-  setupAsterismsControls(
-    asterismsFolder,
-    zodiacGroup,
-    asterismsGroup,
-    zodiacSignsGroup
-  );
+  setupAsterismsControls(asterismsFolder, zodiacGroup, asterismsGroup, zodiacSignsGroup);
   asterismsFolder.close();
 
   const orbitsFolder = overlaysFolder.addFolder('Orbits');

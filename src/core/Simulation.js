@@ -29,13 +29,13 @@ import {
   createSunMagneticField,
   createSunMagneticFieldBasic,
 } from '../systems/magneticFields.js';
+import { updateAllMoonOrbitGradients } from '../systems/moons.js';
 import { musicSystem } from '../systems/music.js';
+import { updateAllOrbitGradients } from '../systems/orbits.js';
 import { createRabbit } from '../systems/rabbit.js';
 import { updateRelativeOrbits } from '../systems/relativeOrbits.js';
-import { updateAllOrbitGradients } from '../systems/orbits.js';
 import { setupTooltipSystem } from '../systems/tooltips.js';
 import { alignZodiacSigns, createZodiacSigns } from '../systems/zodiacSigns.js';
-import { updateAllMoonOrbitGradients } from '../systems/moons.js';
 import { setupGUI, updateUI } from '../ui/gui.js';
 import { Logger } from '../utils/logger.js';
 import { createPlanets, updatePlanets } from './planets.js';

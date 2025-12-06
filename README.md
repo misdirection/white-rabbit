@@ -84,18 +84,20 @@ The UI is organized into four collapsible sections (all closed by default):
 
 ## Architecture
 
+> For detailed architecture documentation with diagrams, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ### Core Files
 
-- **`main.js`**: Application entry point, initializes the scene and animation loop
+- **`src/main.js`**: Application entry point, initializes the Simulation class
+- **`src/core/Simulation.js`**: Main orchestrator class, animation loop
 - **`src/core/planets.js`**: Three.js scene graph manipulation and rendering logic
+- **`src/core/scene.js`**: Three.js scene, camera, renderer, and lighting setup
+- **`src/core/stars.js`**: Starfield generation from astronomical data
 - **`src/data/bodies.js`**: Static data definitions for planets and moons
 - **`src/physics/orbits.js`**: Pure physics functions for orbital calculations
-- **`src/core/scene.js`**: Three.js scene, camera, renderer, and lighting setup
-- **`src/systems/stars.js`**: Starfield generation from astronomical data
-- **`src/ui/modules/missions.js`**: Space mission trajectory data and visualization
-- **`src/ui/gui.js`**: Main GUI setup, orchestrating modules in `src/ui/modules/`
-- **`interactions.js`**: Mouse interaction and tooltip system
+- **`src/systems/tooltips.js`**: Mouse interaction and tooltip/info window system
 - **`src/features/focusMode.js`**: Camera focus and tracking functionality
+- **`src/ui/gui.js`**: Main GUI setup, orchestrating modules in `src/ui/modules/`
 - **`src/config.js`**: Global configuration state
 
 ### Coordinate Systems

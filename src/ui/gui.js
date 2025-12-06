@@ -155,8 +155,18 @@ export function setupGUI(
   createCustomTab('objects', 'Bodies', '🪐', (container) =>
     setupObjectsControlsCustom(container, planets, sun)
   );
-  createCustomTab('asterisms', 'Asterisms', '<span style="font-size:1.5em;font-weight:bold">☆</span>', (container) =>
-    setupAsterismsControlsCustom(container, zodiacGroup, asterismsGroup, zodiacSignsGroup, constellationsGroup)
+  createCustomTab(
+    'asterisms',
+    'Asterisms',
+    '<span style="font-size:1.5em;font-weight:bold">☆</span>',
+    (container) =>
+      setupAsterismsControlsCustom(
+        container,
+        zodiacGroup,
+        asterismsGroup,
+        zodiacSignsGroup,
+        constellationsGroup
+      )
   );
   createCustomTab('orbits', 'Orbits', '💫', (container) =>
     setupOrbitsControlsCustom(container, orbitGroup, planets, relativeOrbitGroup)
@@ -200,7 +210,7 @@ export function setupGUI(
   // Actually, user just said "Swap the icons". Currently 'visuals' was first (line 190ish in original logic implied), but let's see current file state.
   // In the file read, line 171 was 'visuals', then Explorer window creation, then Explorer icon.
   // So 'visuals' was first. Swapping means 'explorer' should come before 'visuals'.
-  
+
   menuDock.addItem('explorer', '🧭', 'Explorer', () => {
     explorerWindow.toggle();
   });
@@ -337,7 +347,7 @@ export function updateUI(uiState, controls) {
   if (menuDock.dock) {
     uiState.dock = menuDock.dock.style.display !== 'none';
   }
-  
+
   const explorerWin = windowManager.getWindow('explorer-window');
   if (explorerWin) {
     uiState.explorerWindow = explorerWin.element.style.display !== 'none';

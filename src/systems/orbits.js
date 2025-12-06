@@ -19,10 +19,7 @@
 import * as Astronomy from 'astronomy-engine';
 import * as THREE from 'three';
 import { AU_TO_SCENE, config } from '../config.js';
-import {
-  createOrbitMaterial,
-  createProgressAttribute,
-} from '../materials/OrbitMaterial.js';
+import { createOrbitMaterial, createProgressAttribute } from '../materials/OrbitMaterial.js';
 import { calculateKeplerianPosition } from '../physics/orbits.js';
 
 /**
@@ -128,7 +125,7 @@ export function updateOrbitGradient(orbitLine, planetPosition) {
     // Calculate distance from current position going BACKWARD (trail direction)
     // progress=0 means the planet just passed this point (bright tail)
     // progress=1 means the planet is approaching this point (faded/future)
-    let dist = (closestIndex - i + numPoints) % numPoints;
+    const dist = (closestIndex - i + numPoints) % numPoints;
     progress[i] = dist / numPoints;
   }
 

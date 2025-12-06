@@ -12,10 +12,10 @@
  */
 
 import fs from 'node:fs';
-import path from 'node:path';
 import https from 'node:https';
-import zlib from 'node:zlib';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import zlib from 'node:zlib';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = path.join(__dirname, '../public/assets');
@@ -27,6 +27,7 @@ const HYG_URL =
   'https://raw.githubusercontent.com/EnguerranVidal/HYG-STAR-MAP/main/hygdata_v3.csv.gz';
 const CSV_FILE = path.join(SCRIPT_DIR, 'hygdata_v3.csv');
 const GZ_FILE = path.join(SCRIPT_DIR, 'hygdata_v3.csv.gz');
+const PATCH_FILE = path.join(SCRIPT_DIR, 'patched_distances.json');
 
 // Chunking Configuration
 const CHUNK_CONFIG = [
@@ -155,28 +156,28 @@ function bvToRGB(bv) {
     b = 0;
   let t = 0;
 
-    // Hot Blue/White (O, B, A) - BV < 0.4
-    if (bv < 0.4) {
-      t = (bv + 0.4) / 0.8; // Range -0.4 to 0.4 -> 0.0 to 1.0
-      r = 0.6 + 0.4 * t;
-      g = 0.7 + 0.3 * t;
-      b = 1.0;
-    }
-    // White/Yellow (F, G) - 0.4 to 0.8
-    else if (bv < 0.8) {
-      t = (bv - 0.4) / 0.4;
-      r = 1.0;
-      g = 1.0 - 0.1 * t; // Slight drop in Green
-      b = 1.0 - 0.4 * t; // Drop Blue significantly
-    }
-    // Orange/Red (K, M) - > 0.8
-    else {
-      t = Math.min((bv - 0.8) / 1.2, 1.0); // Cap at BV 2.0
-      r = 1.0;
-      g = 0.9 - 0.4 * t; // Drop Green to make it richer red/orange
-      b = 0.6 - 0.6 * t; // Kill Blue
-    }
-    return { r, g, b };
+  // Hot Blue/White (O, B, A) - BV < 0.4
+  if (bv < 0.4) {
+    t = (bv + 0.4) / 0.8; // Range -0.4 to 0.4 -> 0.0 to 1.0
+    r = 0.6 + 0.4 * t;
+    g = 0.7 + 0.3 * t;
+    b = 1.0;
+  }
+  // White/Yellow (F, G) - 0.4 to 0.8
+  else if (bv < 0.8) {
+    t = (bv - 0.4) / 0.4;
+    r = 1.0;
+    g = 1.0 - 0.1 * t; // Slight drop in Green
+    b = 1.0 - 0.4 * t; // Drop Blue significantly
+  }
+  // Orange/Red (K, M) - > 0.8
+  else {
+    t = Math.min((bv - 0.8) / 1.2, 1.0); // Cap at BV 2.0
+    r = 1.0;
+    g = 0.9 - 0.4 * t; // Drop Green to make it richer red/orange
+    b = 0.6 - 0.6 * t; // Kill Blue
+  }
+  return { r, g, b };
 }
 
 // Main
@@ -201,6 +202,10 @@ async function generate() {
     }
     const asterismData = JSON.parse(fs.readFileSync(asterismLinesPath, 'utf8'));
     const requiredIDs = new Set();
+    const PATCHED_DISTANCES = fs.existsSync(PATCH_FILE)
+      ? JSON.parse(fs.readFileSync(PATCH_FILE, 'utf8'))
+      : {};
+    console.log(`Loaded ${Object.keys(PATCHED_DISTANCES).length} distance patches.`);
 
     // traverse all asterisms
     Object.values(asterismData).forEach((lines) => {
@@ -248,32 +253,30 @@ async function generate() {
 
     rows.forEach((row) => {
       if (!row.id) return;
-      
+
       const mag = parseFloat(row.mag);
 
       // IDs
-      let hr = row.hr ? parseInt(row.hr) : null;
-      const hip = row.hip ? parseInt(row.hip) : null;
-      const hd = row.hd ? parseInt(row.hd) : null;
-      const hygId = parseInt(row.id);
-
-
+      let hr = row.hr ? parseInt(row.hr, 10) : null;
+      const hip = row.hip ? parseInt(row.hip, 10) : null;
+      const hd = row.hd ? parseInt(row.hd, 10) : null;
+      const hygId = parseInt(row.id, 10);
 
       if (mag < -26.0) return; // Filter out Sun
       if (mag > 10.0) return; // Hard cutoff for file size
 
       // Patch missing or mismatched HR numbers for specific stars required by constellations
       const HR_MISSING_PATCH = {
-          111365: 8559, // Kappa Aquarii
-          8832: 545,    // Gamma1 Arietis (HYG has 546)
-          71795: 5478,  // Kappa2 Bootis (HYG has 5477)
-          8964: 596,    // Xi2 Ceti
-          36848: 2949   // k1 Puppis (HYG has 2916)
+        111365: 8559, // Kappa Aquarii
+        8832: 545, // Gamma1 Arietis (HYG has 546)
+        71795: 5478, // Kappa2 Bootis (HYG has 5477)
+        8964: 596, // Xi2 Ceti
+        36848: 2949, // k1 Puppis (HYG has 2916)
       };
 
       if (hip && HR_MISSING_PATCH[hip]) {
-          hr = HR_MISSING_PATCH[hip];
-          // Logger.log(`Patched HR ${hr} for HIP ${hip}`);
+        hr = HR_MISSING_PATCH[hip];
+        // Logger.log(`Patched HR ${hr} for HIP ${hip}`);
       }
 
       // Logic to determine "Our ID"
@@ -357,6 +360,52 @@ async function generate() {
       });
     });
 
+    // Filter out remaining bad distances
+    const originalCount = allProcessed.length;
+    // Keep stars if:
+    // 1. Distance <= 1000pc (approx 3262 LY)
+    // 2. OR it is a required constellation star (don't break lines)
+    // 3. OR it was explicitly patched (implied by distance check, but let's be safe)
+
+    const MAX_DIST_PC = 1000.0;
+
+    // Patch Distances first
+    let patchedCount = 0;
+    allProcessed.forEach((star) => {
+      if (star.hip && PATCHED_DISTANCES[star.hip]) {
+        star.z = (star.z / star.mass) * star.mass; // Dummy access
+        // We need to re-calculate x,y,z based on new distance?
+        // The patch gives SCALAR distance. We have vector direction.
+        // Old distance: sqrt(x^2+y^2+z^2)
+        // New position = OldPosition * (NewDist / OldDist)
+
+        const oldDist = Math.sqrt(star.x * star.x + star.y * star.y + star.z * star.z);
+        if (oldDist > 0.1) {
+          const newDist = PATCHED_DISTANCES[star.hip];
+          const scale = newDist / oldDist;
+          star.x *= scale;
+          star.y *= scale;
+          star.z *= scale;
+          patchedCount++;
+        }
+      }
+    });
+    console.log(`Patched ${patchedCount} stars with improved distances.`);
+
+    // Filter
+    const filtered = allProcessed.filter((star) => {
+      const dist = Math.sqrt(star.x * star.x + star.y * star.y + star.z * star.z);
+      if (star.isRequired) return true; // Keep constellation stars no matter what
+      if (dist > MAX_DIST_PC) return false;
+      return true;
+    });
+
+    console.log(`Filtered ${originalCount - filtered.length} distant stars (> ${MAX_DIST_PC} pc).`);
+
+    // Replace array
+    allProcessed.length = 0;
+    allProcessed.push(...filtered);
+
     console.log(`Processed candidates: ${allProcessed.length}`);
 
     // 3. Sort by Magnitude (Brightest first)
@@ -384,16 +433,18 @@ async function generate() {
 
     // Check for missing required stars
     const foundIDs = new Set();
-    allProcessed.forEach(s => {
-        if (s.isRequired) foundIDs.add(s.id);
+    allProcessed.forEach((s) => {
+      if (s.isRequired) foundIDs.add(s.id);
     });
 
-    const missingIDs = [...requiredIDs].filter(id => !foundIDs.has(id));
+    const missingIDs = [...requiredIDs].filter((id) => !foundIDs.has(id));
     if (missingIDs.length > 0) {
-        console.warn(`WARNING: ${missingIDs.length} asterism stars were NOT found in the source data!`);
-        console.warn(`Missing IDs: ${missingIDs.join(', ')}`);
+      console.warn(
+        `WARNING: ${missingIDs.length} asterism stars were NOT found in the source data!`
+      );
+      console.warn(`Missing IDs: ${missingIDs.join(', ')}`);
     } else {
-        console.log('SUCCESS: All asterism stars found.');
+      console.log('SUCCESS: All asterism stars found.');
     }
 
     // 5. Write Output Files

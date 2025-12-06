@@ -6,28 +6,28 @@ export function setupMissionsControlsCustom(container, config) {
   gui.title('Missions'); // Set title to Missions
   // gui.domElement.querySelector('.title').style.display = 'none'; // Optional: hide title completely if preferred
   // Since we want "Missions (Check to Show)", we can just use the root.
-  
+
   // Use the root gui instead of a folder, or just hide the root header.
   // To match user request "superfluous menu called controls", simply hiding the root title bar is best.
   // But lil-gui might not expose an easy way to hide just the header via API without CSS.
   // We can just add controls to root and user will see "Controls" title by default.
   // Let's set title to empty string?
   // gui.title(''); // This leaves a small bar.
-  
+
   // Best approach: Add a CSS class to hide the title bar for embedded GUIs.
   // gui.domElement.querySelector('.title').style.display = 'none';
   // But we need to do it after creation.
-  
+
   // Or better:
   const missionsFolder = gui; // Use root
   // We can't rename root easily in old lil-gui but recent versions allow `new GUI({ title: '...' })`.
   // Let's check imports. It's 'lil-gui'.
   // Let's try to set title to 'Missions'.
 
-  // However, users said "sub menu called controls". 
+  // However, users said "sub menu called controls".
   // If I use a folder, I get "Controls" > "Missions".
   // Note: I will use the root GUI and hide the title bar via DOM manipulation to be safe.
-  
+
   const titleBar = gui.domElement.querySelector('.title');
   if (titleBar) titleBar.style.display = 'none';
 
@@ -131,6 +131,6 @@ export function setupMissionsControlsCustom(container, config) {
   parkerCtrl.domElement.classList.add('parker-checkbox');
 
   // We can open the folder or not. Since it's in a dedicated tab, maybe open is better?
-  // missionsFolder.open(); 
+  // missionsFolder.open();
   // Remove the folder header if we want to save space, but let's keep it for now as it acts as a group title.
 }
