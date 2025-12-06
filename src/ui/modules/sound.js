@@ -165,7 +165,7 @@ export function setupMusicWindow() {
 
   // Snap to bottom-left relative to Time Window
   const padding = 20;
-  // win.x = window.innerWidth / 2 + 160; 
+  // win.x = window.innerWidth / 2 + 160;
   win.x = 290;
   win.y = window.innerHeight - height - padding;
 

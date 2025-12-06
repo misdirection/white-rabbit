@@ -290,7 +290,12 @@ export function updateMagneticFieldScales(planets) {
   });
 }
 
-export function setupConstellationsControls(gui, zodiacGroup, constellationsGroup, zodiacSignsGroup) {
+export function setupConstellationsControls(
+  gui,
+  zodiacGroup,
+  constellationsGroup,
+  zodiacSignsGroup
+) {
   // Constellations (All 88)
   const constellationsCtrl = gui
     .add(config, 'showConstellations')
@@ -441,7 +446,7 @@ export function setupMagneticFieldsControls(gui, magneticFieldsGroup, planets, u
   );
 }
 
-// Deprecated wrapper or kept for Axes/Habitable Zone if those stay in Main? 
+// Deprecated wrapper or kept for Axes/Habitable Zone if those stay in Main?
 // User asked for "Magnetic Field" section specifically.
 // Axes and Habitable Zone are "Overlays" but maybe they can stay or go to "Orbits" or "Constellations"?
 // Or a new "General" tab?
@@ -479,7 +484,12 @@ export function setupOverlaysFolder(
 
   const constellationsFolder = overlaysFolder.addFolder('Asterisms');
   constellationsFolder.domElement.classList.add('constellations-folder');
-  setupConstellationsControls(constellationsFolder, zodiacGroup, constellationsGroup, zodiacSignsGroup);
+  setupConstellationsControls(
+    constellationsFolder,
+    zodiacGroup,
+    constellationsGroup,
+    zodiacSignsGroup
+  );
   constellationsFolder.close();
 
   const orbitsFolder = overlaysFolder.addFolder('Orbits');
@@ -621,7 +631,12 @@ export function setupObjectsControlsCustom(container, planets, sun) {
   container.appendChild(list);
 }
 
-export function setupAsterismsControlsCustom(container, zodiacGroup, constellationsGroup, zodiacSignsGroup) {
+export function setupAsterismsControlsCustom(
+  container,
+  zodiacGroup,
+  constellationsGroup,
+  zodiacSignsGroup
+) {
   const items = [
     {
       configKey: 'showConstellations',
@@ -693,7 +708,7 @@ export function setupOrbitsControlsCustom(container, orbitGroup, planets, relati
         configKey: 'showPlanetColors',
         label: 'Colors',
         updateFn: () => updateOrbitColors(orbitGroup, relativeOrbitGroup, planets),
-      }
+      },
     },
     {
       configKey: 'showDwarfPlanetOrbits',
@@ -704,7 +719,7 @@ export function setupOrbitsControlsCustom(container, orbitGroup, planets, relati
         configKey: 'showDwarfPlanetColors',
         label: 'Colors',
         updateFn: () => updateOrbitColors(orbitGroup, relativeOrbitGroup, planets),
-      }
+      },
     },
     {
       configKey: 'showMoonOrbits',
@@ -715,7 +730,7 @@ export function setupOrbitsControlsCustom(container, orbitGroup, planets, relati
         configKey: 'capMoonOrbits',
         label: 'Cap',
         updateFn: () => {}, // Handled in animation loop or updateOrbitsVisibility
-      }
+      },
     },
   ];
 
@@ -746,14 +761,14 @@ export function setupOrbitsControlsCustom(container, orbitGroup, planets, relati
       toggleEl.className = 'object-toggle';
       if (config[item.childToggle.configKey]) toggleEl.classList.add('active');
       toggleEl.textContent = item.childToggle.label;
-      
+
       toggleEl.style.display = config[item.configKey] ? 'flex' : 'none';
 
       toggleEl.addEventListener('click', (e) => {
         e.stopPropagation();
         config[item.childToggle.configKey] = !config[item.childToggle.configKey];
         const isToggleActive = config[item.childToggle.configKey];
-        
+
         if (isToggleActive) toggleEl.classList.add('active');
         else toggleEl.classList.remove('active');
 
@@ -785,7 +800,12 @@ export function setupOrbitsControlsCustom(container, orbitGroup, planets, relati
   container.appendChild(list);
 }
 
-export function setupMagneticFieldsControlsCustom(container, magneticFieldsGroup, planets, universeGroup) {
+export function setupMagneticFieldsControlsCustom(
+  container,
+  magneticFieldsGroup,
+  planets,
+  universeGroup
+) {
   const items = [
     {
       configKey: 'showSunMagneticFieldBasic',
@@ -803,38 +823,44 @@ export function setupMagneticFieldsControlsCustom(container, magneticFieldsGroup
       label: 'Solar Wind',
       icon: '🌬️',
       updateFn: () => {
-         if (universeGroup) {
-            const field = universeGroup.children.find((c) => c.name === 'MagneticField');
-            if (field) field.visible = config.showSunMagneticField;
-         }
+        if (universeGroup) {
+          const field = universeGroup.children.find((c) => c.name === 'MagneticField');
+          if (field) field.visible = config.showSunMagneticField;
+        }
       },
       childToggle: {
         configKey: 'showSunMagneticFieldBasic',
         label: 'Basic',
         updateFn: () => {
-            if (universeGroup) {
-              const field = universeGroup.children.find((c) => c.name === 'SunMagneticFieldBasic');
-              if (field) field.visible = config.showSunMagneticFieldBasic;
-            }
-        }
-      }
+          if (universeGroup) {
+            const field = universeGroup.children.find((c) => c.name === 'SunMagneticFieldBasic');
+            if (field) field.visible = config.showSunMagneticFieldBasic;
+          }
+        },
+      },
     },
     {
-        configKey: 'showMagneticFields',
-        label: 'Planets, Moons',
-        icon: '🧲',
-        updateFn: () => updateMagneticFieldsVisibility(config.showMagneticFields, magneticFieldsGroup, planets, null),
-        childToggle: {
-            configKey: 'capMagneticFields',
-            label: 'Cap',
-            updateFn: () => updateMagneticFieldScales(planets),
-        }
-    }
+      configKey: 'showMagneticFields',
+      label: 'Planets, Moons',
+      icon: '🧲',
+      updateFn: () =>
+        updateMagneticFieldsVisibility(
+          config.showMagneticFields,
+          magneticFieldsGroup,
+          planets,
+          null
+        ),
+      childToggle: {
+        configKey: 'capMagneticFields',
+        label: 'Cap',
+        updateFn: () => updateMagneticFieldScales(planets),
+      },
+    },
   ];
 
   const list = document.createElement('div');
   list.className = 'object-list';
-  
+
   items.forEach((item) => {
     const el = document.createElement('div');
     el.className = 'object-item';
@@ -859,14 +885,14 @@ export function setupMagneticFieldsControlsCustom(container, magneticFieldsGroup
       toggleEl.className = 'object-toggle';
       if (config[item.childToggle.configKey]) toggleEl.classList.add('active');
       toggleEl.textContent = item.childToggle.label;
-      
+
       toggleEl.style.display = config[item.configKey] ? 'flex' : 'none';
 
       toggleEl.addEventListener('click', (e) => {
         e.stopPropagation();
         config[item.childToggle.configKey] = !config[item.childToggle.configKey];
         const isToggleActive = config[item.childToggle.configKey];
-        
+
         if (isToggleActive) toggleEl.classList.add('active');
         else toggleEl.classList.remove('active');
 

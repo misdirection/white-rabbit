@@ -46,7 +46,7 @@ export const planetData = [
     rotationPeriod: 1408,
     axialTilt: 0.01,
     details: {
-      mass: 0.330e24,
+      mass: 0.33e24,
       density: '5427 kg/m³',
       gravity: '0.38 g',
       albedo: '0.12',

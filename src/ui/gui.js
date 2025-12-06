@@ -1,23 +1,5 @@
 import GUI from 'lil-gui';
 import { config, REAL_PLANET_SCALE_FACTOR, REAL_SUN_SCALE_FACTOR } from '../config.js';
-import { setupAboutFolder } from './modules/about.js';
-import { setupEventsFolder } from './modules/events.js';
-import { setupFindFolder } from './modules/find.js';
-import { setupMissionsFolder } from './modules/missions.js';
-import { setupNavigationFolder } from './modules/navigation.js';
-import { setupScaleFolder } from './modules/scale.js';
-import { setupTimeFolder } from './modules/time.js';
-import {
-  setupObjectsControlsCustom,
-  setupAsterismsControlsCustom,
-  setupOrbitsControlsCustom,
-  setupMagneticFieldsControlsCustom,
-  setupGuidesControlsCustom,
-  setupVisualFolder,
-} from './modules/visual.js';
-import { setupMusicWindow } from './modules/sound.js';
-import { setupSystemUI } from './modules/system.js';
-
 /**
  * Sets up the GUI with Scale, Visual, Time, and Navigation sections
  *
@@ -31,8 +13,14 @@ import { setupSystemUI } from './modules/system.js';
  * - Navigation: Help text for camera and focus controls
  */
 import { menuDock } from './MenuDock.js';
-import { windowManager } from './WindowManager.js';
-
+import { setupAboutFolder } from './modules/about.js';
+import { setupEventsFolder } from './modules/events.js';
+import { setupFindFolder } from './modules/find.js';
+import { setupMissionsFolder } from './modules/missions.js';
+import { setupNavigationFolder } from './modules/navigation.js';
+import { setupScaleFolder } from './modules/scale.js';
+import { setupMusicWindow } from './modules/sound.js';
+import { setupSystemUI } from './modules/system.js';
 /**
  * Sets up the GUI with Scale, Visual, Time, and Navigation sections
  *
@@ -46,6 +34,16 @@ import { windowManager } from './WindowManager.js';
  * - Navigation: Help text for camera and focus controls
  */
 import { TabbedWindow } from './modules/TabbedWindow.js'; // Import TabbedWindow
+import { setupTimeFolder } from './modules/time.js';
+import {
+  setupAsterismsControlsCustom,
+  setupGuidesControlsCustom,
+  setupMagneticFieldsControlsCustom,
+  setupObjectsControlsCustom,
+  setupOrbitsControlsCustom,
+  setupVisualFolder,
+} from './modules/visual.js';
+import { windowManager } from './WindowManager.js';
 
 /**
  * Sets up the GUI with Scale, Visual, Time, and Navigation sections

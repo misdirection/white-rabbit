@@ -1,21 +1,21 @@
 import * as THREE from 'three';
-import { Logger } from '../utils/logger.js';
 import { config } from '../config.js';
-import { focusOnObject, exitFocusMode } from '../features/focusMode.js';
+import { exitFocusMode, focusOnObject } from '../features/focusMode.js';
 import {
-  updateReferencePlane,
-  updateStarBrightness,
-  updateOrbitsVisibility,
   updateAxesVisibility,
   updateConstellationsVisibility,
-  updateZodiacSignsVisibility,
+  updateDwarfVisibility,
   updateHabitableZoneVisibility,
   updateMagneticFieldsVisibility,
-  updateSunVisibility,
-  updatePlanetVisibility,
-  updateDwarfVisibility,
   updateMoonVisibility,
+  updateOrbitsVisibility,
+  updatePlanetVisibility,
+  updateReferencePlane,
+  updateStarBrightness,
+  updateSunVisibility,
+  updateZodiacSignsVisibility,
 } from '../ui/modules/visual.js';
+import { Logger } from '../utils/logger.js';
 
 /**
  * API for controlling the simulation programmatically.

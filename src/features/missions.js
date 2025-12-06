@@ -1,5 +1,5 @@
-import * as THREE from 'three';
 import * as Astronomy from 'astronomy-engine';
+import * as THREE from 'three';
 import { AU_TO_SCENE, config } from '../config.js';
 import { calculateKeplerianPosition } from '../physics/orbits.js';
 
@@ -290,7 +290,7 @@ export function initializeMissions(scene) {
         }
       } else if (wp.type === 'interpolate') {
         // Find previous and next known points
-        let prev = finalPoints[i - 1];
+        const prev = finalPoints[i - 1];
         let next = null;
         // Search forward for next known point
         for (let j = i + 1; j < calculatedWaypoints.length; j++) {

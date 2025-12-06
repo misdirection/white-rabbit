@@ -92,7 +92,6 @@
   cursor: text;
 }
 
-
 .window-close:hover {
   color: #ff5555;
 }
@@ -229,7 +228,6 @@
   backdrop-filter: none;
 }
 
-
 .ui-window .tooltip-header {
   color: #aaccff;
   font-size: 16px;
@@ -249,15 +247,11 @@
   position: relative;
 }
 
-
-
 .tab-list {
   display: flex;
   gap: 2px;
   flex: 1; /* Take available space */
 }
-
-
 
 .tab-item {
   padding: 8px 10px; /* Reduced horizontal padding */
@@ -339,7 +333,7 @@
 
 /* Ensure controls fit */
 .gui-tab-container .lil-gui .title {
-    display: none; /* Double check hiding main title */
+  display: none; /* Double check hiding main title */
 }
 
 /* Custom Object Menu Styles */
@@ -418,5 +412,3 @@
   color: #fff; /* Bright white text */
   font-weight: bold;
 }
-
-

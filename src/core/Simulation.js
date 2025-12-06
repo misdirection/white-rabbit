@@ -1,0 +1,291 @@
+/**
+ * @file Simulation.js
+ * @description Core simulation class that orchestrates the entire application.
+ */
+
+import * as THREE from 'three';
+import { SimulationControl } from '../api/SimulationControl.js';
+import { config } from '../config.js';
+import { setupFocusMode, updateFocusMode } from '../features/focusMode.js';
+import { initializeMissions, updateMissions } from '../features/missions.js';
+import { updateCoordinateSystem } from '../systems/coordinates.js';
+import { createHabitableZone } from '../systems/habitableZone.js';
+import {
+  createMagneticField,
+  createSunMagneticField,
+  createSunMagneticFieldBasic,
+} from '../systems/magneticFields.js';
+import { musicSystem } from '../systems/music.js';
+import { createRabbit } from '../systems/rabbit.js';
+import { updateRelativeOrbits } from '../systems/relativeOrbits.js';
+import { setupTooltipSystem } from '../systems/tooltips.js';
+import { alignZodiacSigns, createZodiacSigns } from '../systems/zodiacSigns.js';
+import { setupGUI, updateUI } from '../ui/gui.js';
+import { Logger } from '../utils/logger.js';
+import { createPlanets, updatePlanets } from './planets.js';
+import { createScene } from './scene.js';
+import { createConstellations, createStarfield } from './stars.js';
+
+export class Simulation {
+  constructor() {
+    this.scene = null;
+    this.camera = null;
+    this.renderer = null;
+    this.controls = null;
+    this.universeGroup = null;
+    this.planets = [];
+    this.sun = null;
+    this.orbitGroup = null;
+    this.relativeOrbitGroup = null;
+    this.zodiacGroup = null;
+    this.starsRef = { value: null };
+    this.uiControls = null;
+    this.rabbit = null;
+    this.clock = new THREE.Clock();
+    this.magneticFieldTime = 0;
+    this.shadowLight = null;
+  }
+
+  async init() {
+    try {
+      Logger.log('White Rabbit Version: 1.3 (Class-based Init)');
+      const loading = document.getElementById('loading');
+      loading.textContent = `Initializing... (Base: ${import.meta.env.BASE_URL})`;
+
+      // 1. Setup Scene
+      loading.textContent = 'Creating Scene...';
+      const { scene, camera, renderer, controls, orbitGroup, zodiacGroup, sunLight, shadowLight } =
+        createScene();
+
+      this.scene = scene;
+      this.camera = camera;
+      this.renderer = renderer;
+      this.controls = controls;
+      this.orbitGroup = orbitGroup;
+      this.zodiacGroup = zodiacGroup;
+      this.shadowLight = shadowLight;
+
+      window.scene = scene; // Expose for debugging
+
+      // Create Universe Group (Root for all celestial objects)
+      this.universeGroup = new THREE.Group();
+      scene.add(this.universeGroup);
+
+      // Add lights to universeGroup
+      this.universeGroup.add(sunLight);
+      this.universeGroup.add(shadowLight);
+
+      // Add groups to universe
+      this.universeGroup.add(orbitGroup);
+      this.universeGroup.add(zodiacGroup);
+
+      const constellationsGroup = new THREE.Group();
+      this.universeGroup.add(constellationsGroup);
+      constellationsGroup.visible = config.showConstellations;
+
+      zodiacGroup.visible = config.showZodiacs;
+
+      // 1.5 Create Zodiac Signs
+      const textureLoader = new THREE.TextureLoader();
+      const zodiacSignsGroup = createZodiacSigns(this.universeGroup, textureLoader);
+
+      // 1.6 Create Habitable Zone
+      const habitableZone = createHabitableZone(this.universeGroup);
+
+      // 2. Create Planets & Sun (Immediate)
+      loading.textContent = 'Loading Planets...';
+      const { planets, sun } = createPlanets(this.universeGroup, orbitGroup);
+      this.planets = planets;
+      this.sun = sun;
+
+      // 2.5 Create Magnetic Fields
+      this.setupMagneticFields();
+
+      this.relativeOrbitGroup = new THREE.Group();
+      scene.add(this.relativeOrbitGroup);
+
+      // 3. Setup GUI & Interactions (Immediate)
+      loading.textContent = 'Setting up GUI...';
+
+      this.uiControls = setupGUI(
+        planets,
+        sun,
+        orbitGroup,
+        this.relativeOrbitGroup,
+        zodiacGroup,
+        constellationsGroup,
+        this.starsRef,
+        renderer,
+        camera,
+        controls,
+        zodiacSignsGroup,
+        habitableZone,
+        this.magneticFieldsGroup, // Use the stored group
+        this.universeGroup
+      );
+
+      setupTooltipSystem(camera, planets, sun, this.starsRef, zodiacGroup, constellationsGroup);
+      setupFocusMode(camera, controls, planets, sun);
+      initializeMissions(this.universeGroup);
+      window.updateMissions = updateMissions;
+
+      // Initialize relative orbits
+      updateRelativeOrbits(orbitGroup, this.relativeOrbitGroup, planets, sun);
+
+      // 3.1 Setup Simulation Control API
+      window.SimulationControl = new SimulationControl(
+        planets,
+        sun,
+        orbitGroup,
+        zodiacGroup,
+        constellationsGroup,
+        this.starsRef,
+        camera,
+        controls,
+        zodiacSignsGroup,
+        habitableZone,
+        this.magneticFieldsGroup,
+        this.universeGroup
+      );
+
+      // 3.5 Setup Rabbit Intro
+      this.rabbit = createRabbit(renderer);
+
+      // 4. Remove Loading Screen (Immediate)
+      loading.style.opacity = 0;
+      loading.style.pointerEvents = 'none';
+
+      // 6. Initialize Music System (After page is interactive)
+      setTimeout(() => {
+        musicSystem.init();
+      }, 100);
+
+      // 7. Load Stars & Constellations (Background)
+      createStarfield(this.universeGroup)
+        .then(({ stars, rawData }) => {
+          if (stars) {
+            this.starsRef.value = stars;
+            stars.material.opacity = (config.starBrightness / 0.6) * 0.3;
+            createConstellations(zodiacGroup, constellationsGroup, rawData);
+            alignZodiacSigns(zodiacSignsGroup, rawData);
+          }
+        })
+        .catch((err) => Logger.error('Error loading stars:', err));
+
+      // Start Animation Loop
+      this.animate();
+    } catch (error) {
+      Logger.error('Initialization error:', error);
+      document.getElementById('loading').textContent = 'Error loading simulation: ' + error.message;
+      document.getElementById('loading').style.color = 'red';
+    }
+  }
+
+  setupMagneticFields() {
+    this.magneticFieldsGroup = new THREE.Group();
+    this.magneticFieldsGroup.visible = config.showMagneticFields;
+    this.universeGroup.add(this.magneticFieldsGroup);
+
+    // Sun field - Basic
+    const sunFieldBasic = createSunMagneticFieldBasic(this.sun);
+    if (sunFieldBasic) {
+      sunFieldBasic.visible = config.showSunMagneticFieldBasic;
+      this.universeGroup.add(sunFieldBasic);
+    }
+
+    // Sun field - Parker Spiral
+    const sunField = createSunMagneticField(this.sun);
+    if (sunField) {
+      sunField.visible = config.showSunMagneticField;
+      this.universeGroup.add(sunField);
+    }
+
+    this.planets.forEach((p) => {
+      if (p.data.magneticField) {
+        const field = createMagneticField(p.data, p.data.radius);
+        if (field) p.mesh.add(field);
+      }
+      p.moons.forEach((m) => {
+        if (m.data.magneticField) {
+          const field = createMagneticField(m.data, m.data.radius);
+          if (field) m.mesh.add(field);
+        }
+      });
+    });
+  }
+
+  animate = () => {
+    requestAnimationFrame(this.animate);
+
+    const delta = this.clock.getDelta();
+
+    if (!config.stop) {
+      const secondsToAdd = config.simulationSpeed * delta;
+      config.date.setTime(config.date.getTime() + secondsToAdd * 1000);
+      this.magneticFieldTime += delta * config.simulationSpeed * 0.00025;
+    }
+
+    updateUI(this.uiControls.uiState, this.uiControls);
+    updatePlanets(this.planets, this.sun, this.shadowLight);
+    updateCoordinateSystem(this.universeGroup, this.planets, this.sun);
+    updateRelativeOrbits(this.orbitGroup, this.relativeOrbitGroup, this.planets, this.sun);
+    updateFocusMode(this.camera, this.controls, this.planets, this.sun);
+
+    this.rabbit.update(delta);
+    this.controls.update();
+    this.renderer.render(this.scene, this.camera);
+
+    this.updateMagneticFieldsAnimations();
+    this.rabbit.render();
+  };
+
+  updateMagneticFieldsAnimations() {
+    // Update Sun Magnetic Field Animation
+    if (this.universeGroup) {
+      const sunField = this.universeGroup.children.find((c) => c.name === 'MagneticField');
+
+      if (sunField?.visible && sunField.userData.material) {
+        sunField.userData.material.uniforms.uTime.value = this.magneticFieldTime;
+        if (this.sun) {
+          sunField.rotation.y = this.sun.rotation.y;
+        }
+      }
+
+      // Update Sun Basic Magnetic Field Animation
+      const sunFieldBasic = this.universeGroup.children.find(
+        (c) => c.name === 'SunMagneticFieldBasic'
+      );
+
+      if (sunFieldBasic?.visible) {
+        const time = this.magneticFieldTime + sunFieldBasic.userData.timeOffset;
+        if (sunFieldBasic.userData.shaderUniforms) {
+          const J2000 = new Date('2000-01-01T12:00:00Z').getTime();
+          const currentMs = config.date.getTime();
+          const hoursSinceJ2000 = (currentMs - J2000) / (1000 * 60 * 60);
+          sunFieldBasic.userData.shaderUniforms.uTime.value = hoursSinceJ2000;
+          if (this.sun) {
+            sunFieldBasic.rotation.y = this.sun.rotation.y;
+          }
+        }
+        sunFieldBasic.children.forEach((line) => {
+          if (line.userData.isPolar && line.userData.basePoints) {
+            const positions = line.geometry.attributes.position;
+            const basePoints = line.userData.basePoints;
+            for (let i = 0; i < basePoints.length; i++) {
+              const basePoint = basePoints[i];
+              const flutter = Math.sin(time * 0.3 + i * 0.1) * 0.1;
+              const offset = new THREE.Vector3(flutter, 0, flutter);
+              positions.setXYZ(
+                i,
+                basePoint.x + offset.x,
+                basePoint.y + offset.y,
+                basePoint.z + offset.z
+              );
+            }
+            positions.needsUpdate = true;
+          }
+        });
+      }
+    }
+  }
+}

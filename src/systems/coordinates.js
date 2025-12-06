@@ -1,8 +1,6 @@
-import * as THREE from 'three';
 import * as Astronomy from 'astronomy-engine';
-import { config, AU_TO_SCENE } from '../config.js';
-
-
+import * as THREE from 'three';
+import { AU_TO_SCENE, config } from '../config.js';
 
 /**
  * Updates the position of the universeGroup to shift the coordinate system.
@@ -22,7 +20,7 @@ export function updateCoordinateSystem(universeGroup, planets, sun) {
   } else if (system === 'Barycentric') {
     // Use native Astronomy Engine SSB (Solar System Barycenter)
     const ssb = Astronomy.HelioVector(Astronomy.Body.SSB, config.date);
-    // Convert to scene coordinates (SSB is relative to Sun, so we need to invert it? 
+    // Convert to scene coordinates (SSB is relative to Sun, so we need to invert it?
     // Wait, HelioVector returns position relative to Sun.
     // So if SSB is at (x,y,z) relative to Sun, then Sun is at (-x,-y,-z) relative to SSB.
     // If we want to center on SSB, the target position (relative to Universe/Sun) is (x,y,z).
@@ -36,7 +34,7 @@ export function updateCoordinateSystem(universeGroup, planets, sun) {
   // We want the Target to be at World (0,0,0).
   // universeGroup.position + (universeGroup.rotation * targetPosition) = 0
   // universeGroup.position = -(universeGroup.rotation * targetPosition)
-  
+
   targetPosition.applyQuaternion(universeGroup.quaternion);
   universeGroup.position.copy(targetPosition).negate();
 }

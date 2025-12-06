@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { Octree } from '../utils/Octree.js';
 import { Logger } from '../utils/logger.js';
+import { Octree } from '../utils/Octree.js';
 
 const ZODIAC_IDS = [
   'Ari',

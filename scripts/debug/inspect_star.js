@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 
 const stars = JSON.parse(fs.readFileSync('public/assets/stars_3d.json', 'utf8'));
 
