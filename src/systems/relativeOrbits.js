@@ -1,6 +1,26 @@
+/**
+ * @file relativeOrbits.js
+ * @description Dynamic relative orbit trails for non-heliocentric coordinate systems.
+ *
+ * This file handles the visualization of orbital paths when viewing the solar system from
+ * Earth-centered (Geocentric), Barycentric, or Tychonic perspectives. It creates epicycle
+ * patterns for planets as seen from Earth.
+ *
+ * Key features:
+ * - Efficient trail rendering: Only updates positions when time changes, not every frame
+ * - Gradient shader support: Uses the same visual style as heliocentric orbits
+ * - Adaptive resolution: Higher detail for geocentric epicycles, lower for simple ellipses
+ * - Memory efficient: Reuses geometry buffers instead of recreating them
+ *
+ * Performance optimizations:
+ * - Caches last update time to skip redundant calculations
+ * - Uses pre-allocated Float32Arrays for positions and progress
+ * - Only recalculates when simulation time has moved significantly
+ */
 import * as Astronomy from 'astronomy-engine';
 import * as THREE from 'three';
 import { AU_TO_SCENE, config } from '../config.js';
+import { createOrbitMaterial, createProgressAttribute } from '../materials/OrbitMaterial.js';
 import { calculateKeplerianPosition } from '../physics/orbits.js';
 
 // Reusable vectors to avoid garbage collection
@@ -8,9 +28,13 @@ const _tempVec = new THREE.Vector3();
 const _targetPos = new THREE.Vector3();
 const _centerPos = new THREE.Vector3();
 
-// Cache for geometries to avoid reallocation
-const orbitGeometries = new Map();
+// Cache for tracking last update times to avoid redundant calculations
+const lastUpdateTimes = new Map();
+const UPDATE_THRESHOLD_MS = 1000 * 60 * 60; // Only recalculate if time moved by 1+ hour
 
+/**
+ * Gets heliocentric position for a body at a given time
+ */
 function getHeliocentricPosition(data, time, target) {
   if (data.body) {
     const vec = Astronomy.HelioVector(Astronomy.Body[data.body], time);
@@ -25,9 +49,44 @@ function getHeliocentricPosition(data, time, target) {
 }
 
 /**
+ * Creates or updates the gradient material for a relative orbit line
+ */
+function getOrCreateMaterial(data, line) {
+  const isSun = data.name === 'Sun';
+  const showColors = config.showPlanetColors;
+  const showDwarfColors = config.showDwarfPlanetColors;
+  const isDwarf = data.type === 'dwarf';
+  const useColor = isDwarf ? showDwarfColors : showColors;
+  
+  // Default cyan-tinted color, or planet color if enabled
+  const defaultColor = 0x7799aa;
+  const color = isSun ? (data.color || 0xffff00) : (useColor ? (data.color || defaultColor) : defaultColor);
+  const opacity = isSun ? 0.8 : (useColor ? 0.9 : 0.7);
+  const glowIntensity = isSun ? 0.5 : (useColor ? 0.4 : 0.2);
+
+  if (!line) {
+    // Create new material
+    return createOrbitMaterial({
+      color: color,
+      opacity: opacity,
+      useGradient: true,
+      glowIntensity: glowIntensity,
+    });
+  } else if (line.material.uniforms) {
+    // Update existing shader material
+    line.material.uniforms.uColor.value.set(color);
+    line.material.uniforms.uOpacity.value = opacity;
+    line.material.uniforms.uGlowIntensity.value = glowIntensity;
+    return line.material;
+  }
+  
+  return line.material;
+}
+
+/**
  * Updates relative orbits dynamically.
  * Should be called every frame if in Geocentric/Barycentric mode.
-
+ * Optimized to only recalculate positions when simulation time has changed significantly.
  */
 export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, sun) {
   const system = config.coordinateSystem;
@@ -44,7 +103,6 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
 
     // Ensure orbits are visible, respecting settings
     orbitGroup.children.forEach((child) => {
-      // Check if it's a dwarf planet orbit
       const isDwarf = planets.some(
         (p) => p.data.type === 'dwarf' && child.name === p.data.name + '_Orbit'
       );
@@ -57,7 +115,6 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
       } else if (isPlanet) {
         child.visible = config.showPlanetOrbits && config.showPlanets;
       } else {
-        // Fallback for other orbits
         child.visible = true;
       }
     });
@@ -70,14 +127,16 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
 
   const allBodiesData = planets.map((p) => p.data);
   const bodiesToTrace = [...planets];
+  
   if (system === 'Geocentric' || system === 'Tychonic') {
     bodiesToTrace.push({ data: { name: 'Sun', body: 'Sun', color: 0xffff00, period: 365.25 } });
   } else if (system === 'Barycentric') {
-    // 12 years (Jupiter period) to show the full wobble loop
     bodiesToTrace.push({
       data: { name: 'Sun', body: 'Sun', color: 0xffff00, period: 12 * 365.25 },
     });
   }
+
+  const currentSimTime = config.date.getTime();
 
   // 3. Update Lines
   bodiesToTrace.forEach((bodyObj) => {
@@ -90,7 +149,6 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
     } else if (data.name === 'Sun') {
       isVisible = config.showSunOrbits && config.showSun;
     } else {
-      // Planets
       isVisible = config.showPlanetOrbits && config.showPlanets;
     }
 
@@ -99,31 +157,9 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
       isVisible = false;
     }
 
-    // In Tychonic, ONLY show Sun trail (planets use standard orbits)
-    // Wait, if planets use standard orbits in Tychonic, then orbitGroup SHOULD be visible?
-    // Tychonic: Earth is center. Sun orbits Earth. Planets orbit Sun.
-    // So planets follow their standard heliocentric orbits relative to the Sun.
-    // But the Sun moves relative to Earth.
-    // If we use orbitGroup (children of universeGroup), they are centered at 0,0,0 (Universe Center).
-    // In Tychonic, we usually shift the Universe so Earth is at 0,0,0.
-    // So Universe Center is at -EarthPos.
-    // The Sun is at Universe Center (0,0,0) in Universe coordinates.
-    // So orbitGroup is centered on the Sun.
-    // So yes, in Tychonic, we WANT orbitGroup visible for planets!
-    // And we want relativeOrbitGroup visible ONLY for the Sun (orbiting Earth).
-
-    if (system === 'Tychonic') {
-      // Special Case: Tychonic
-      // Sun Trail: Visible (handled by relativeOrbitGroup)
-      // Planet Orbits: Visible (handled by orbitGroup)
-      // Earth Trail: Hidden
-
-      if (data.name === 'Sun') {
-        // Sun trail is needed
-      } else {
-        // Planets don't need trails, they use static orbits
-        isVisible = false;
-      }
+    // In Tychonic, ONLY show Sun trail
+    if (system === 'Tychonic' && data.name !== 'Sun') {
+      isVisible = false;
     }
 
     let line = relativeOrbitGroup.getObjectByName(data.name + '_Trail');
@@ -135,88 +171,157 @@ export function updateRelativeOrbits(orbitGroup, relativeOrbitGroup, planets, su
 
     // Determine Duration and Steps
     const durationDays = data.period || 730;
+    
+    // Calculate approximate orbital path length using Kepler's 3rd law
+    // Period (years)² = SemiMajorAxis (AU)³
+    // So SMA = Period^(2/3) AU
+    const periodYears = durationDays / 365.25;
+    const semiMajorAxisAU = Math.pow(periodYears, 2/3);
+    
+    // Approximate circumference of the orbit in AU (assuming roughly circular)
+    // For geocentric epicycles, the path is more complex (~1.5x longer due to loops)
+    const orbitCircumference = 2 * Math.PI * semiMajorAxisAU;
+    
+    // Scale step count based on path length
+    // ~50 points per AU of path length gives smooth curves
+    let steps;
+    
+    if (system === 'Geocentric') {
+      // Geocentric epicycles are more complex - add extra detail
+      // The epicycle adds roughly Earth's orbit circumference to each planet's path
+      const earthOrbitCircumference = 2 * Math.PI; // ~6.28 AU
+      const epicyclePathLength = orbitCircumference + earthOrbitCircumference;
+      
+      // ~80 points per AU of path length for smooth epicycles
+      steps = Math.ceil(epicyclePathLength * 80);
+      steps = Math.max(360, Math.min(steps, 4000));
+    } else {
+      // Barycentric and others: simpler ellipses
+      // ~40 points per AU of path length
+      steps = Math.ceil(orbitCircumference * 40);
+      steps = Math.max(180, Math.min(steps, 800));
+    }
 
-    // Adaptive resolution: 1 step every ~2 days, but capped
-    // Barycentric/Tychonic: 500 (performance focus, simple ellipses)
-    // Geocentric: 5000 (fidelity focus, complex epicycles)
-    const maxSteps = system === 'Geocentric' ? 5000 : 500;
+    // Check if we need to recalculate positions
+    const cacheKey = data.name + '_' + system;
+    const lastUpdate = lastUpdateTimes.get(cacheKey) || 0;
+    const timeDelta = Math.abs(currentSimTime - lastUpdate);
+    const needsRecalc = timeDelta > UPDATE_THRESHOLD_MS;
 
-    let steps = Math.ceil(durationDays / 2);
-    if (steps > maxSteps) steps = maxSteps;
-    if (steps < 360) steps = 360;
-
-    const halfDuration = durationDays / 2;
-    const startTimeMs = config.date.getTime() - halfDuration * 24 * 60 * 60 * 1000;
-
-    // Create or Resize Line
-    if (!line || line.geometry.attributes.position.count <= steps) {
+    // Create or resize line if needed
+    const needsNewLine = !line || (line.geometry.attributes.position?.count || 0) < steps;
+    
+    if (needsNewLine) {
       if (line) {
         line.geometry.dispose();
+        if (line.material.dispose) line.material.dispose();
         relativeOrbitGroup.remove(line);
       }
 
       const geometry = new THREE.BufferGeometry();
-      const positions = new Float32Array((steps + 1) * 3);
+      const positions = new Float32Array(steps * 3);
+      const progress = new Float32Array(steps);
+      
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
 
-      const isSun = data.name === 'Sun';
-      const showColors = config.showPlanetColors;
-      const showDwarfColors = config.showDwarfPlanetColors;
-      const isDwarf = data.type === 'dwarf';
-      const useColor = isDwarf ? showDwarfColors : showColors;
-
-      const color = isSun ? data.color || 0xffff00 : useColor ? data.color || 0x444444 : 0x444444;
-
-      const material = new THREE.LineBasicMaterial({
-        color: color,
-        transparent: true,
-        opacity: isSun ? 0.8 : useColor ? 0.8 : 0.5,
-      });
+      const material = getOrCreateMaterial(data, null);
 
       line = new THREE.Line(geometry, material);
       line.name = data.name + '_Trail';
       line.frustumCulled = false;
+      line.userData.steps = steps;
+      line.userData.durationDays = durationDays;
+      line.userData.bodyData = data;
       relativeOrbitGroup.add(line);
+      
+      // Force recalculation for new lines
+      lastUpdateTimes.set(cacheKey, 0);
+    } else {
+      // Update material colors if needed (e.g., when toggling planet colors)
+      getOrCreateMaterial(data, line);
     }
 
     line.visible = true;
-    line.geometry.setDrawRange(0, steps + 1);
-    const positions = line.geometry.attributes.position.array;
+    line.geometry.setDrawRange(0, steps);
 
-    // Update Points
-    for (let i = 0; i <= steps; i++) {
-      const t = new Date(startTimeMs + (i / steps) * durationDays * 24 * 60 * 60 * 1000);
+    // Only recalculate positions if time has moved significantly
+    if (needsRecalc || needsNewLine) {
+      const positions = line.geometry.attributes.position.array;
+      const progressAttr = line.geometry.attributes.progress.array;
+      
+      const halfDuration = durationDays / 2;
+      const startTimeMs = currentSimTime - halfDuration * 24 * 60 * 60 * 1000;
 
-      if (data.name === 'Sun') {
-        _targetPos.set(0, 0, 0);
-      } else {
-        getHeliocentricPosition(data, t, _targetPos);
+      // Calculate positions
+      for (let i = 0; i < steps; i++) {
+        const t = new Date(startTimeMs + (i / (steps - 1)) * durationDays * 24 * 60 * 60 * 1000);
+
+        if (data.name === 'Sun') {
+          _targetPos.set(0, 0, 0);
+        } else {
+          getHeliocentricPosition(data, t, _targetPos);
+        }
+
+        if (system === 'Geocentric' || system === 'Tychonic') {
+          const earthData = allBodiesData.find((d) => d.name === 'Earth');
+          getHeliocentricPosition(earthData, t, _centerPos);
+        } else {
+          const ssb = Astronomy.HelioVector(Astronomy.Body.SSB, t);
+          _centerPos.set(ssb.x, ssb.y, ssb.z);
+        }
+
+        _tempVec.subVectors(_targetPos, _centerPos);
+
+        // Convert to Scene Coords (X, Z, -Y)
+        positions[i * 3] = _tempVec.x * AU_TO_SCENE;
+        positions[i * 3 + 1] = _tempVec.z * AU_TO_SCENE;
+        positions[i * 3 + 2] = -_tempVec.y * AU_TO_SCENE;
       }
 
-      if (system === 'Geocentric' || system === 'Tychonic') {
-        const earthData = allBodiesData.find((d) => d.name === 'Earth');
-        getHeliocentricPosition(earthData, t, _centerPos);
-      } else {
-        // Use native Astronomy Engine SSB
-        const ssb = Astronomy.HelioVector(Astronomy.Body.SSB, t);
-        _centerPos.set(ssb.x, ssb.y, ssb.z);
-      }
-
-      // _tempVec = target - center
-      _tempVec.subVectors(_targetPos, _centerPos);
-
-      // Convert to Scene Coords (X, Z, -Y)
-      positions[i * 3] = _tempVec.x * AU_TO_SCENE;
-      positions[i * 3 + 1] = _tempVec.z * AU_TO_SCENE;
-      positions[i * 3 + 2] = -_tempVec.y * AU_TO_SCENE;
+      line.geometry.attributes.position.needsUpdate = true;
+      lastUpdateTimes.set(cacheKey, currentSimTime);
     }
-
-    line.geometry.attributes.position.needsUpdate = true;
+    
+    // Always update progress/gradient (this is fast)
+    updateRelativeOrbitGradient(line, currentSimTime, durationDays);
   });
 
   // Special Handling for Tychonic Mode Visibility
   if (system === 'Tychonic') {
-    orbitGroup.visible = true; // Show static orbits for planets
-    relativeOrbitGroup.visible = true; // Show Sun trail
+    orbitGroup.visible = true;
+    relativeOrbitGroup.visible = true;
   }
+}
+
+/**
+ * Updates the gradient for a relative orbit line based on current time
+ * The trail shows where the planet WAS (bright) and where it's GOING (dim)
+ */
+function updateRelativeOrbitGradient(line, currentSimTime, durationDays) {
+  if (!line || !line.geometry) return;
+  
+  const progressAttr = line.geometry.getAttribute('progress');
+  if (!progressAttr) return;
+  
+  const steps = progressAttr.count;
+  const progress = progressAttr.array;
+  
+  const halfDuration = durationDays / 2;
+  const startTimeMs = currentSimTime - halfDuration * 24 * 60 * 60 * 1000;
+  
+  // The current time is at the center of the trail (50%)
+  // Points before current time = trail (should be bright)
+  // Points after current time = future (should be dim)
+  const currentTimeIndex = Math.floor(steps * 0.5); // Center point is "now"
+  
+  for (let i = 0; i < steps; i++) {
+    // Calculate how far BEHIND the current time this point is
+    // 0 = just passed (brightest)
+    // 1 = about to come (dimmest)
+    let dist = (currentTimeIndex - i + steps) % steps;
+    progress[i] = dist / steps;
+  }
+  
+  progressAttr.needsUpdate = true;
 }

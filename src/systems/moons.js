@@ -33,6 +33,7 @@ import * as Astronomy from 'astronomy-engine';
 import * as THREE from 'three';
 import { AU_TO_SCENE, config, REAL_PLANET_SCALE_FACTOR } from '../config.js';
 import { textureManager } from '../managers/TextureManager.js';
+import { createOrbitMaterial, createProgressAttribute } from '../materials/OrbitMaterial.js';
 
 /**
  * Get approximate orbital distance for a planet in AU
@@ -156,19 +157,30 @@ function updateOrbitGeometry(moonData, date) {
  * @param {THREE.Group} orbitLinesGroup - Group for moon orbit lines
  */
 function createJovianOrbitLine(moonData, orbitLinesGroup) {
-  // Create empty geometry initially
+  // Create empty geometry initially - will be populated by updateOrbitGeometry
   const orbitGeo = new THREE.BufferGeometry();
-  const orbitMat = new THREE.LineBasicMaterial({
-    color: 0x666666,
-    transparent: true,
-    opacity: 0.3,
+  
+  // Use gradient shader material for visual appeal
+  const orbitMat = createOrbitMaterial({
+    color: 0x7799aa,
+    opacity: 0.6,
+    useGradient: true,
+    glowIntensity: 0.2,
   });
+  
   const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
   orbitLinesGroup.add(orbitLine);
   moonData.orbitLine = orbitLine;
 
   // Populate with initial points
   updateOrbitGeometry(moonData, new Date());
+  
+  // Add progress attribute after geometry is populated
+  if (orbitLine.geometry.attributes.position) {
+    const numPoints = orbitLine.geometry.attributes.position.count;
+    const progress = createProgressAttribute(numPoints, 0);
+    orbitLine.geometry.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
+  }
 }
 
 /**
@@ -179,9 +191,10 @@ function createJovianOrbitLine(moonData, orbitLinesGroup) {
 function createSimpleOrbitLine(moonData, orbitLinesGroup) {
   const orbitPoints = [];
   const radiusBase = moonData.distance * AU_TO_SCENE;
+  const steps = 64;
 
-  for (let i = 0; i < 64; i++) {
-    const angle = (i / 64) * Math.PI * 2;
+  for (let i = 0; i < steps; i++) {
+    const angle = (i / steps) * Math.PI * 2;
     orbitPoints.push(
       new THREE.Vector3(Math.cos(angle) * radiusBase, 0, Math.sin(angle) * radiusBase)
     );
@@ -192,11 +205,19 @@ function createSimpleOrbitLine(moonData, orbitLinesGroup) {
 
   // Create geometry at 1x scale
   const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-  const orbitMat = new THREE.LineBasicMaterial({
-    color: 0x666666,
-    transparent: true,
-    opacity: 0.3,
+  
+  // Add progress attribute for gradient effect
+  const progress = createProgressAttribute(steps, 0);
+  orbitGeo.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
+  
+  // Use gradient shader material for visual appeal
+  const orbitMat = createOrbitMaterial({
+    color: 0x7799aa,
+    opacity: 0.6,
+    useGradient: true,
+    glowIntensity: 0.2,
   });
+  
   const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
   orbitLinesGroup.add(orbitLine);
   moonData.orbitLine = orbitLine;
@@ -208,19 +229,30 @@ function createSimpleOrbitLine(moonData, orbitLinesGroup) {
  * @param {THREE.Group} orbitLinesGroup - Group for moon orbit lines
  */
 function createRealOrbitLine(moonData, orbitLinesGroup) {
-  // Create empty geometry initially
+  // Create empty geometry initially - will be populated by updateOrbitGeometry
   const orbitGeo = new THREE.BufferGeometry();
-  const orbitMat = new THREE.LineBasicMaterial({
-    color: 0x666666,
-    transparent: true,
-    opacity: 0.3,
+  
+  // Use gradient shader material for visual appeal
+  const orbitMat = createOrbitMaterial({
+    color: 0x7799aa,
+    opacity: 0.6,
+    useGradient: true,
+    glowIntensity: 0.2,
   });
+  
   const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
   orbitLinesGroup.add(orbitLine);
   moonData.orbitLine = orbitLine;
 
   // Populate with initial points
   updateOrbitGeometry(moonData, new Date());
+  
+  // Add progress attribute after geometry is populated
+  if (orbitLine.geometry.attributes.position) {
+    const numPoints = orbitLine.geometry.attributes.position.count;
+    const progress = createProgressAttribute(numPoints, 0);
+    orbitLine.geometry.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
+  }
 }
 
 /**
@@ -478,5 +510,79 @@ export function updateMoonPositions(planet, allPlanets) {
         updateOrbitGeometry(m.data, config.date);
       }
     }
+    
+    // Update orbit gradient for the tail effect
+    updateMoonOrbitGradient(m.data.orbitLine, m.mesh.position, planet.mesh.position);
+  });
+}
+
+/**
+ * Updates a moon orbit line's gradient based on the moon's current position
+ * @param {THREE.LineLoop} orbitLine - The moon orbit line
+ * @param {THREE.Vector3} moonPosition - Current world position of the moon
+ * @param {THREE.Vector3} planetPosition - Current world position of the parent planet
+ */
+function updateMoonOrbitGradient(orbitLine, moonPosition, planetPosition) {
+  if (!orbitLine || !orbitLine.geometry) return;
+  
+  const geometry = orbitLine.geometry;
+  const positionAttr = geometry.getAttribute('position');
+  const progressAttr = geometry.getAttribute('progress');
+  
+  if (!positionAttr || !progressAttr) return;
+  
+  const numPoints = positionAttr.count;
+  const progress = progressAttr.array;
+  
+  // Calculate moon's local position relative to planet
+  const localMoonX = moonPosition.x - planetPosition.x;
+  const localMoonY = moonPosition.y - planetPosition.y;
+  const localMoonZ = moonPosition.z - planetPosition.z;
+  
+  // Get the orbit line's scale (used for moon orbit capping)
+  const scale = orbitLine.scale.x || 1;
+  
+  // Find the closest point on the orbit to the moon's current position
+  let minDist = Infinity;
+  let closestIndex = 0;
+  
+  for (let i = 0; i < numPoints; i++) {
+    const x = positionAttr.getX(i) * scale;
+    const y = positionAttr.getY(i) * scale;
+    const z = positionAttr.getZ(i) * scale;
+    
+    const dx = x - localMoonX;
+    const dy = y - localMoonY;
+    const dz = z - localMoonZ;
+    const dist = dx * dx + dy * dy + dz * dz;
+    
+    if (dist < minDist) {
+      minDist = dist;
+      closestIndex = i;
+    }
+  }
+  
+  // Update progress values - brightest BEHIND the moon (trail/tail), fading AHEAD
+  for (let i = 0; i < numPoints; i++) {
+    let dist = (closestIndex - i + numPoints) % numPoints;
+    progress[i] = dist / numPoints;
+  }
+  
+  progressAttr.needsUpdate = true;
+}
+
+/**
+ * Updates all moon orbit gradients for all planets
+ * @param {Array} planets - Array of planet objects
+ */
+export function updateAllMoonOrbitGradients(planets) {
+  planets.forEach((planet) => {
+    if (!planet.moons) return;
+    
+    planet.moons.forEach((moon) => {
+      if (moon.data.orbitLine) {
+        updateMoonOrbitGradient(moon.data.orbitLine, moon.mesh.position, planet.mesh.position);
+      }
+    });
   });
 }

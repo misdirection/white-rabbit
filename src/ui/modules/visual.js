@@ -24,6 +24,7 @@
  */
 import * as THREE from 'three';
 import { config, REAL_PLANET_SCALE_FACTOR } from '../../config.js';
+import { updateOrbitMaterialColor } from '../../materials/OrbitMaterial.js';
 
 export function updateReferencePlane(val, universeGroup) {
   if (universeGroup) {
@@ -1015,21 +1016,25 @@ export function setupGuidesControlsCustom(container, sun, planets, habitableZone
 export function updateOrbitColors(orbitGroup, relativeOrbitGroup, planets) {
   const showColors = config.showPlanetColors;
   const showDwarfColors = config.showDwarfPlanetColors;
+  const defaultColor = 0x7799aa; // Slight cyan-tinted gray for default orbits
 
   // 1. Update Standard Orbits (Heliocentric / Tychonic)
   orbitGroup.children.forEach((line) => {
-    // if (line.name === 'Earth_Orbit') return; // Removed exclusion
-
     const planetName = line.name.replace('_Orbit', '');
     const planet = planets.find((p) => p.data.name === planetName);
 
     if (planet) {
       const isDwarf = planet.data.type === 'dwarf';
       const useColor = isDwarf ? showDwarfColors : showColors;
-      const color = useColor ? planet.data.color || 0x444444 : 0x444444;
-      if (line.material) {
-        line.material.color.setHex(color);
-        line.material.opacity = useColor ? 0.8 : 0.5;
+      const color = useColor ? planet.data.color || defaultColor : defaultColor;
+      const opacity = useColor ? 0.9 : 0.7;
+
+      // Use utility function that handles both shader and basic materials
+      updateOrbitMaterialColor(line.material, color, opacity);
+
+      // Update glow intensity based on color mode
+      if (line.material.uniforms && line.material.uniforms.uGlowIntensity) {
+        line.material.uniforms.uGlowIntensity.value = useColor ? 0.4 : 0.2;
       }
     }
   });
@@ -1043,10 +1048,15 @@ export function updateOrbitColors(orbitGroup, relativeOrbitGroup, planets) {
     if (planet) {
       const isDwarf = planet.data.type === 'dwarf';
       const useColor = isDwarf ? showDwarfColors : showColors;
-      const color = useColor ? planet.data.color || 0x444444 : 0x444444;
-      if (line.material) {
-        line.material.color.setHex(color);
-        line.material.opacity = useColor ? 0.8 : 0.5;
+      const color = useColor ? planet.data.color || defaultColor : defaultColor;
+      const opacity = useColor ? 0.9 : 0.7;
+
+      // Use utility function that handles both shader and basic materials
+      updateOrbitMaterialColor(line.material, color, opacity);
+
+      // Update glow intensity based on color mode
+      if (line.material.uniforms && line.material.uniforms.uGlowIntensity) {
+        line.material.uniforms.uGlowIntensity.value = useColor ? 0.4 : 0.2;
       }
     }
   });

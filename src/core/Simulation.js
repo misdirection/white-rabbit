@@ -32,8 +32,10 @@ import {
 import { musicSystem } from '../systems/music.js';
 import { createRabbit } from '../systems/rabbit.js';
 import { updateRelativeOrbits } from '../systems/relativeOrbits.js';
+import { updateAllOrbitGradients } from '../systems/orbits.js';
 import { setupTooltipSystem } from '../systems/tooltips.js';
 import { alignZodiacSigns, createZodiacSigns } from '../systems/zodiacSigns.js';
+import { updateAllMoonOrbitGradients } from '../systems/moons.js';
 import { setupGUI, updateUI } from '../ui/gui.js';
 import { Logger } from '../utils/logger.js';
 import { createPlanets, updatePlanets } from './planets.js';
@@ -250,6 +252,8 @@ export class Simulation {
     updatePlanets(this.planets, this.sun, this.shadowLight);
     updateCoordinateSystem(this.universeGroup, this.planets, this.sun);
     updateRelativeOrbits(this.orbitGroup, this.relativeOrbitGroup, this.planets, this.sun);
+    updateAllOrbitGradients(this.orbitGroup, this.planets);
+    updateAllMoonOrbitGradients(this.planets);
     updateFocusMode(this.camera, this.controls, this.planets, this.sun);
 
     this.rabbit.update(delta);
