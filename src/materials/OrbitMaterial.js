@@ -32,6 +32,7 @@ const orbitFragmentShader = `
   uniform float uOpacity;
   uniform bool uUseGradient;
   uniform float uGlowIntensity;
+  uniform int uMode; // 0 = Orbit (periodic), 1 = Mission (linear)
   
   varying float vProgress;
   
@@ -42,36 +43,52 @@ const orbitFragmentShader = `
     float alpha = uOpacity;
     
     if (uUseGradient) {
-      // Smooth fade from recent path (bright tail) to future (dimmer but still visible)
-      // The first ~15% of the orbit (the trail behind) stays fully bright
-      // Then it fades smoothly but stays visible enough to almost reconnect
-      float trailStart = 0.15; // Keep bright for first 15% (recent path / tail)
-      float trailEnd = 0.85;   // Fade to minimum by 85%
-      
-      float progress = vProgress;
-      float fadeFactor;
-      
-      if (progress < trailStart) {
-        // Recent path (tail) - stay bright
-        fadeFactor = 1.0;
-      } else if (progress < trailEnd) {
-        // Fading section - smooth falloff
-        float normalizedProgress = (progress - trailStart) / (trailEnd - trailStart);
-        fadeFactor = 1.0 - pow(normalizedProgress, 0.7) * 0.7; // Fade to 30% (1.0 - 0.7 = 0.3)
+      if (uMode == 1) {
+        // Mission mode: Linear fade from launch (0.0) to current (1.0)
+        // Start at 40% opacity, fade to 100%
+        float fadeFactor = 0.4 + 0.6 * vProgress;
+        alpha *= fadeFactor;
       } else {
-        // Future path - still visible to reconnect
-        fadeFactor = 0.3;
+        // Orbit mode: Periodic fade
+        // Smooth fade from recent path (bright tail) to future (dimmer but still visible)
+        // The first ~15% of the orbit (the trail behind) stays fully bright
+        // Then it fades smoothly but stays visible enough to almost reconnect
+        float trailStart = 0.15; // Keep bright for first 15% (recent path / tail)
+        float trailEnd = 0.85;   // Fade to minimum by 85%
+        
+        float progress = vProgress;
+        float fadeFactor;
+        
+        if (progress < trailStart) {
+          // Recent path (tail) - stay bright
+          fadeFactor = 1.0;
+        } else if (progress < trailEnd) {
+          // Fading section - smooth falloff
+          float normalizedProgress = (progress - trailStart) / (trailEnd - trailStart);
+          fadeFactor = 1.0 - pow(normalizedProgress, 0.7) * 0.7; // Fade to 30% (1.0 - 0.7 = 0.3)
+        } else {
+          // Future path - still visible to reconnect
+          fadeFactor = 0.3;
+        }
+        
+        alpha *= fadeFactor;
+        
+        // Ensure minimum visibility for the full orbit to be traceable
+        alpha = max(alpha, 0.15);
       }
-      
-      alpha *= fadeFactor;
-      
-      // Ensure minimum visibility for the full orbit to be traceable
-      alpha = max(alpha, 0.15);
     }
     
-    // Apply glow effect - brighten the color near the planet's recent path
-    // Creates a subtle "glowing trail" effect where the planet just passed
-    float glowFactor = 1.0 + uGlowIntensity * (1.0 - vProgress) * (1.0 - vProgress);
+    // Apply glow effect
+    float glowFactor = 1.0;
+    
+    if (uMode == 1) {
+      // Mission mode: Glow increases towards the end (current position)
+      glowFactor = 1.0 + uGlowIntensity * vProgress * vProgress;
+    } else {
+      // Orbit mode: Glow increases near 0 (recent position)
+      glowFactor = 1.0 + uGlowIntensity * (1.0 - vProgress) * (1.0 - vProgress);
+    }
+
     vec3 glowColor = uColor * glowFactor;
     
     // Clamp to prevent excessive brightness
@@ -96,6 +113,7 @@ export function createOrbitMaterial(options = {}) {
     opacity = 0.85,
     useGradient = true,
     glowIntensity = 0.4, // Increased glow to match constellation/asterism visuals
+    mode = 'orbit', // 'orbit' or 'mission'
   } = options;
 
   const threeColor = new THREE.Color(color);
@@ -106,6 +124,7 @@ export function createOrbitMaterial(options = {}) {
       uOpacity: { value: opacity },
       uUseGradient: { value: useGradient },
       uGlowIntensity: { value: glowIntensity },
+      uMode: { value: mode === 'mission' ? 1 : 0 },
     },
     vertexShader: orbitVertexShader,
     fragmentShader: orbitFragmentShader,

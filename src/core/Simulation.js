@@ -21,7 +21,11 @@ import * as THREE from 'three';
 import { SimulationControl } from '../api/SimulationControl.js';
 import { config } from '../config.js';
 import { setupFocusMode, updateFocusMode } from '../features/focusMode.js';
-import { initializeMissions, updateMissions } from '../features/missions.js';
+import {
+  initializeMissions,
+  updateMissionTrajectories,
+  updateMissions,
+} from '../features/missions.js';
 import { updateCoordinateSystem } from '../systems/coordinates.js';
 import { createHabitableZone } from '../systems/habitableZone.js';
 import {
@@ -147,7 +151,13 @@ export class Simulation {
 
       setupTooltipSystem(camera, planets, sun, this.starsRef, zodiacGroup, asterismsGroup);
       setupFocusMode(camera, controls, planets, sun);
-      initializeMissions(this.universeGroup);
+
+      // Create dedicated group for missions that is NOT part of universeGroup
+      // This ensures we can control their positioning independently of the coordinate system shifts
+      this.missionGroup = new THREE.Group();
+      this.scene.add(this.missionGroup);
+      initializeMissions(this.missionGroup);
+
       window.updateMissions = updateMissions;
 
       // Initialize relative orbits
@@ -252,6 +262,7 @@ export class Simulation {
     updatePlanets(this.planets, this.sun, this.shadowLight);
     updateCoordinateSystem(this.universeGroup, this.planets, this.sun);
     updateRelativeOrbits(this.orbitGroup, this.relativeOrbitGroup, this.planets, this.sun);
+    updateMissionTrajectories(this.scene);
     updateAllOrbitGradients(this.orbitGroup, this.planets);
     updateAllMoonOrbitGradients(this.planets);
     updateFocusMode(this.camera, this.controls, this.planets, this.sun);

@@ -29,6 +29,7 @@ import * as Astronomy from 'astronomy-engine';
 import * as THREE from 'three';
 import { AU_TO_SCENE, config } from '../config.js';
 import { calculateKeplerianPosition } from '../physics/orbits.js';
+import { createOrbitMaterial } from '../materials/OrbitMaterial.js';
 
 /**
  * Mission trajectory data
@@ -346,12 +347,24 @@ export function initializeMissions(scene) {
     const geometry = new THREE.BufferGeometry().setFromPoints(
       points.map((p) => p.multiplyScalar(AU_TO_SCENE))
     );
-    const material = new THREE.LineBasicMaterial({
+
+    // Create progress attribute for gradient shader
+    // Progress goes from 0 (Launch) to 1 (End/Current)
+    const numPoints = points.length;
+    const progress = new Float32Array(numPoints);
+    for (let i = 0; i < numPoints; i++) {
+      progress[i] = i / (numPoints - 1);
+    }
+    geometry.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
+
+    const material = createOrbitMaterial({
       color: mission.color,
-      linewidth: 2,
-      transparent: true,
-      opacity: 0.8,
+      opacity: 1.0, // Shader scales this: 50% at launch -> 100% at end
+      useGradient: true,
+      glowIntensity: 0.5,
+      mode: 'mission',
     });
+
     const line = new THREE.Line(geometry, material);
     line.visible = config.showMissions[mission.id];
     scene.add(line);
@@ -369,5 +382,160 @@ export function updateMissions() {
     if (missionLines[id]) {
       missionLines[id].visible = config.showMissions[id];
     }
+  });
+}
+
+let lastCoordinateSystem = null;
+
+/**
+ * Updates mission trajectories when the coordinate system changes.
+ * Recalculates all waypoints relative to the new center (e.g., Earth for Geocentric).
+ * @param {THREE.Scene} scene - The scene (unused, but kept for consistency)
+ */
+export function updateMissionTrajectories(scene) {
+  const currentSystem = config.coordinateSystem;
+
+  // Only update if the coordinate system has changed
+  if (lastCoordinateSystem === currentSystem) {
+    return;
+  }
+
+  lastCoordinateSystem = currentSystem;
+  console.log(`Recalculating mission trajectories for ${currentSystem} system...`);
+
+  missionData.forEach((mission) => {
+    const line = missionLines[mission.id];
+    if (!line) return;
+
+    // Recalculate positions for all waypoints with coordinate system correction
+    const calculatedWaypoints = mission.waypoints.map((wp, index) => {
+      let pos = new THREE.Vector3();
+      const time = new Date(wp.date);
+
+      // 1. Calculate base Heliocentric position
+      if (wp.body) {
+        pos = getBodyPosition(wp.body, wp.date);
+      } else if (wp.customBody && customBodies[wp.customBody]) {
+        pos = getBodyPosition(null, wp.date, customBodies[wp.customBody]);
+      } else if (wp.pos) {
+        pos = wp.pos.clone();
+      } else if (wp.dist) {
+        // Deep space / Exit point
+        if (mission.exit) {
+          const exitVec = getExitVector(mission.exit.ra, mission.exit.dec);
+          pos = exitVec.multiplyScalar(wp.dist);
+        } else {
+          // No exit vector, just distance (Pioneer 10 check)
+          pos = new THREE.Vector3(0, 0, 0);
+        }
+      }
+
+      // 2. Apply Coordinate System Correction
+      // If Geocentric/Tychonic, subtract Earth's position at that time
+      // If Barycentric, subtract SSB position at that time
+      let correction = new THREE.Vector3(0, 0, 0);
+
+      if (currentSystem === 'Geocentric' || currentSystem === 'Tychonic') {
+        const earthPos = getBodyPosition('Earth', wp.date);
+        correction.copy(earthPos);
+      } else if (currentSystem === 'Barycentric') {
+        const ssb = Astronomy.HelioVector(Astronomy.Body.SSB, time);
+        // Convert to Scene: x=x, y=z, z=-y
+        correction.set(ssb.x, ssb.z, -ssb.y);
+      }
+
+      pos.sub(correction);
+
+      return {
+        pos,
+        date: time.getTime(),
+        type: wp.type, // Keep type for interpolation logic
+        dist: wp.dist, // Keep dist for exit logic logic if needed
+      };
+    });
+
+    // Second pass to resolve 'exit' and 'interpolate' with CORRECTED positions
+    // Note: interpolation needs to happen between already corrected points for accuracy
+    const finalPoints = [];
+
+    for (let i = 0; i < calculatedWaypoints.length; i++) {
+      const wp = calculatedWaypoints[i];
+
+      // If it's a known position (calculated above), use it
+      // We check if it WAS an exit/interpolate point in the first pass
+      // But wait, the first pass calculated positions for everything EXCEPT 'interpolate' types maybe?
+      // Let's re-verify the logic from initializeMissions.
+
+      // Refined logic:
+      // In initializeMissions, 'exit' used getExitVector. 'interpolate' was skipped in first pass.
+      // In this loop, we did the same for 'body', 'customBody', 'pos', and 'exit' (if dist).
+      // So 'interpolate' ones currently have (0,0,0) or undefined pos from the map above if we didn't handle them.
+
+      // Actually the map above returns valid pos for Body/Custom/Pos/Exit.
+      // It returns undefined pos for 'interpolate'.
+
+      if (wp.type === 'interpolate') {
+        // Find previous and next known points (which are already corrected!)
+        const prev = finalPoints[i - 1];
+        let next = null;
+        // Search forward for next known point
+        for (let j = i + 1; j < calculatedWaypoints.length; j++) {
+          // Check if that future point has a position (calculated in pass 1)
+          // Note: 'interpolate' points won't have it calculated yet.
+          if (calculatedWaypoints[j].type !== 'interpolate') {
+            next = calculatedWaypoints[j];
+            break;
+          }
+        }
+
+        if (prev && next) {
+          const totalTime = next.date - prev.date;
+          const elapsedTime = wp.date - prev.date;
+          const alpha = elapsedTime / totalTime;
+          const pos = new THREE.Vector3().lerpVectors(prev.pos, next.pos, alpha);
+          finalPoints.push({ pos, date: wp.date });
+        } else {
+          finalPoints.push({ pos: new THREE.Vector3(0, 0, 0), date: wp.date });
+        }
+      } else {
+        // It's a point we calculated in pass 1 (orbit, body, or exit)
+        finalPoints.push({ pos: wp.pos, date: wp.date });
+      }
+    }
+
+    // Regenerate geometry
+    const points = createSmoothPath(finalPoints, 200);
+    const geometry = line.geometry;
+
+    // Update position attribute
+    // We assume point count is similar (200 segments), but best to recreate attribute if length changes usually
+    // createSmoothPath returns predictable number of points based on input, but let's be safe
+    // BufferGeometry setFromPoints creates new position attribute
+
+    const newGeometry = new THREE.BufferGeometry().setFromPoints(
+      points.map((p) => p.multiplyScalar(AU_TO_SCENE))
+    );
+
+    // Copy position attribute to existing geometry? Or replace geometry?
+    // Replacing geometry is cleaner but we need to dispose old one if we were creating NEW Line objects
+    // But here we want to update the existing line.
+
+    geometry.setAttribute('position', newGeometry.getAttribute('position'));
+
+    // Update progress attribute (just in case count changed slightly)
+    const numPoints = points.length;
+    if (geometry.getAttribute('progress').count !== numPoints) {
+      const progress = new Float32Array(numPoints);
+      for (let i = 0; i < numPoints; i++) {
+        progress[i] = i / (numPoints - 1);
+      }
+      geometry.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
+    }
+
+    // Important: Recompute bounding sphere for culling
+    geometry.computeBoundingSphere();
+
+    // Trigger update
+    geometry.attributes.position.needsUpdate = true;
   });
 }
