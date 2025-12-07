@@ -15,6 +15,7 @@ import {
   updateReferencePlane,
   updateSunMagneticFieldScale,
 } from './visual.js';
+import { updateMissionTrajectories } from '../../features/missions.js';
 
 export function setupSystemTab(
   container,
@@ -275,6 +276,8 @@ export function setupSystemTab(
       p.moons.forEach((m) => m.mesh.scale.setScalar(internalVal));
     });
     updateMagneticFieldScales(planets);
+    // Force mission trajectory update (for scale-aware offsets)
+    updateMissionTrajectories(null, true);
 
     if (planetCtrl) planetCtrl.update();
   };

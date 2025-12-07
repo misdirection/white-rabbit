@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { config } from '../config.js';
-import { exitFocusMode, focusOnObject } from '../features/focusMode.js';
+import { exitFocusMode, focusOnObject, isFocusModeActive } from '../features/focusMode.js';
 import {
   updateAsterismsVisibility,
   updateAxesVisibility,
@@ -15,6 +15,7 @@ import {
   updateZodiacSignsVisibility,
 } from '../ui/modules/visual.js';
 import { Logger } from '../utils/logger.js';
+import { getMissionState } from '../features/missions.js';
 
 /**
  * API for controlling the simulation programmatically.
@@ -57,6 +58,62 @@ export class SimulationControl {
     } else {
       Logger.warn('jumpToDate function not provided to SimulationControl.');
       // Fallback or do nothing
+    }
+  }
+
+  jumpToMissionLocation(missionId, date, pause = true) {
+    // 1. Jump to Date
+    this.jumpToDate(date, pause);
+
+    // 2. Get Mission State (Position & Direction)
+    // We defer slightly to allow date update to propagate if needed,
+    // but usually synchronous update is fine if data is already there.
+    // However, if the date jump triggers a recalc, we might need to wait.
+    // For now, let's assume immediate calculation is okay or close enough.
+
+    // Check if we need to wait for update?
+    // updateMissionTrajectories runs in main loop.
+    // If we change date, coordinates update next frame.
+    // So ideally we should execute this on next frame or after update.
+    // But let's try immediate first. Reference frames generally only rotate.
+
+    const state = getMissionState(missionId, date);
+
+    if (state) {
+      const { position, direction } = state;
+      // "Looking direction of flight" means Camera looks AT the spacecraft, ALIGNED with flight path?
+      // Or Camera LOOKS towards where the spacecraft is going?
+      // "looking the direction of its flight path" usually means User POV is same as Spacecraft POV.
+      // But user said: "jump to the location of the spacecraft... and looking the direction of its flight path".
+      // If I am at the location looking in the direction, I don't see the spacecraft (it's inside me).
+      // User also said: "slightly 'above' it (in case we add a rendering later)".
+      // So likely: Camera is behind and above, looking forward (at the spacecraft and beyond).
+
+      const upOffset = 0.0005; // Slightly above (approx 75,000 km)
+      const backOffset = 0.002; // Behind (approx 300,000 km - Moon distance)
+
+      // Camera Pos = MissionPos - (Direction * backOffset) + (Up * upOffset)
+      // Up vector: Y axis? Or ecliptic normal? Scene Y is "Up" (perpendicular to ecliptic plane usually? No, Z is up? Check coords).
+      // missions.js: getBodyPosition uses x=x, y=z, z=-y.
+      // Standard Three.js: Y is up.
+      // Solar system usually has Z as ecliptic normal in some coords, but Three.js usually maps Y to up.
+      // Let's assume Scene Y is Up.
+
+      const camPos = position
+        .clone()
+        .addScaledVector(direction, -backOffset)
+        .add(new THREE.Vector3(0, upOffset, 0));
+
+      this.camera.position.copy(camPos);
+      this.controls.target.copy(position);
+      this.controls.update();
+
+      // Exit focus mode if active to prevent conflict (and suppress message)
+      if (isFocusModeActive && isFocusModeActive()) {
+        exitFocusMode(this.controls, true);
+      }
+    } else {
+      Logger.warn(`Could not get state for mission ${missionId} at ${date}`);
     }
   }
 

@@ -317,15 +317,18 @@ function lookAtObject(targetMesh, camera, controls) {
 /**
  * Exits focus mode and returns control to the user
  * @param {Object} controls - OrbitControls instance
+ * @param {boolean} [suppressFeedback=false] - Whether to suppress the notification
  */
-export function exitFocusMode(controls) {
+export function exitFocusMode(controls, suppressFeedback = false) {
   if (focusedObject) {
     disableHighRes(focusedObject);
     focusedObject = null;
   }
   controls.enabled = true;
   controls.enablePan = true;
-  showFocusNotification('Focus mode deactivated');
+  if (!suppressFeedback) {
+    showFocusNotification('Focus mode deactivated');
+  }
 }
 
 /**

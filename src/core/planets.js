@@ -126,6 +126,13 @@ export function createPlanets(scene, orbitGroup) {
     if (data.axialTilt !== undefined) {
       const tiltRadians = (data.axialTilt * Math.PI) / 180;
       mesh.rotation.z = tiltRadians;
+
+      // FIX: Earth's axis defines the J2000 coordinate system (Equatorial).
+      // So Earth should be "Upright" (Tilt = 0) in this scene.
+      // Applying 23.5 deg tilt moves it AWAY from the North Pole of the coordinate system.
+      if (data.name === 'Earth') {
+        mesh.rotation.z = 0;
+      }
     }
 
     // Create axis line
@@ -295,7 +302,21 @@ export function updatePlanets(planets, sun = null, shadowLight = null) {
     }
 
     // Apply rotation
-    if (p.data.rotationPeriod) {
+    if (p.data.name === 'Earth') {
+      // Use Sidereal Time for precise Earth rotation alignment (Greenwich matching coordinates)
+      // Greenwich Apparent Sidereal Time (GAST) in hours
+      const gst = Astronomy.SiderealTime(config.date);
+      // Convert to radians (0..24h -> 0..2PI)
+      const stRad = (gst / 24.0) * 2 * Math.PI;
+
+      // Alignment Offset:
+      // Texture Greenwich is usually at U=0.5 (or 0).
+      // If SphereGeometry starts at +X (u=0.5?), and ST=0 means Greenwich at +X.
+      // Then p.mesh.rotation.y = stRad should be correct (0 offset).
+      // Previous attempts with PI/2 offsets landed on India/Africa.
+      // Trying raw Sidereal Time.
+      p.mesh.rotation.y = stRad;
+    } else if (p.data.rotationPeriod) {
       // Calculate deterministic rotation based on time since J2000 epoch
       const J2000 = new Date('2000-01-01T12:00:00Z').getTime();
       const currentMs = config.date.getTime();

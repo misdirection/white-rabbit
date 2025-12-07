@@ -343,6 +343,9 @@ export function setupMissionDetails(container, config) {
         const row = document.createElement('div');
         row.className = 'timeline-event';
         row.title = `Jump to ${event.date} - ${event.label}`;
+        // Store metadata for updates
+        row.dataset.date = event.date;
+        row.dataset.color = '#' + mission.color.toString(16).padStart(6, '0');
 
         row.onclick = () => {
           const simCtrl = window.SimulationControl;
@@ -398,6 +401,26 @@ export function setupMissionDetails(container, config) {
         const labelSpan = document.createElement('span');
         labelSpan.className = 'event-label';
         labelSpan.textContent = event.label;
+        labelSpan.style.cursor = 'pointer'; // Make it look clickable
+        labelSpan.title = 'Jump to Location & Date';
+
+        labelSpan.onclick = (e) => {
+          e.stopPropagation(); // Prevent parent row click (which just jumps to date)
+          const simCtrl = window.SimulationControl;
+          if (simCtrl?.jumpToMissionLocation) {
+            simCtrl.jumpToMissionLocation(mission.id, event.date, true);
+          } else {
+            console.warn('SimulationControl.jumpToMissionLocation not available');
+          }
+        };
+
+        labelSpan.onmouseover = () => {
+          labelSpan.style.textDecoration = 'underline';
+        };
+        labelSpan.onmouseout = () => {
+          labelSpan.style.textDecoration = 'none';
+        };
+
         row.appendChild(labelSpan);
 
         timelineDiv.appendChild(row);
@@ -421,4 +444,37 @@ export function setupMissionDetails(container, config) {
     // The user can now use the header dot to toggle it.
   };
   window.addEventListener('mission-selected', onMissionSelected);
+}
+
+/**
+ * Updates the mission timeline visuals based on current simulation time.
+ * Called every frame by the UI loop.
+ */
+export function updateMissionTimeline(config) {
+  const events = document.querySelectorAll('.mission-timeline .timeline-event');
+  if (events.length === 0) return;
+
+  const simDate = config.date;
+
+  events.forEach((row) => {
+    const eventDate = new Date(row.dataset.date);
+    const colorHex = row.dataset.color;
+    const dot = row.querySelector('.timeline-dot');
+
+    if (!dot) return;
+
+    const isFuture = eventDate > simDate;
+
+    if (isFuture) {
+      // Future: Thin Inner Outline
+      dot.style.backgroundColor = 'transparent';
+      dot.style.border = '2px solid transparent';
+      dot.style.boxShadow = `inset 0 0 0 1px ${colorHex}`;
+    } else {
+      // Past: Solid
+      dot.style.backgroundColor = colorHex;
+      dot.style.border = '2px solid #222';
+      dot.style.boxShadow = 'none';
+    }
+  });
 }

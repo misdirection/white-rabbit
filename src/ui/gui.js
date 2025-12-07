@@ -18,7 +18,11 @@ import { menuDock } from './MenuDock.js';
 import { setupAboutFolder } from './modules/about.js';
 import { setupEventsControlsCustom } from './modules/events.js';
 import { setupFindControlsCustom } from './modules/find.js';
-import { setupMissionDetails, setupMissionList } from './modules/missions.js';
+import {
+  setupMissionDetails,
+  setupMissionList,
+  updateMissionTimeline,
+} from './modules/missions.js';
 import { setupNavigationFolder } from './modules/navigation.js';
 
 import { setupMusicWindow } from './modules/sound.js';
@@ -243,7 +247,7 @@ export function setupGUI(
   createExplorerTab('missions', 'Missions', '🚀', (container) =>
     setupMissionList(container, config)
   );
-  createExplorerTab('mission-details', 'Mission Info', 'ℹ️', (container) =>
+  createExplorerTab('mission-details', 'Story', '☄️', (container) =>
     setupMissionDetails(container, config)
   );
   createExplorerTab('events', 'Events', '📅', (container) =>
@@ -395,5 +399,8 @@ export function updateUI(uiState, controls) {
   const explorerWin = windowManager.getWindow('explorer-window');
   if (explorerWin) {
     uiState.explorerWindow = explorerWin.element.style.display !== 'none';
+    if (uiState.explorerWindow) {
+      updateMissionTimeline(config);
+    }
   }
 }
