@@ -48,11 +48,112 @@ import { missionData, customBodies } from '../data/missions.js';
  * Positions are dynamically calculated based on dates and celestial bodies.
  */
 
-// Helper to create smooth curve through waypoints
+export function setupMissionInteraction(camera, missionGroup, domElement) {
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
+  // Threshold for line selection
+  raycaster.params.Line.threshold = 0.5; // Adjust based on scale (AU is huge, so this might need tuning. Wait, scene is scaled.)
+  // AU_TO_SCENE is 20. So 1 AU = 20 units.
+  // 0.5 units is reasonable trigger zone.
+
+  const onClick = (event) => {
+    // Calculate mouse position in normalized device coordinates
+    // (-1 to +1) for both components
+    const rect = domElement.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    // Filter outlines (only check main mission lines)
+    // Mission lines are direct children of missionGroup or wrapped?
+    // initializeMissions adds lines to missionGroup.
+    // They are Line objects.
+
+    // We only want visible lines
+    const visibleChildren = missionGroup.children.filter((c) => c.visible);
+
+    const intersects = raycaster.intersectObjects(visibleChildren, false);
+
+    if (intersects.length > 0) {
+      // Get the first intersected object
+      const object = intersects[0].object;
+      const missionId = object.userData.id; // We need to ensure userData.id is set on the line!
+
+      if (missionId) {
+        // Trigger Selection
+
+        // 1. Open Explorer Window
+        import('../ui/WindowManager.js').then(({ windowManager }) => {
+          const win = windowManager.getWindow('explorer-window');
+          if (win) {
+            windowManager.showWindow('explorer-window');
+            if (win.controller) {
+              win.controller.selectTab('mission-details');
+            }
+          }
+        });
+
+        // 2. Select Mission via Event
+        const event = new CustomEvent('mission-selected', { detail: { missionId } });
+        window.dispatchEvent(event);
+      }
+    }
+  };
+
+  domElement.addEventListener('click', onClick);
+
+  // Return cleanup function
+  return () => {
+    domElement.removeEventListener('click', onClick);
+  };
+}
+/**
+ * Generate smooth path points from waypoints, including time interpolation.
+ * @param {Array<{pos: THREE.Vector3, date: number}>} waypoints
+ * @param {number} segments
+ * @returns {Array<{pos: THREE.Vector3, date: number}>}
+ */
 function createSmoothPath(waypoints, segments = 100) {
-  const points = waypoints.map((wp) => wp.pos);
-  const curve = new THREE.CatmullRomCurve3(points);
-  return curve.getPoints(segments);
+  if (!waypoints || waypoints.length < 2) {
+    return waypoints || [];
+  }
+
+  const positions = waypoints.map((wp) => wp.pos);
+  // Use 'catmullrom' (Uniform) parameterization for predictable time mapping
+  const curve = new THREE.CatmullRomCurve3(positions, false, 'catmullrom');
+
+  const points = [];
+  const numWaypoints = waypoints.length;
+
+  for (let i = 0; i <= segments; i++) {
+    const t = i / segments;
+    const pos = curve.getPoint(t);
+
+    // Interpolate Date
+    // Since we use Uniform parameterization, t maps linearly to waypoint indices
+    const floatIndex = t * (numWaypoints - 1);
+    const lowerIndex = Math.floor(floatIndex);
+
+    // Safety check just in case
+    if (lowerIndex < 0) {
+      points.push({ pos, date: waypoints[0].date });
+      continue;
+    }
+
+    // Ensure upperIndex does not exceed array bounds
+    const upperIndex = Math.min(lowerIndex + 1, numWaypoints - 1);
+    const alpha = Math.max(0, floatIndex - lowerIndex);
+
+    const date =
+      waypoints[lowerIndex].date +
+      (waypoints[upperIndex].date - waypoints[lowerIndex].date) * alpha;
+
+    points.push({ pos, date });
+  }
+
+  return points;
 }
 
 // Helper to get position of a body at a specific date
@@ -195,29 +296,77 @@ export function initializeMissions(scene) {
       }
     }
 
-    const points = createSmoothPath(finalPoints, 200);
+    // Regenerate geometry
+    let smoothPoints;
+    try {
+      smoothPoints = createSmoothPath(finalPoints, 1000);
+    } catch (e) {
+      console.warn(`Failed to create path for mission ${mission.id}:`, e);
+      return; // Skip this mission
+    }
+
+    if (!smoothPoints || smoothPoints.length < 2) {
+      // Not enough points to make a line
+      return;
+    }
+
     const geometry = new THREE.BufferGeometry().setFromPoints(
-      points.map((p) => p.multiplyScalar(AU_TO_SCENE))
+      smoothPoints.map((p) => p.pos.multiplyScalar(AU_TO_SCENE))
     );
 
     // Create progress attribute for gradient shader
-    // Progress goes from 0 (Launch) to 1 (End/Current)
-    const numPoints = points.length;
+    // Progress is now Normalized Time (0..1) relative to mission duration
+    const numPoints = smoothPoints.length;
     const progress = new Float32Array(numPoints);
+
+    // Find Start and End times
+    const startTime = smoothPoints[0].date;
+    const endTime = smoothPoints[numPoints - 1].date;
+    const duration = endTime - startTime;
+
+    // Calculate progress (time) and lineDistance (spatial)
+    const lineDistances = new Float32Array(numPoints);
+    let totalDist = 0;
+
     for (let i = 0; i < numPoints; i++) {
-      progress[i] = i / (numPoints - 1);
+      // Time Progress
+      if (duration > 0) {
+        progress[i] = (smoothPoints[i].date - startTime) / duration;
+      } else {
+        progress[i] = 0;
+      }
+
+      // Spatial Distance
+      if (i > 0) {
+        // Distance in Scene Units
+        // Note: points in smoothPoints are Vector3s but NOT scaled to AU_TO_SCENE yet?
+        // Wait, look at setFromPoints above: p.pos.multiplyScalar(AU_TO_SCENE)
+        // smoothPoints[i].pos is in AU.
+        const p1 = smoothPoints[i - 1].pos;
+        const p2 = smoothPoints[i].pos;
+        const d = p1.distanceTo(p2);
+        totalDist += d;
+      }
+      lineDistances[i] = totalDist;
     }
+
     geometry.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
+    geometry.setAttribute('lineDistance', new THREE.BufferAttribute(lineDistances, 1));
 
     const material = createOrbitMaterial({
       color: mission.color,
-      opacity: 1.0, // Shader scales this: 50% at launch -> 100% at end
+      opacity: 1.0,
       useGradient: true,
-      glowIntensity: 0.5,
+      glowIntensity: 0.8,
       mode: 'mission',
     });
 
     const line = new THREE.Line(geometry, material);
+
+    // Store timing metadata for updates
+    line.userData.id = mission.id;
+    line.userData.startTime = startTime;
+    line.userData.duration = duration;
     line.visible = config.showMissions[mission.id];
     scene.add(line);
     missionLines[mission.id] = line;
@@ -356,38 +505,111 @@ export function updateMissionTrajectories(scene) {
     }
 
     // Regenerate geometry
-    const points = createSmoothPath(finalPoints, 200);
+    let smoothPoints;
+    try {
+      smoothPoints = createSmoothPath(finalPoints, 1000);
+    } catch (e) {
+      console.warn(`Failed to update path for mission ${mission.id}:`, e);
+      return;
+    }
+
+    if (!smoothPoints || smoothPoints.length < 2) {
+      return;
+    }
+
     const geometry = line.geometry;
 
     // Update position attribute
-    // We assume point count is similar (200 segments), but best to recreate attribute if length changes usually
-    // createSmoothPath returns predictable number of points based on input, but let's be safe
-    // BufferGeometry setFromPoints creates new position attribute
-
     const newGeometry = new THREE.BufferGeometry().setFromPoints(
-      points.map((p) => p.multiplyScalar(AU_TO_SCENE))
+      smoothPoints.map((p) => p.pos.multiplyScalar(AU_TO_SCENE))
     );
-
-    // Copy position attribute to existing geometry? Or replace geometry?
-    // Replacing geometry is cleaner but we need to dispose old one if we were creating NEW Line objects
-    // But here we want to update the existing line.
 
     geometry.setAttribute('position', newGeometry.getAttribute('position'));
 
-    // Update progress attribute (just in case count changed slightly)
-    const numPoints = points.length;
-    if (geometry.getAttribute('progress').count !== numPoints) {
-      const progress = new Float32Array(numPoints);
-      for (let i = 0; i < numPoints; i++) {
-        progress[i] = i / (numPoints - 1);
+    // Update progress attribute (Time based) and lineDistance (Spatial)
+    const numPoints = smoothPoints.length;
+    // Always recreate attributes to be safe with lengths
+
+    // Check if attributes need resizing or just updating
+    // const progressAttribute = geometry.getAttribute('progress');
+    // const distanceAttribute = geometry.getAttribute('lineDistance');
+
+    let progress, lineDistances;
+
+    // If counts match, reuse array (faster?), actually cleaner to just new Float32Array
+    // But if we want to avoid GC, we could reuse if size matches.
+    // Given the frequency of this update (only on coordinate change), new arrays are fine.
+    progress = new Float32Array(numPoints);
+    lineDistances = new Float32Array(numPoints);
+
+    const startTime = smoothPoints[0].date;
+    const endTime = smoothPoints[numPoints - 1].date;
+    const duration = endTime - startTime;
+    let totalDist = 0;
+
+    for (let i = 0; i < numPoints; i++) {
+      // Time
+      if (duration > 0) {
+        progress[i] = (smoothPoints[i].date - startTime) / duration;
+      } else {
+        progress[i] = 0;
       }
-      geometry.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
+
+      // Distance
+      if (i > 0) {
+        const p1 = smoothPoints[i - 1].pos;
+        const p2 = smoothPoints[i].pos;
+        const d = p1.distanceTo(p2);
+        totalDist += d;
+      }
+      lineDistances[i] = totalDist;
     }
+
+    geometry.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
+    geometry.setAttribute('lineDistance', new THREE.BufferAttribute(lineDistances, 1));
+
+    // Update metadata just in case dates changed (unlikely unless data changed)
+    line.userData.startTime = smoothPoints[0].date;
+    line.userData.duration = smoothPoints[numPoints - 1].date - smoothPoints[0].date;
 
     // Important: Recompute bounding sphere for culling
     geometry.computeBoundingSphere();
 
     // Trigger update
     geometry.attributes.position.needsUpdate = true;
+    geometry.attributes.progress.needsUpdate = true;
   });
+}
+
+/**
+ * Updates visual uniforms for mission lines based on current simulation time.
+ * Should be called every frame.
+ * @param {number} currentSimTime - Time in ms
+ */
+export function updateMissionVisuals(currentSimTime) {
+  try {
+    Object.values(missionLines).forEach((line) => {
+      if (!line.visible) return;
+
+      const startTime = line.userData.startTime;
+      const duration = line.userData.duration;
+
+      if (startTime !== undefined && duration > 0) {
+        // Calculate normalized time (0..1)
+        const relativeTime = (currentSimTime - startTime) / duration;
+        // Clamp to 0..1 (although shader handles >1, we generally want 1 max)
+        // Actually, if we want dotted line for future, we need >1?
+        // No, progress is 0..1. If sim time is > end time, relativeTime > 1.
+        // Shader: if (vProgress > uCurrentTime). vProgress is 0..1.
+        // If relativeTime > 1, uCurrentTime > 1, so vProgress is always < uCurrentTime -> Solid line (Mission Complete).
+        // If relativeTime < 0 (Pre-launch), uCurrentTime < 0, vProgress > uCurrentTime -> Dotted line (Planned).
+
+        if (line.material && line.material.uniforms && line.material.uniforms.uCurrentTime) {
+          line.material.uniforms.uCurrentTime.value = relativeTime;
+        }
+      }
+    });
+  } catch (e) {
+    // Suppress spammy visual update errors
+  }
 }

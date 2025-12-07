@@ -70,8 +70,20 @@ export const customBodies = {
 export const missionData = [
   {
     id: 'voyager1',
+    name: 'Voyager 1',
     color: 0x00ffff,
+    summary:
+      'Launched in 1977, Voyager 1 is the farthest human-made object from Earth. After visiting Jupiter and Saturn, it crossed the heliopause in 2012, becoming the first spacecraft to enter interstellar space.',
+    image: 'assets/missions/voyager.jpg',
+    wikiUrl: 'https://en.wikipedia.org/wiki/Voyager_1',
     exit: { ra: 17.2, dec: 12.1 }, // Ophiuchus
+    timeline: [
+      { date: '1977-09-05', label: 'Launch' },
+      { date: '1979-03-05', label: 'Jupiter Flyby' },
+      { date: '1980-11-12', label: 'Saturn Flyby' },
+      { date: '1990-02-14', label: 'Pale Blue Dot' },
+      { date: '2012-08-25', label: 'Interstellar Space' },
+    ],
     waypoints: [
       { date: '1977-09-05', body: 'Earth' },
       { date: '1979-03-05', body: 'Jupiter' },
@@ -83,8 +95,21 @@ export const missionData = [
   },
   {
     id: 'voyager2',
+    name: 'Voyager 2',
     color: 0xff00ff,
+    summary:
+      'Voyager 2 is the only spacecraft to have visited Uranus and Neptune. Launched shortly before Voyager 1, it completed the "Grand Tour" of the outer solar system and entered interstellar space in 2018.',
+    image: 'assets/missions/voyager.jpg',
+    wikiUrl: 'https://en.wikipedia.org/wiki/Voyager_2',
     exit: { ra: 20.0, dec: -60.0 }, // Pavo/Telescopium
+    timeline: [
+      { date: '1977-08-20', label: 'Launch' },
+      { date: '1979-07-09', label: 'Jupiter Flyby' },
+      { date: '1981-08-25', label: 'Saturn Flyby' },
+      { date: '1986-01-24', label: 'Uranus Flyby' },
+      { date: '1989-08-25', label: 'Neptune Flyby' },
+      { date: '2018-11-05', label: 'Interstellar Space' },
+    ],
     waypoints: [
       { date: '1977-08-20', body: 'Earth' },
       { date: '1979-07-09', body: 'Jupiter' },
@@ -98,8 +123,19 @@ export const missionData = [
   },
   {
     id: 'pioneer10',
+    name: 'Pioneer 10',
     color: 0xffa500,
+    summary:
+      'Pioneer 10 was the first spacecraft to travel through the asteroid belt and visit Jupiter. It sent back the first close-up images of the giant planet and carried a famous golden plaque with a message for extraterrestrial life.',
+    image: 'assets/missions/pioneer.jpg',
+    wikiUrl: 'https://en.wikipedia.org/wiki/Pioneer_10',
     exit: { ra: 5.2, dec: 26.0 }, // Taurus
+    timeline: [
+      { date: '1972-03-02', label: 'Launch' },
+      { date: '1973-12-04', label: 'Jupiter Flyby' },
+      { date: '1983-06-13', label: 'Neptune Orbit' },
+      { date: '2003-01-23', label: 'End of Mission (Signal Lost)' },
+    ],
     waypoints: [
       { date: '1972-03-02', body: 'Earth' },
       { date: '1973-12-04', body: 'Jupiter' },
@@ -111,8 +147,19 @@ export const missionData = [
   },
   {
     id: 'pioneer11',
+    name: 'Pioneer 11',
     color: 0x00ff00,
+    summary:
+      'Pioneer 11 was the second mission to investigate Jupiter and the outer solar system and the first to explore Saturn and its main rings.',
+    image: 'assets/missions/pioneer.jpg',
+    wikiUrl: 'https://en.wikipedia.org/wiki/Pioneer_11',
     exit: { ra: 18.8, dec: -8.0 }, // Scutum
+    timeline: [
+      { date: '1973-04-06', label: 'Launch' },
+      { date: '1974-12-02', label: 'Jupiter Flyby' },
+      { date: '1979-09-01', label: 'Saturn Flyby' },
+      { date: '1995-11-24', label: 'End of Mission (Signal Lost)' },
+    ],
     waypoints: [
       { date: '1973-04-06', body: 'Earth' },
       { date: '1974-12-02', body: 'Jupiter' },
@@ -123,7 +170,22 @@ export const missionData = [
   },
   {
     id: 'galileo',
+    name: 'Galileo',
     color: 0xffd700,
+    summary:
+      'Galileo was an unmanned spacecraft that studied the planet Jupiter and its moons, as well as several other Solar System bodies. It was the first spacecraft to orbit an outer planet.',
+    image: 'assets/missions/galileo.jpg',
+    wikiUrl: 'https://en.wikipedia.org/wiki/Galileo_(spacecraft)',
+    timeline: [
+      { date: '1989-10-18', label: 'Launch' },
+      { date: '1990-02-10', label: 'Venus Flyby' },
+      { date: '1990-12-08', label: 'Earth Flyby 1' },
+      { date: '1991-10-29', label: 'Gaspra Flyby' },
+      { date: '1992-12-08', label: 'Earth Flyby 2' },
+      { date: '1993-08-28', label: 'Ida Flyby' },
+      { date: '1995-12-07', label: 'Jupiter Arrival' },
+      { date: '2003-09-21', label: 'Impact into Jupiter' },
+    ],
     waypoints: [
       { date: '1989-10-18', body: 'Earth' },
       { date: '1990-02-10', body: 'Venus' },
@@ -137,7 +199,21 @@ export const missionData = [
   },
   {
     id: 'cassini',
+    name: 'Cassini',
     color: 0x0088ff,
+    summary:
+      'Cassini-Huygens was a collaboration between NASA, ESA, and ASI to send a probe to study the planet Saturn and its system, including its rings and natural satellites.',
+    image: 'assets/missions/cassini.jpg',
+    wikiUrl: 'https://en.wikipedia.org/wiki/Cassini%E2%80%93Huygens',
+    timeline: [
+      { date: '1997-10-15', label: 'Launch' },
+      { date: '1998-04-26', label: 'Venus Flyby 1' },
+      { date: '1999-06-24', label: 'Venus Flyby 2' },
+      { date: '1999-08-18', label: 'Earth Flyby' },
+      { date: '2000-12-30', label: 'Jupiter Flyby' },
+      { date: '2004-07-01', label: 'Saturn Arrival' },
+      { date: '2017-09-15', label: 'Grand Finale' },
+    ],
     waypoints: [
       { date: '1997-10-15', body: 'Earth' },
       { date: '1998-04-26', body: 'Venus' },
@@ -150,8 +226,19 @@ export const missionData = [
   },
   {
     id: 'newHorizons',
+    name: 'New Horizons',
     color: 0xffffff,
+    summary:
+      'New Horizons performed the first flyby of Pluto in 2015 and the first flyby of a Kuiper Belt object (Arrokoth) in 2019.',
+    image: 'assets/missions/new_horizons.jpg',
+    wikiUrl: 'https://en.wikipedia.org/wiki/New_Horizons',
     exit: { ra: 19.9, dec: -20.0 }, // Sagittarius
+    timeline: [
+      { date: '2006-01-19', label: 'Launch' },
+      { date: '2007-02-28', label: 'Jupiter Flyby' },
+      { date: '2015-07-14', label: 'Pluto Flyby' },
+      { date: '2019-01-01', label: 'Arrokoth Flyby' },
+    ],
     waypoints: [
       { date: '2006-01-19', body: 'Earth' },
       { date: '2007-02-28', body: 'Jupiter' },
@@ -162,7 +249,18 @@ export const missionData = [
   },
   {
     id: 'parkerSolarProbe',
+    name: 'Parker Solar Probe',
     color: 0xff4500,
+    summary:
+      'Parker Solar Probe is a NASA robotic spacecraft launched in 2018, with the mission of making observations of the outer corona of the Sun.',
+    image: 'assets/missions/parker.jpg',
+    wikiUrl: 'https://en.wikipedia.org/wiki/Parker_Solar_Probe',
+    timeline: [
+      { date: '2018-08-12', label: 'Launch' },
+      { date: '2018-10-03', label: 'Venus Flyby 1' },
+      { date: '2018-11-06', label: 'First Perihelion' },
+      { date: '2024-12-24', label: 'Closest Approach' },
+    ],
     waypoints: [
       { date: '2018-08-12', body: 'Earth' },
       { date: '2018-10-03', body: 'Venus' },
@@ -178,7 +276,19 @@ export const missionData = [
   },
   {
     id: 'juno',
+    name: 'Juno',
     color: 0xff69b4,
+    summary:
+      "Juno is a NASA space probe orbiting the planet Jupiter. It was built by Lockheed Martin and is operated by NASA's Jet Propulsion Laboratory.",
+    image: 'assets/missions/juno.jpg',
+    wikiUrl: 'https://en.wikipedia.org/wiki/Juno_(spacecraft)',
+    timeline: [
+      { date: '2011-08-05', label: 'Launch' },
+      { date: '2013-10-09', label: 'Earth Flyby' },
+      { date: '2016-07-04', label: 'Jupiter Arrival' },
+      { date: '2021-06-07', label: 'Ganymede Flyby' },
+      { date: '2022-09-29', label: 'Europa Flyby' },
+    ],
     waypoints: [
       { date: '2011-08-05', body: 'Earth' },
       { date: '2013-10-09', body: 'Earth' },
@@ -191,7 +301,23 @@ export const missionData = [
   },
   {
     id: 'rosetta',
+    name: 'Rosetta',
     color: 0x8a2be2,
+    summary:
+      'Rosetta was a space probe built by the European Space Agency which performed a detailed study of comet 67P/Churyumov–Gerasimenko.',
+    image: 'assets/missions/rosetta.jpg',
+    wikiUrl: 'https://en.wikipedia.org/wiki/Rosetta_(spacecraft)',
+    timeline: [
+      { date: '2004-03-02', label: 'Launch' },
+      { date: '2005-03-04', label: 'Earth Flyby 1' },
+      { date: '2007-02-25', label: 'Mars Flyby' },
+      { date: '2007-11-13', label: 'Earth Flyby 2' },
+      { date: '2008-09-05', label: 'Steins Flyby' },
+      { date: '2009-11-13', label: 'Earth Flyby 3' },
+      { date: '2010-07-10', label: 'Lutetia Flyby' },
+      { date: '2014-08-06', label: 'Comet Arrival' },
+      { date: '2016-09-30', label: 'End of Mission' },
+    ],
     waypoints: [
       { date: '2004-03-02', body: 'Earth' },
       { date: '2005-03-04', body: 'Earth' },
@@ -206,7 +332,19 @@ export const missionData = [
   },
   {
     id: 'ulysses',
+    name: 'Ulysses',
     color: 0xffff00,
+    summary:
+      'Ulysses was a robotic space probe designed to study the Sun at all latitudes. It used a gravity assist from Jupiter to leave the ecliptic plane.',
+    image: 'assets/missions/ulysses.jpg',
+    wikiUrl: 'https://en.wikipedia.org/wiki/Ulysses_(spacecraft)',
+    timeline: [
+      { date: '1990-10-06', label: 'Launch' },
+      { date: '1992-02-08', label: 'Jupiter Flyby' },
+      { date: '1994-06-26', label: 'South Pole Pass 1' },
+      { date: '1995-06-19', label: 'North Pole Pass 1' },
+      { date: '2009-06-30', label: 'End of Mission' },
+    ],
     waypoints: [
       { date: '1990-10-06', body: 'Earth' },
       { date: '1992-02-08', body: 'Jupiter' },

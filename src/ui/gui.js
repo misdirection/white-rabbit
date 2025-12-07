@@ -18,7 +18,7 @@ import { menuDock } from './MenuDock.js';
 import { setupAboutFolder } from './modules/about.js';
 import { setupEventsControlsCustom } from './modules/events.js';
 import { setupFindControlsCustom } from './modules/find.js';
-import { setupMissionsControlsCustom } from './modules/missions.js';
+import { setupMissionDetails, setupMissionList } from './modules/missions.js';
 import { setupNavigationFolder } from './modules/navigation.js';
 
 import { setupMusicWindow } from './modules/sound.js';
@@ -241,7 +241,10 @@ export function setupGUI(
     setupFindControlsCustom(container, planets, sun, starsRef, camera, controls)
   );
   createExplorerTab('missions', 'Missions', '🚀', (container) =>
-    setupMissionsControlsCustom(container, config)
+    setupMissionList(container, config)
+  );
+  createExplorerTab('mission-details', 'Mission Info', 'ℹ️', (container) =>
+    setupMissionDetails(container, config)
   );
   createExplorerTab('events', 'Events', '📅', (container) =>
     setupEventsControlsCustom(container, camera, controls, planets, scaleCtrl.setScalePreset)

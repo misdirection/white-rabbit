@@ -23,7 +23,9 @@ import { config } from '../config.js';
 import { setupFocusMode, updateFocusMode } from '../features/focusMode.js';
 import {
   initializeMissions,
+  setupMissionInteraction,
   updateMissionTrajectories,
+  updateMissionVisuals,
   updateMissions,
 } from '../features/missions.js';
 import { updateCoordinateSystem } from '../systems/coordinates.js';
@@ -53,6 +55,7 @@ export class Simulation {
     this.renderer = null;
     this.controls = null;
     this.universeGroup = null;
+    this.config = config;
     this.planets = [];
     this.sun = null;
     this.orbitGroup = null;
@@ -158,6 +161,14 @@ export class Simulation {
       this.scene.add(this.missionGroup);
       initializeMissions(this.missionGroup);
 
+      // Setup Mission Interaction (Click to Select)
+      // We pass the domElement to listen for clicks
+      this.cleanupMissionInteraction = setupMissionInteraction(
+        this.camera,
+        this.missionGroup,
+        this.renderer.domElement
+      );
+
       window.updateMissions = updateMissions;
 
       // Initialize relative orbits
@@ -176,7 +187,8 @@ export class Simulation {
         zodiacSignsGroup,
         habitableZone,
         this.magneticFieldsGroup,
-        this.universeGroup
+        this.universeGroup,
+        this.jumpToDate // Pass jumpToDate
       );
 
       // 3.5 Setup Rabbit Intro
@@ -262,7 +274,11 @@ export class Simulation {
     updatePlanets(this.planets, this.sun, this.shadowLight);
     updateCoordinateSystem(this.universeGroup, this.planets, this.sun);
     updateRelativeOrbits(this.orbitGroup, this.relativeOrbitGroup, this.planets, this.sun);
-    updateMissionTrajectories(this.scene);
+    // Update Mission Trajectories (re-calculate if coordinate system changed)
+    if (this.config.coordinateSystem && this.missionGroup.children.length > 0) {
+      updateMissionTrajectories(this.scene);
+      updateMissionVisuals(this.config.date);
+    }
     updateAllOrbitGradients(this.orbitGroup, this.planets);
     updateAllMoonOrbitGradients(this.planets);
     updateFocusMode(this.camera, this.controls, this.planets, this.sun);
@@ -273,6 +289,38 @@ export class Simulation {
 
     this.updateMagneticFieldsAnimations();
     this.rabbit.render();
+  };
+
+  /**
+   * Jumps the simulation to a specific date.
+   * @param {string|Date} date - Target date.
+   * @param {boolean} pause - Whether to pause after jumping (default true).
+   */
+  jumpToDate = (date, pause = true) => {
+    const targetDate = new Date(date);
+    if (isNaN(targetDate.getTime())) {
+      Logger.error('Invalid date passed to jumpToDate:', date);
+      return;
+    }
+
+    config.date = targetDate;
+    if (pause) {
+      config.simulationSpeed = 0;
+    }
+
+    // Force updates immediately to reflect the new state
+    updatePlanets(this.planets, this.sun, this.shadowLight);
+    updateCoordinateSystem(this.universeGroup, this.planets, this.sun);
+    updateRelativeOrbits(this.orbitGroup, this.relativeOrbitGroup, this.planets, this.sun);
+    updateMissionTrajectories(this.scene);
+    updateFocusMode(this.camera, this.controls, this.planets, this.sun);
+
+    // Update UI controls if they exist
+    if (this.uiControls) {
+      updateUI(this.uiControls.uiState, this.uiControls);
+    }
+
+    Logger.log(`Jumped to date: ${targetDate.toISOString()}`);
   };
 
   updateMagneticFieldsAnimations() {

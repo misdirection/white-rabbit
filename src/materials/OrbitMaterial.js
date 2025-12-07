@@ -16,11 +16,14 @@ import * as THREE from 'three';
 // Vertex shader for orbit lines
 const orbitVertexShader = `
   attribute float progress;
+  attribute float lineDistance;
   varying float vProgress;
+  varying float vLineDistance;
   varying vec2 vUv;
   
   void main() {
     vProgress = progress;
+    vLineDistance = lineDistance;
     vUv = uv;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
@@ -33,68 +36,99 @@ const orbitFragmentShader = `
   uniform bool uUseGradient;
   uniform float uGlowIntensity;
   uniform int uMode; // 0 = Orbit (periodic), 1 = Mission (linear)
+  uniform float uCurrentTime; // Normalized mission time (0..1)
   
-  varying float vProgress;
+  uniform sampler2D uDashTexture;
+  
+  varying float vProgress; // In Mission mode, this is Normalized Time (0..1)
+  varying float vLineDistance;
+  varying vec2 vUv;
   
   void main() {
-    // Calculate alpha based on progress
-    // progress=0 is where the object just was (brightest - the tail)
-    // progress=1 is where the object is heading (more faded - the future)
     float alpha = uOpacity;
-    
-    if (uUseGradient) {
-      if (uMode == 1) {
-        // Mission mode: Linear fade from launch (0.0) to current (1.0)
-        // Start at 40% opacity, fade to 100%
-        float fadeFactor = 0.4 + 0.6 * vProgress;
-        alpha *= fadeFactor;
+    vec3 finalColor = uColor;
+
+    if (uMode == 1) {
+      // --- MISSION MODE ---
+      
+      // Check if this fragment is in the Past or Future relative to current simulation time
+      if (vProgress > uCurrentTime) {
+        // --- FUTURE: Dotted Line ---
+        
+        // Use spatial distance for stable dashes
+        // Frequency 0.5 = Repeat every 2.0 units
+        float freq = 0.5;
+        
+        // Use texture for perfect anti-aliasing
+        // GPU texture filtering (mipmaps/linear) handles the "moire" automatically
+        
+        // Scale distance to texture coords
+        // One dash cycle every 35.0 units (smaller, denser dots)
+        float texCoord = vLineDistance / 35.0;
+        
+        // Sample texture (alpha channel)
+        float dash = texture2D(uDashTexture, vec2(texCoord, 0.5)).a;
+        
+        // Dimmer, flat color for future
+        // Reduced opacity as requested
+        alpha = uOpacity * 0.35 * dash;
+        
+        // Discard fully transparent pixels
+        if (alpha < 0.01) discard; 
+        
       } else {
-        // Orbit mode: Periodic fade
-        // Smooth fade from recent path (bright tail) to future (dimmer but still visible)
-        // The first ~15% of the orbit (the trail behind) stays fully bright
-        // Then it fades smoothly but stays visible enough to almost reconnect
-        float trailStart = 0.15; // Keep bright for first 15% (recent path / tail)
-        float trailEnd = 0.85;   // Fade to minimum by 85%
+        // --- PAST: Gradient Trail ---
+        
+        if (uUseGradient) {
+          // Rescale progress to 0..1 range of the "flown" path
+          // Avoid divide by zero
+          float relativeProgress = (uCurrentTime > 0.001) ? (vProgress / uCurrentTime) : 0.0;
+          
+          // Fade from tail (0.0) to head (1.0)
+          // Tail starts at 30%, Head reaches 100%
+          float fadeFactor = 0.3 + 0.7 * relativeProgress;
+          alpha *= fadeFactor;
+        }
+        
+        // --- GLOW (Past only) ---
+        // Glow peaks at the head (current position)
+        float relativeProgress = (uCurrentTime > 0.001) ? (vProgress / uCurrentTime) : 0.0;
+        float glowFactor = 1.0 + uGlowIntensity * (relativeProgress * relativeProgress); // Exponential glow at tip
+        finalColor *= glowFactor;
+      }
+
+    } else {
+      // --- ORBIT MODE (Existing Logic) ---
+      
+      if (uUseGradient) {
+        // Periodic fade logic for orbits
+        float trailStart = 0.15; 
+        float trailEnd = 0.85;   
         
         float progress = vProgress;
         float fadeFactor;
         
         if (progress < trailStart) {
-          // Recent path (tail) - stay bright
           fadeFactor = 1.0;
         } else if (progress < trailEnd) {
-          // Fading section - smooth falloff
           float normalizedProgress = (progress - trailStart) / (trailEnd - trailStart);
-          fadeFactor = 1.0 - pow(normalizedProgress, 0.7) * 0.7; // Fade to 30% (1.0 - 0.7 = 0.3)
+          fadeFactor = 1.0 - pow(normalizedProgress, 0.7) * 0.7; 
         } else {
-          // Future path - still visible to reconnect
           fadeFactor = 0.3;
         }
         
         alpha *= fadeFactor;
-        
-        // Ensure minimum visibility for the full orbit to be traceable
         alpha = max(alpha, 0.15);
       }
+      
+      float glowFactor = 1.0 + uGlowIntensity * (1.0 - vProgress) * (1.0 - vProgress);
+      finalColor *= glowFactor;
     }
-    
-    // Apply glow effect
-    float glowFactor = 1.0;
-    
-    if (uMode == 1) {
-      // Mission mode: Glow increases towards the end (current position)
-      glowFactor = 1.0 + uGlowIntensity * vProgress * vProgress;
-    } else {
-      // Orbit mode: Glow increases near 0 (recent position)
-      glowFactor = 1.0 + uGlowIntensity * (1.0 - vProgress) * (1.0 - vProgress);
-    }
-
-    vec3 glowColor = uColor * glowFactor;
     
     // Clamp to prevent excessive brightness
-    glowColor = min(glowColor, vec3(1.5));
+    finalColor = min(finalColor, vec3(1.5));
     
-    gl_FragColor = vec4(glowColor, alpha);
+    gl_FragColor = vec4(finalColor, alpha);
   }
 `;
 
@@ -107,6 +141,36 @@ const orbitFragmentShader = `
  * @param {number} options.glowIntensity - Glow intensity 0-1 (default: 0.3)
  * @returns {THREE.ShaderMaterial} Custom orbit material
  */
+function createDashTexture() {
+  const size = 64;
+  const data = new Uint8Array(size * 4);
+
+  const dashRatio = 0.5;
+  const dashLength = Math.floor(size * dashRatio);
+
+  for (let i = 0; i < size; i++) {
+    const stride = i * 4;
+    const val = i < dashLength ? 255 : 0;
+
+    data[stride] = 255;
+    data[stride + 1] = 255;
+    data[stride + 2] = 255;
+    data[stride + 3] = val;
+  }
+
+  const texture = new THREE.DataTexture(data, size, 1, THREE.RGBAFormat);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.minFilter = THREE.LinearMipMapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+
+  return texture;
+}
+
+let _dashTexture = null;
+
 export function createOrbitMaterial(options = {}) {
   const {
     color = 0x88bbdd, // Boosted cyan for better visibility
@@ -118,13 +182,19 @@ export function createOrbitMaterial(options = {}) {
 
   const threeColor = new THREE.Color(color);
 
+  if (!_dashTexture) {
+    _dashTexture = createDashTexture();
+  }
+
   return new THREE.ShaderMaterial({
     uniforms: {
       uColor: { value: threeColor },
       uOpacity: { value: opacity },
       uUseGradient: { value: useGradient },
-      uGlowIntensity: { value: glowIntensity },
-      uMode: { value: mode === 'mission' ? 1 : 0 },
+      uGlowIntensity: { value: options.glowIntensity || 1.0 },
+      uMode: { value: options.mode === 'mission' ? 1 : 0 },
+      uCurrentTime: { value: 1.0 }, // Default to full visibility
+      uDashTexture: { value: _dashTexture },
     },
     vertexShader: orbitVertexShader,
     fragmentShader: orbitFragmentShader,

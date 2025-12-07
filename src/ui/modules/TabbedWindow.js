@@ -31,6 +31,7 @@ export class TabbedWindow {
       ...options,
       onClose: () => this.onClose(),
     });
+    this.window.controller = this; // Expose controller for external access
 
     // Custom structure for tabs
     this.setupTabStructure();
@@ -315,7 +316,7 @@ export class TabbedWindow {
     // For now, let's implement a global mouseup listener that checks for overlap
     // with any 'dockable-window' that is currently being dragged (or simply is open).
 
-    document.addEventListener('mouseup', (e) => {
+    document.addEventListener('mouseup', () => {
       // Check if any dockable window is overlapping this header
       // And is NOT the tabbed window itself.
 

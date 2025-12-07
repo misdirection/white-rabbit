@@ -33,7 +33,8 @@ export class SimulationControl {
     zodiacSignsGroup,
     habitableZone,
     magneticFieldsGroup,
-    universeGroup
+    universeGroup,
+    jumpToDate
   ) {
     this.planets = planets;
     this.sun = sun;
@@ -47,6 +48,16 @@ export class SimulationControl {
     this.habitableZone = habitableZone;
     this.magneticFieldsGroup = magneticFieldsGroup;
     this.universeGroup = universeGroup;
+    this.jumpToDateFn = jumpToDate; // Store function reference
+  }
+
+  jumpToDate(date, pause = true) {
+    if (this.jumpToDateFn) {
+      this.jumpToDateFn(date, pause);
+    } else {
+      Logger.warn('jumpToDate function not provided to SimulationControl.');
+      // Fallback or do nothing
+    }
   }
 
   getConfig() {
@@ -142,7 +153,7 @@ export class SimulationControl {
   setStarBrightness(val) {
     config.starBrightness = Math.max(0, Math.min(1, val));
     const starsGroup = this.starsRef.value;
-    if (starsGroup && starsGroup.userData.manager) {
+    if (starsGroup?.userData?.manager) {
       starsGroup.userData.manager.setBrightness(config.starBrightness);
     }
   }

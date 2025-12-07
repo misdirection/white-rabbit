@@ -1,136 +1,424 @@
-import GUI from 'lil-gui';
+import { missionData } from '../../data/missions.js';
+// import GUI from 'lil-gui'; // Unused
 
-export function setupMissionsControlsCustom(container, config) {
-  const gui = new GUI({ container: container, width: '100%' });
-  gui.domElement.classList.add('embedded-gui');
-  gui.title('Missions'); // Set title to Missions
-  // gui.domElement.querySelector('.title').style.display = 'none'; // Optional: hide title completely if preferred
-  // Since we want "Missions (Check to Show)", we can just use the root.
+// --- Shared Styles ---
+const SHARED_STYLES = `
+  .mission-ui-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    color: #eee;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-y: auto;
+    padding: 10px;
+  }
 
-  // Use the root gui instead of a folder, or just hide the root header.
-  // To match user request "superfluous menu called controls", simply hiding the root title bar is best.
-  // But lil-gui might not expose an easy way to hide just the header via API without CSS.
-  // We can just add controls to root and user will see "Controls" title by default.
-  // Let's set title to empty string?
-  // gui.title(''); // This leaves a small bar.
+  /* List Styles */
+  .mission-list-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .mission-list-item:hover {
+    background: rgba(255,255,255,0.1);
+  }
+  /* Custom Checkbox Styles - REMOVED */
 
-  // Best approach: Add a CSS class to hide the title bar for embedded GUIs.
-  // gui.domElement.querySelector('.title').style.display = 'none';
-  // But we need to do it after creation.
+  .mission-list-name {
+    flex-grow: 1;
+    font-size: 0.95em;
+    user-select: none;
+  }
 
-  // Or better:
-  const missionsFolder = gui; // Use root
-  // We can't rename root easily in old lil-gui but recent versions allow `new GUI({ title: '...' })`.
-  // Let's check imports. It's 'lil-gui'.
-  // Let's try to set title to 'Missions'.
+  .mission-color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 12px;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
 
-  // However, users said "sub menu called controls".
-  // If I use a folder, I get "Controls" > "Missions".
-  // Note: I will use the root GUI and hide the title bar via DOM manipulation to be safe.
+  .mission-color-dot:hover {
+    transform: scale(1.2);
+    border-color: rgba(255,255,255,0.8);
+  }
 
-  const titleBar = gui.domElement.querySelector('.title');
-  if (titleBar) titleBar.style.display = 'none';
+  /* Detail Styles */
+  .mission-info-panel {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+  }
+  .mission-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .mission-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 0;
+    flex-grow: 1;
+  }
+  .mission-image {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    background-color: #000;
+    display: block;
+  }
+  .mission-summary {
+    font-size: 0.9em;
+    line-height: 1.5;
+    opacity: 0.9;
+    margin-bottom: 20px;
+    padding: 0 5px;
+  }
 
-  // Pioneer 10 (1972)
-  const p10Ctrl = missionsFolder
-    .add(config.showMissions, 'pioneer10')
-    .name('Pioneer 10 (1972)')
-    .onChange(() => {
+  /* Vertical Stepper Timeline */
+  .mission-timeline {
+    position: relative;
+    padding-left: 20px;
+    margin-top: 10px;
+    border-left: 2px solid rgba(255, 255, 255, 0.1);
+    margin-left: 10px;
+  }
+
+  .timeline-event {
+    position: relative;
+    padding: 0 0 15px 15px; /* Reduced padding */
+    cursor: pointer;
+    transition: opacity 0.2s;
+    display: flex; /* Flex layout for single line */
+    align-items: baseline;
+    gap: 10px;
+  }
+  
+  .timeline-event:last-child {
+    padding-bottom: 0;
+  }
+
+  .timeline-event:hover {
+    opacity: 1;
+  }
+  .timeline-event:hover .timeline-dot {
+    background: #fff;
+    box-shadow: 0 0 8px rgba(255,255,255,0.8);
+  }
+
+  .timeline-dot {
+    position: absolute;
+    left: -26px; /* Adjust based on padding/margin */
+    top: 5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #555;
+    border: 2px solid #222;
+    transition: all 0.2s ease;
+  }
+
+  .event-date {
+    display: block;
+    font-family: monospace;
+    font-size: 0.85em;
+    color: #888;
+    flex-shrink: 0; /* Prevent shrinking */
+    min-width: 80px; /* Fixed width for alignment */
+  }
+
+  .event-label {
+    display: block;
+    font-size: 0.95em;
+    font-weight: 500;
+    color: #eee;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 30px 20px;
+    color: #666;
+    font-style: italic;
+  }
+`;
+
+function injectStyles(container) {
+  const style = document.createElement('style');
+  style.textContent = SHARED_STYLES;
+  container.appendChild(style);
+}
+
+/**
+ * Tab 1: Mission Visibility List
+ */
+export function setupMissionList(container, config) {
+  container.innerHTML = '';
+  container.className = 'mission-ui-container';
+  injectStyles(container);
+
+  const listDiv = document.createElement('div');
+  listDiv.className = 'mission-list';
+
+  missionData.forEach((mission) => {
+    const row = document.createElement('div');
+    row.className = 'mission-list-item';
+
+    // Toggle Button (Color Dot)
+    const dot = document.createElement('div');
+    dot.className = 'mission-color-dot';
+
+    const updateDotState = () => {
+      const isVisible = config.showMissions[mission.id];
+      if (isVisible) {
+        const colorHex = '#' + mission.color.toString(16).padStart(6, '0');
+        dot.style.backgroundColor = colorHex;
+        dot.style.boxShadow = `0 0 8px ${colorHex}`;
+        dot.style.borderColor = 'rgba(255,255,255,0.5)';
+      } else {
+        dot.style.backgroundColor = '#444'; // Dark grey
+        dot.style.boxShadow = 'none';
+        dot.style.borderColor = 'rgba(255,255,255,0.2)';
+      }
+    };
+
+    // Initial State
+    updateDotState();
+
+    // Click Handler for Toggle
+    dot.onclick = (e) => {
+      e.stopPropagation(); // Prevent opening details
+      config.showMissions[mission.id] = !config.showMissions[mission.id];
+      updateDotState();
+      // Dispatch event to update Detail view if open
+      window.dispatchEvent(
+        new CustomEvent('mission-visibility-changed', { detail: { missionId: mission.id } })
+      );
       if (window.updateMissions) window.updateMissions();
-    });
-  p10Ctrl.domElement.classList.add('pioneer10-checkbox');
+    };
 
-  // Pioneer 11 (1973)
-  const p11Ctrl = missionsFolder
-    .add(config.showMissions, 'pioneer11')
-    .name('Pioneer 11 (1973)')
-    .onChange(() => {
+    // Name
+    const name = document.createElement('span');
+    name.className = 'mission-list-name';
+    name.textContent = mission.name || mission.id;
+
+    row.appendChild(dot);
+    row.appendChild(name);
+
+    // Row Click -> Select Mission & Open Details Tab
+    row.onclick = () => {
+      const event = new CustomEvent('mission-selected', { detail: { missionId: mission.id } });
+      window.dispatchEvent(event);
+
+      import('../WindowManager.js').then(({ windowManager }) => {
+        const win = windowManager.getWindow('explorer-window');
+        if (win && win.controller) {
+          win.controller.selectTab?.('mission-details');
+        }
+      });
+    };
+
+    // Listen for external updates (e.g. from Detail view)
+    const onVisibilityChange = (e) => {
+      if (e.detail.missionId === mission.id) {
+        updateDotState();
+      }
+    };
+    window.addEventListener('mission-visibility-changed', onVisibilityChange);
+    // Cleanup? This listener will persist. Ideally we'd remove it.
+    // However, given the app structure, this is acceptable for now.
+
+    listDiv.appendChild(row);
+  });
+
+  container.appendChild(listDiv);
+}
+
+/**
+ * Tab 2: Mission Details
+ */
+export function setupMissionDetails(container, config) {
+  container.innerHTML = '';
+  container.className = 'mission-ui-container';
+  injectStyles(container);
+
+  const content = document.createElement('div');
+  container.appendChild(content);
+
+  const renderEmpty = () => {
+    content.innerHTML =
+      '<div class="empty-state">Select a mission from the list to view details.</div>';
+  };
+
+  const renderMission = (missionId) => {
+    const mission = missionData.find((m) => m.id === missionId);
+    if (!mission) {
+      renderEmpty();
+      return;
+    }
+
+    content.innerHTML = '';
+
+    // Panel
+    const panel = document.createElement('div');
+    panel.className = 'mission-info-panel';
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'mission-header';
+
+    // Header Dot with Toggle Logic
+    const dot = document.createElement('div');
+    dot.className = 'mission-color-dot';
+    // Reuse the style class but maybe it needs specific sizing or just use same
+    // The previous CSS had mission-color-dot at 12px.
+
+    const updateHeaderDot = () => {
+      const isVisible = config.showMissions[mission.id];
+      if (isVisible) {
+        const colorHex = '#' + mission.color.toString(16).padStart(6, '0');
+        dot.style.backgroundColor = colorHex;
+        dot.style.boxShadow = `0 0 8px ${colorHex}`;
+        dot.style.borderColor = 'rgba(255,255,255,0.5)';
+      } else {
+        dot.style.backgroundColor = '#444'; // Dark grey
+        dot.style.boxShadow = 'none';
+        dot.style.borderColor = 'rgba(255,255,255,0.2)';
+      }
+    };
+    updateHeaderDot();
+
+    dot.onclick = () => {
+      config.showMissions[mission.id] = !config.showMissions[mission.id];
+      updateHeaderDot();
+      // Dispatch to update List view
+      window.dispatchEvent(
+        new CustomEvent('mission-visibility-changed', { detail: { missionId: mission.id } })
+      );
       if (window.updateMissions) window.updateMissions();
-    });
-  p11Ctrl.domElement.classList.add('pioneer11-checkbox');
+    };
 
-  // Voyager 2 (1977)
-  const v2Ctrl = missionsFolder
-    .add(config.showMissions, 'voyager2')
-    .name('Voyager 2 (1977)')
-    .onChange(() => {
-      if (window.updateMissions) window.updateMissions();
-    });
-  v2Ctrl.domElement.classList.add('voyager2-checkbox');
+    const title = document.createElement('h3');
+    title.className = 'mission-title';
+    title.textContent = mission.name || mission.id;
 
-  // Voyager 1 (1977)
-  const v1Ctrl = missionsFolder
-    .add(config.showMissions, 'voyager1')
-    .name('Voyager 1 (1977)')
-    .onChange(() => {
-      if (window.updateMissions) window.updateMissions();
-    });
-  v1Ctrl.domElement.classList.add('voyager1-checkbox');
+    header.appendChild(dot);
+    header.appendChild(title);
+    panel.appendChild(header);
 
-  // Galileo (1989)
-  const galCtrl = missionsFolder
-    .add(config.showMissions, 'galileo')
-    .name('Galileo (1989)')
-    .onChange(() => {
-      if (window.updateMissions) window.updateMissions();
-    });
-  galCtrl.domElement.classList.add('galileo-checkbox');
+    // Image
+    if (mission.image) {
+      const img = document.createElement('img');
+      img.className = 'mission-image';
+      img.src = mission.image;
+      img.onerror = () => {
+        img.style.display = 'none';
+      };
+      panel.appendChild(img);
+    }
 
-  // Ulysses (1990)
-  const ulyssesCtrl = missionsFolder
-    .add(config.showMissions, 'ulysses')
-    .name('Ulysses (1990)')
-    .onChange(() => {
-      if (window.updateMissions) window.updateMissions();
-    });
-  ulyssesCtrl.domElement.classList.add('ulysses-checkbox');
+    // Summary
+    if (mission.summary) {
+      const p = document.createElement('p');
+      p.className = 'mission-summary';
+      p.textContent = mission.summary;
+      panel.appendChild(p);
+    }
 
-  // Cassini (1997)
-  const cassiniCtrl = missionsFolder
-    .add(config.showMissions, 'cassini')
-    .name('Cassini (1997)')
-    .onChange(() => {
-      if (window.updateMissions) window.updateMissions();
-    });
-  cassiniCtrl.domElement.classList.add('cassini-checkbox');
+    // Timeline (Vertical Stepper)
+    if (mission.timeline && mission.timeline.length > 0) {
+      // NOTE: User requested removing label/header to save space
+      const timelineDiv = document.createElement('div');
+      timelineDiv.className = 'mission-timeline';
 
-  // Rosetta (2004)
-  const rosettaCtrl = missionsFolder
-    .add(config.showMissions, 'rosetta')
-    .name('Rosetta (2004)')
-    .onChange(() => {
-      if (window.updateMissions) window.updateMissions();
-    });
-  rosettaCtrl.domElement.classList.add('rosetta-checkbox');
+      mission.timeline.forEach((event) => {
+        const row = document.createElement('div');
+        row.className = 'timeline-event';
+        row.title = `Jump to ${event.date} - ${event.label}`;
 
-  // New Horizons (2006)
-  const nhCtrl = missionsFolder
-    .add(config.showMissions, 'newHorizons')
-    .name('New Horizons (2006)')
-    .onChange(() => {
-      if (window.updateMissions) window.updateMissions();
-    });
-  nhCtrl.domElement.classList.add('new-horizons-checkbox');
+        row.onclick = () => {
+          const simCtrl = window.SimulationControl;
+          if (simCtrl?.jumpToDateFn) {
+            simCtrl.jumpToDate(event.date, true);
+          } else {
+            console.warn('SimulationControl.jumpToDate not available');
+          }
+        };
 
-  // Juno (2011)
-  const junoCtrl = missionsFolder
-    .add(config.showMissions, 'juno')
-    .name('Juno (2011)')
-    .onChange(() => {
-      if (window.updateMissions) window.updateMissions();
-    });
-  junoCtrl.domElement.classList.add('juno-checkbox');
+        // Stepper Dot
+        // Stepper Dot
+        const dot = document.createElement('div');
+        dot.className = 'timeline-dot';
 
-  // Parker Solar Probe (2018)
-  const parkerCtrl = missionsFolder
-    .add(config.showMissions, 'parkerSolarProbe')
-    .name('Parker Solar Probe (2018)')
-    .onChange(() => {
-      if (window.updateMissions) window.updateMissions();
-    });
-  parkerCtrl.domElement.classList.add('parker-checkbox');
+        // Intelligent Styling: Solid if Past/Now, Outline if Future
+        const eventDate = new Date(event.date);
+        const simDate = config.date;
+        const isFuture = eventDate > simDate;
+        const colorHex = '#' + mission.color.toString(16).padStart(6, '0');
 
-  // We can open the folder or not. Since it's in a dedicated tab, maybe open is better?
-  // missionsFolder.open();
-  // Remove the folder header if we want to save space, but let's keep it for now as it acts as a group title.
+        if (isFuture) {
+          // Future: Thin Inner Outline
+          dot.style.backgroundColor = 'transparent';
+          // Transparent border preserves layout size (10px + 4px = 14px)
+          dot.style.border = '2px solid transparent';
+          // Inset shadow creates the "inner" ring exactly where the solid fill would be
+          dot.style.boxShadow = `inset 0 0 0 1px ${colorHex}`;
+        } else {
+          // Past: Solid
+          dot.style.backgroundColor = colorHex;
+          // Default dark border for contrast
+          dot.style.border = '2px solid #222';
+          dot.style.boxShadow = 'none';
+        }
+
+        // Fix for box-sizing mismatch causing potential jitter
+        // Let's standardise to border-box for both to be safe, modifying size slightly?
+        // Actually, let's just use inline styles to override specific props.
+        // Existing CSS: width 10px, height 10px, border 2px solid #222. Total 14px.
+        // If Future: border 2px solid color. width 10px. Total 14px.
+        // So size is consistent.
+
+        row.appendChild(dot);
+
+        // Date (inline)
+        const dateSpan = document.createElement('span');
+        dateSpan.className = 'event-date';
+        dateSpan.textContent = event.date;
+        row.appendChild(dateSpan);
+
+        // Label (inline)
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'event-label';
+        labelSpan.textContent = event.label;
+        row.appendChild(labelSpan);
+
+        timelineDiv.appendChild(row);
+      });
+
+      panel.appendChild(timelineDiv);
+    }
+
+    content.appendChild(panel);
+  };
+
+  // Initial Empty State
+  renderEmpty();
+
+  // Listener
+  const onMissionSelected = (e) => {
+    const missionId = e.detail.missionId;
+    renderMission(missionId);
+    // Note: We are NO LONGER auto-showing the mission on selection,
+    // as the user might want to read about it without enabling the trajectory.
+    // The user can now use the header dot to toggle it.
+  };
+  window.addEventListener('mission-selected', onMissionSelected);
 }
