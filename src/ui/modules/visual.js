@@ -68,41 +68,6 @@ export function setupVisualFolder(
 
   // Coordinate System and Reference Plane moved to System Tab
 
-  const starSlider = visualFolder
-    .add(config, 'starBrightness', 0.0, 1.0)
-    .name('Star Brightness')
-    .onChange((val) => {
-      const starsGroup = starsRef.value;
-      if (starsGroup && starsGroup.userData.manager) {
-        starsGroup.userData.manager.setBrightness(val);
-      }
-    });
-  starSlider.domElement.classList.add('hide-value');
-  starSlider.domElement.classList.add('full-width');
-
-  // Magnitude Limit (Star Count)
-  const magSlider = visualFolder
-    .add(config, 'magnitudeLimit', 2.0, 13.0)
-    .name('Magnitude Limit')
-    .step(0.1)
-    .onChange((val) => {
-      const stars = starsRef.value;
-      if (stars && stars.userData.manager) {
-        const manager = stars.userData.manager;
-        // Coarse chunk loading based on magnitude thresholds
-        // Chunk 0: <= 6.5 (Always loaded)
-        // Chunk 1: <= 8.0
-        // Chunk 2: > 8.0 (Deep space)
-
-        if (val > 6.5) manager.loadChunk(1);
-        if (val > 8.0) manager.loadChunk(2);
-
-        // Pass 'val' to shader to clip stars precisely
-        manager.setMagnitudeLimit(val);
-      }
-    });
-  magSlider.domElement.classList.add('full-width');
-
   const gammaSlider = visualFolder
     .add(config, 'gamma', 0.1, 5.0)
     .name('Gamma')
@@ -113,7 +78,6 @@ export function setupVisualFolder(
     });
   gammaSlider.domElement.classList.add('hide-value');
   gammaSlider.domElement.classList.add('full-width');
-
   // Object Info Mode
   const objectInfoCtrl = visualFolder
     .add(config, 'objectInfoMode', {

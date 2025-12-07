@@ -34,7 +34,8 @@ export const config = {
   sunScale: 1,
   capMoonOrbits: true,
   capMagneticFields: true,
-  starBrightness: 0.35,
+  starBrightness: 0.6,
+  starSaturation: 0.3,
   magnitudeLimit: 6.0,
   gamma: 1.0,
   showOrbits: true, // Deprecated, kept for safety

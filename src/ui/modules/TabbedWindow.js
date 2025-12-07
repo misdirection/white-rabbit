@@ -74,7 +74,7 @@ export class TabbedWindow {
     if (this.tabs.find((t) => t.id === id)) return;
 
     // Ordered list of tab IDs
-    const TAB_ORDER = ['objects', 'orbits', 'magnetic', 'guides', 'asterisms', 'system'];
+    const TAB_ORDER = ['objects', 'orbits', 'magnetic', 'guides', 'stars', 'asterisms', 'system'];
 
     // Prepare content element
     contentElement.classList.add('tab-content'); // Add class for styling

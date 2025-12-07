@@ -4,6 +4,17 @@
  *
  * Supports chunked loading of star data for performance (visible vs deep space).
  * Manages multiple THREE.Points objects and Octrees.
+ *
+ * NOTE ON RENDERING:
+ * Previously, star sizes and fluxes were calculated using the 'luminosity' field from the HYG database.
+ * It was discovered that this field likely represents Bolometric Luminosity (total energy output),
+ * which includes Infrared/UV. This caused cool stars (like Red Dwarfs, M-types) to have massively
+ * inflated visual brightness/size relative to their Visual Magnitude.
+ * The rendering logic has been switched to use 'mag' (Visual Magnitude) exclusively for:
+ * 1. Flux calculation (-0.921 * mag)
+ * 2. Size scaling logic
+ * 3. Intensity attenuation
+ * This ensures accurate visual representation as seen by the human eye.
  */
 import * as THREE from 'three';
 import { config, PARSEC_TO_SCENE } from '../config.js';
@@ -78,6 +89,10 @@ class StarManager {
     this.brightness = config.starBrightness;
     this.currentBrightness = this.brightness;
     this.currentLimit = 6.0; // Default limit
+    this.currentLimit = 6.0; // Default limit
+    this.saturation = config.starSaturation !== undefined ? config.starSaturation : 1.0;
+    // Shared uniform object to ensure all shaders share the same live value
+    this.saturationUniform = { value: this.saturation };
 
     this.loadingChunks = new Set();
   }
@@ -133,23 +148,43 @@ class StarManager {
         // Recalculate distance from coords (since we don't store it in binary)
         // Coords are already normalized or scaled? No, raw coords in parsecs?
         // Wait, x/y/z in binary ARE the coords.
+        // Recalculate distance from coords
         const distV = Math.sqrt(xRaw * xRaw + yRaw * yRaw + zRaw * zRaw);
         const dist = Math.max(distV, 0.1);
 
-        // Flux-based size
-        const flux = lum / (dist * dist);
-        const logFlux = Math.log(Math.max(flux, 1e-12));
+        // FIX: Use Visual Magnitude (mag) for visual apparent brightness/size
+        // Previous use of 'lum' (likely Bolometric) caused cool stars (Red Dwarfs)
+        // to appear way too bright/large relative to their visual magnitude.
+        // logFlux ~ -0.921 * mag (Natural log scaling of magnitude)
+        const logFlux = -0.921 * mag;
 
         // Tuned Size Curve for Gaia Sky look (Round 3):
         let size = 1.0;
 
-        // Fainter stars (logFlux < -8) -> Keep small but visible
-        if (logFlux < -8) {
-          size = 0.8 + (logFlux + 12) * 0.15; // Increased base size & slope
-          if (size < 0.6) size = 0.6; // Hard floor
+        // Magnitude-based intensity attenuation
+        // Stars brighter than mag 2.0 = 1.0 intensity
+        // Stars dimmer than mag 2.0 = dimmer
+        // Mag 6.0 ~ 0.6
+        // Mag 10.0 ~ 0.2
+        let intensity = 1.0;
+        if (mag > 2.0) {
+          intensity = Math.max(0.1, 1.0 - (mag - 2.0) * 0.1);
+        }
+
+        // Fainter stars (logFlux < -6.0) -> Keep small but visible
+        // Mag 6.5 => logFlux ~ -6.0
+        if (logFlux < -6.0) {
+          // Linear scaling for faint stars
+          // Mag 13 (logFlux -12) -> size ~ 0.4
+          // Mag 6.5 (logFlux -6) -> size ~ 1.0
+          // Slope: (1.0 - 0.4) / 6 = 0.1
+          size = 1.0 + (logFlux + 6.0) * 0.1;
+          if (size < 0.3) size = 0.3; // Hard floor
         } else {
-          // Brighter stars: Exponential growth
-          const t = logFlux + 8;
+          // Brighter stars (Mag < 6.5)
+          // Mag 2 => logFlux -1.8. t = 4.2. Size 1 + 4.2^1.4 * 0.3 = 1 + 7.4 * 0.3 = 3.2
+          // Mag -1.5 => logFlux 1.4. t = 7.4. Size 1 + 16 * 0.3 = 5.8
+          const t = logFlux + 6.0;
           size = 1.0 + t ** 1.4 * 0.3;
         }
 
@@ -165,7 +200,9 @@ class StarManager {
         const z = -yRaw * PARSEC_TO_SCENE;
 
         positions.push(x, y, z);
-        colors.push(r, g, b);
+
+        // Apply intensity to vertex colors
+        colors.push(r * intensity, g * intensity, b * intensity);
 
         if (i === 0) {
           console.warn(
@@ -177,6 +214,13 @@ class StarManager {
         if (hip === 11767) {
           console.warn(
             `[DEBUG] Polaris Found! Raw(x,y,z): [${xRaw}, ${yRaw}, ${zRaw}]. Scene(x,y,z): [${x}, ${y}, ${z}]`
+          );
+        }
+
+        // Debug stats for first few stars of each chunk
+        if (i < 5) {
+          console.log(
+            `[Chunk ${chunkId} Sample ${i}] Mag: ${mag.toFixed(2)}, Lum: ${lum.toFixed(2)}, Dist: ${dist.toFixed(2)}, logFlux(mag): ${logFlux.toFixed(2)}, Size: ${size.toFixed(2)}, Intensity: ${intensity.toFixed(2)}`
           );
         }
 
@@ -216,6 +260,7 @@ class StarManager {
         depthWrite: false,
         blending: THREE.AdditiveBlending,
         sizeAttenuation: false, // Fix: Prevent distance from shrinking stars to <1px
+        dithering: true,
       });
 
       material.onBeforeCompile = (shader) => {
@@ -228,6 +273,80 @@ class StarManager {
           'gl_PointSize = size;',
           'gl_PointSize = starSize * size;'
         );
+
+        // Inject Saturation Uniform (Shared Reference)
+        shader.uniforms.saturation = this.saturationUniform;
+
+        // Inject Saturation Logic in Fragment Shader
+        // We inject at the start of main to define uniforms if needed,
+        // but standard material shader structure means we usually append to top or replace chunks.
+        // Easiest: Prepend uniform to fragmentShader
+        shader.fragmentShader = `
+          uniform float saturation;
+          ${shader.fragmentShader}
+        `;
+
+        // Apply saturation control before output
+        // gl_FragColor is set at end of main. We hook in right before the closing brace?
+        // Or replace a chunk. '#include <dithering_fragment>' is usually last.
+        // Apply saturation control.
+        // We hook into <fog_fragment> which is near the end of the main function in PointsMaterial.
+        // Apply saturation control.
+        // We hook into <fog_fragment> which is near the end of the main function in PointsMaterial.
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <fog_fragment>',
+          `
+          #include <fog_fragment>
+          
+          // Saturation Boost "Bimodal Separation" Algorithm
+          // Goal: Create distinct Red/Blue stars (Sci-Fi aesthetic) removing "muddy" middle ground.
+          vec3 col = gl_FragColor.rgb;
+          
+          if (saturation > 0.1) {
+             // 1. Analyze Spectral Bias (Red vs Blue channel dominance)
+             // Green is usually the "luminance" anchor, so we pivot around it.
+             float bias = col.r - col.b; // + is Warm (Red), - is Cool (Blue)
+             
+             // 2. Apply Divergence (Push colors apart)
+             // As saturation increases, we force stars to "pick a side".
+             float strength = saturation * 0.5; // Tunable power
+             
+             if (bias > 0.0) {
+                 // WARN STAR -> Push Red/Gold
+                 col.r *= (1.0 + strength * 0.6); 
+                 col.g *= (1.0 + strength * 0.1); // Keep some gold
+                 col.b *= (1.0 - strength * 0.8); // Kill Blue
+             } else {
+                 // COOL STAR -> Push Blue/Cyan
+                 col.b *= (1.0 + strength * 1.2); // Blue needs more help to be visible
+                 col.r *= (1.0 - strength * 0.8); // Kill Red
+                 col.g *= (1.0 - strength * 0.2);
+             }
+             
+             // 3. Global Saturation (Clean up grayness)
+             // Standard vibrance pass to finish
+             float lum = dot(col, vec3(0.299, 0.587, 0.114));
+             col = mix(vec3(lum), col, 1.0 + saturation * 0.3);
+             
+             // 4. Energy Conservation (Prevent Darkening)
+             // If we killed a channel, we lost brightness. Add it back.
+             // We just enforce a floor based on original max intensity.
+             float oldMax = max(gl_FragColor.r, max(gl_FragColor.g, gl_FragColor.b));
+             float newMax = max(col.r, max(col.g, col.b));
+             if (newMax > 0.001) {
+                col *= (oldMax / newMax);
+             }
+             
+             // 5. Final Boost (Make colors pop)
+             col *= 1.1; 
+             
+             gl_FragColor.rgb = col;
+          }
+          `
+        );
+
+        // Save reference to shader to update uniforms later
+        material.userData.shader = shader;
       };
 
       const points = new THREE.Points(geometry, material);
@@ -399,22 +518,27 @@ class StarManager {
     } else {
       // Range 0.5 -> 1.0 (Bloom/HDR mode)
       // Opacity: 0.85 -> 1.0
-      // Intensity: 1.2 -> 2.5
+      // Intensity: 1.2 -> 5.0 (Boosted from 2.5)
       const t = (val - 0.5) / 0.5;
       opacity = 0.85 + t * 0.15;
-      intensity = 1.2 + t * 1.3;
+      intensity = 1.2 + t * 3.8; // Much stronger exponential boost
     }
 
     points.material.opacity = opacity;
     points.material.color.setScalar(intensity);
 
     // Subtle size increase only at very high settings (Turbo Range)
-    if (val > 0.8) {
-      const t = (val - 0.8) / 0.2;
-      points.material.size = 1.0 + t * 0.2; // Max 1.2x
+    if (val > 0.5) {
+      const t = (val - 0.5) / 0.5;
+      points.material.size = 1.0 + t * 0.5; // Max 1.5x at 100%
     } else {
       points.material.size = 1.0;
     }
+  }
+
+  setSaturation(val) {
+    this.saturation = val;
+    this.saturationUniform.value = val;
   }
 }
 

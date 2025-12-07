@@ -22,6 +22,7 @@ import { setupMissionsControlsCustom } from './modules/missions.js';
 import { setupNavigationFolder } from './modules/navigation.js';
 
 import { setupMusicWindow } from './modules/sound.js';
+import { setupStarsTab } from './modules/starsTab.js';
 import { setupSystemUI } from './modules/system.js';
 import { setupSystemTab } from './modules/systemTab.js';
 import { TabbedWindow } from './modules/TabbedWindow.js';
@@ -76,8 +77,8 @@ export function setupGUI(
     time: '',
     stardate: '',
     speedFactor: '0x',
-    planetScaleDisplay: (1 * REAL_PLANET_SCALE_FACTOR).toFixed(0) + 'x',
-    sunScaleDisplay: (1 * REAL_SUN_SCALE_FACTOR).toFixed(1) + 'x',
+    planetScaleDisplay: `${(1 * REAL_PLANET_SCALE_FACTOR).toFixed(0)}x`,
+    sunScaleDisplay: `${(1 * REAL_SUN_SCALE_FACTOR).toFixed(1)}x`,
     rotate: 'Left Click + Drag',
     pan: 'Right Click + Drag',
     zoom: 'Scroll',
@@ -168,6 +169,10 @@ export function setupGUI(
   );
   createCustomTab('guides', 'Guides', '📐', (container) =>
     setupGuidesControlsCustom(container, sun, planets, habitableZone)
+  );
+
+  createCustomTab('stars', 'Stars', '✨', (container) =>
+    setupStarsTab(container, starsRef, renderer)
   );
 
   createCustomTab(
