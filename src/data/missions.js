@@ -11,10 +11,57 @@
 import * as THREE from 'three';
 
 // Custom orbital elements for bodies not in Astronomy Engine
+/**
+ * Keplerian Elements Key:
+ * a: Semi-major axis in AU (Size of orbit)
+ * e: Eccentricity (0 = circular, 0.99 = highly elliptical)
+ * i: Inclination in degrees (Tilt relative to ecliptic)
+ * Omega: Longitude of Ascending Node in degrees (Orientation of nodal line)
+ * w: Argument of Perihelion in degrees (Orientation of ellipse)
+ * M: Mean Anomaly in degrees (Position at Epoch)
+ * epoch: Reference date (Julian Day or Date string)
+ */
 export const customBodies = {
   '67P': { a: 3.46, e: 0.641, i: 7.04, Omega: 50.1, w: 12.7, M: 303.7 }, // Comet 67P
   Ulysses: { a: 3.37, e: 0.603, i: 79.1, Omega: 337.2, w: 22.4, M: 0 }, // Ulysses orbit approx
   Arrokoth: { a: 44.58, e: 0.042, i: 2.45, Omega: 293.0, w: 323.0, M: 0 }, // Arrokoth
+  // Asteroids for mission flybys (Epochs in JD or Date)
+  Gaspra: {
+    a: 2.21,
+    e: 0.173,
+    i: 4.11,
+    Omega: 252.99,
+    w: 129.88,
+    M: 173.1,
+    epoch: 2460200.5,
+  },
+  Ida: {
+    a: 2.861,
+    e: 0.0444,
+    i: 1.13,
+    Omega: 323.59,
+    w: 113.88,
+    M: 205.36,
+    epoch: 2460200.5,
+  },
+  Steins: {
+    a: 2.363,
+    e: 0.146,
+    i: 9.94,
+    Omega: 55.37,
+    w: 251.08,
+    M: 182.24,
+    epoch: 2458200.5,
+  },
+  Lutetia: {
+    a: 2.436,
+    e: 0.164,
+    i: 3.06,
+    Omega: 80.84,
+    w: 250.3,
+    M: 38.89,
+    epoch: 2460200.5,
+  },
 };
 
 // Mission Definitions
@@ -79,9 +126,9 @@ export const missionData = [
       { date: '1989-10-18', body: 'Earth' },
       { date: '1990-02-10', body: 'Venus' },
       { date: '1990-12-08', body: 'Earth' },
-      { date: '1991-10-29', label: 'Gaspra' }, // Interpolated
+      { date: '1991-10-29', customBody: 'Gaspra' },
       { date: '1992-12-08', body: 'Earth' },
-      { date: '1993-08-28', label: 'Ida' }, // Interpolated
+      { date: '1993-08-28', customBody: 'Ida' },
       { date: '1995-12-07', body: 'Jupiter' },
       { date: '2003-09-21', body: 'Jupiter' }, // End
     ],
@@ -148,9 +195,9 @@ export const missionData = [
       { date: '2005-03-04', body: 'Earth' },
       { date: '2007-02-25', body: 'Mars' },
       { date: '2007-11-13', body: 'Earth' },
-      { date: '2008-09-05', label: 'Steins' }, // Interpolated
+      { date: '2008-09-05', customBody: 'Steins' },
       { date: '2009-11-13', body: 'Earth' },
-      { date: '2010-07-10', label: 'Lutetia' }, // Interpolated
+      { date: '2010-07-10', customBody: 'Lutetia' },
       { date: '2014-08-06', customBody: '67P' },
       { date: '2016-09-30', customBody: '67P' },
     ],

@@ -43,8 +43,20 @@ function solveKepler(M, e) {
  */
 export function calculateKeplerianPosition(elements, date) {
   const dayMs = 86400000;
-  const J2000 = new Date('2000-01-01T12:00:00Z').getTime();
-  const d = (date.getTime() - J2000) / dayMs; // Days since J2000
+  let epochTime = new Date('2000-01-01T12:00:00Z').getTime(); // Default J2000
+
+  if (elements.epoch) {
+    if (typeof elements.epoch === 'number') {
+      // Assume Julian Date (JD)
+      // JD to Unix Time: (JD - 2440587.5) * 86400000
+      epochTime = (elements.epoch - 2440587.5) * 86400000;
+    } else {
+      // Assume Date string or object
+      epochTime = new Date(elements.epoch).getTime();
+    }
+  }
+
+  const d = (date.getTime() - epochTime) / dayMs; // Days since Epoch
 
   // Mean motion (degrees per day)
   // Based on Earth's mean motion: 360° / 365.256363004 days ≈ 0.9856076686°/day
