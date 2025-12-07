@@ -11,6 +11,8 @@
 import * as THREE from 'three';
 
 // Custom orbital elements for bodies not in Astronomy Engine
+// These are essential for "Trajectory Pinning" - ensuring flyby waypoints are
+// calculated at precise 3D locations rather than interpolated through the Sun.
 /**
  * Keplerian Elements Key:
  * a: Semi-major axis in AU (Size of orbit)

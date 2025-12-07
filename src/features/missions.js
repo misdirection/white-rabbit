@@ -23,6 +23,17 @@
  * creating visually realistic arcing paths. Positions are calculated in heliocentric coordinates
  * and transformed to Three.js scene space.
  *
+ * HOW IT WORKS (Methodology):
+ * Unlike simple interpolation, which can cause paths to "cut through" the Sun when connecting
+ * points on opposite sides of the solar system, this system uses "Trajectory Pinning":
+ * 1. Precise Dating: Each waypoint has a specific date (Epoch).
+ * 2. Orbital Calculation: For asteroid flybys (Gaspra, Ida, etc.), we plug the date and the
+ *    asteroid's Keplerian elements (a, e, i, Omega, w, M) into Kepler's equations.
+ * 3. Pinning: This gives us the EXACT 3D coordinate of the asteroid on that specific day.
+ * 4. Curve Generation: The mission line is forced to pass through this exact point in space.
+ *    This "pins" the trajectory to the correct location in the asteroid belt, forcing the
+ *    spline to arc outward correctly around the inner solar system instead of taking a shortcut.
+ *
  * References: JPL Horizons System, NASA mission archives
  */
 import * as Astronomy from 'astronomy-engine';
