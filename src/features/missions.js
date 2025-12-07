@@ -820,3 +820,204 @@ export function getMissionState(missionId, date) {
 
   return { position, direction };
 }
+
+// ============================================================================
+// MISSION PROBE MODELS
+// ============================================================================
+
+const missionProbes = {}; // { missionId: THREE.Object3D }
+let missionProbeScene = null;
+
+/**
+ * Sets the scene reference for probe models.
+ * @param {THREE.Scene} scene
+ */
+export function setMissionProbeScene(scene) {
+  missionProbeScene = scene;
+}
+
+/**
+ * Loads a probe model for a mission (from cache or via GLTFLoader).
+ * Uses the same cache as ModelPreview for efficiency.
+ * @param {string} missionId
+ * @param {string} modelPath
+ */
+async function loadMissionProbe(missionId, modelPath) {
+  if (!missionProbeScene || missionProbes[missionId]) return;
+
+  // Dynamic import to avoid circular dependency
+  const { ModelPreview } = await import('../ui/components/ModelPreview.js');
+  const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
+  const { DRACOLoader } = await import('three/examples/jsm/loaders/DRACOLoader.js');
+
+  // Practical scale: 1e-6 scene units (~7.5 km displayed size)
+  // This is a compromise between realism and floating-point precision.
+  // True realistic scale (5.35e-10) causes precision issues with camera positioning.
+  const PROBE_SCALE = 1e-6;
+
+  // Check cache first
+  if (ModelPreview.modelCache.has(modelPath)) {
+    const gltf = ModelPreview.modelCache.get(modelPath);
+    const model = gltf.scene.clone();
+    model.name = `probe_${missionId}`;
+    model.scale.setScalar(1e-4); // ~750 km displayed
+    
+    // Make materials emissive
+    model.traverse((node) => {
+      if (node.isMesh && node.material) {
+        if (Array.isArray(node.material)) {
+          node.material.forEach((m) => { m.emissive = m.color?.clone(); m.emissiveIntensity = 0.5; });
+        } else {
+          node.material.emissive = node.material.color?.clone() || new THREE.Color(1, 1, 1);
+          node.material.emissiveIntensity = 0.5;
+        }
+      }
+    });
+    
+    missionProbeScene.add(model);
+    missionProbes[missionId] = model;
+    return;
+  }
+
+  // Load if not cached
+  const loader = new GLTFLoader();
+  const dracoLoader = new DRACOLoader();
+  dracoLoader.setDecoderPath('/draco/');
+  dracoLoader.setDecoderConfig({ type: 'js' });
+  loader.setDRACOLoader(dracoLoader);
+
+  loader.load(
+    modelPath,
+    (gltf) => {
+      // Cache it
+      ModelPreview.modelCache.set(modelPath, gltf);
+
+      const model = gltf.scene.clone();
+      model.name = `probe_${missionId}`;
+      
+      // Scale: 1e-4 (~750 km displayed)
+      model.scale.setScalar(1e-4);
+      
+      // Make materials emissive so probe is self-lit (visible in dark space)
+      model.traverse((node) => {
+        if (node.isMesh && node.material) {
+          if (Array.isArray(node.material)) {
+            node.material.forEach((m) => { m.emissive = m.color.clone(); m.emissiveIntensity = 0.5; });
+          } else {
+            node.material.emissive = node.material.color?.clone() || new THREE.Color(1, 1, 1);
+            node.material.emissiveIntensity = 0.5;
+          }
+        }
+      });
+      
+      missionProbeScene.add(model);
+      missionProbes[missionId] = model;
+    },
+    undefined,
+    (error) => {
+      console.warn(`Failed to load probe model for ${missionId}:`, error);
+    }
+  );
+}
+
+/**
+ * Updates all probe model positions based on current simulation time.
+ * Should be called every frame from the animation loop.
+ * @param {Date} currentDate
+ */
+export function updateMissionProbes(currentDate) {
+  if (!missionProbeScene) return;
+
+  const time = currentDate.getTime();
+
+  Object.keys(missionProbes).forEach((missionId) => {
+    const probe = missionProbes[missionId];
+    if (!probe) return;
+
+    // Check if mission is visible
+    if (!config.showMissions[missionId]) {
+      probe.visible = false;
+      return;
+    }
+
+    // Get current position from getMissionState
+    const state = getMissionState(missionId, time);
+
+    if (state) {
+      probe.visible = true;
+      probe.position.copy(state.position);
+
+      // Orient probe along flight direction
+      if (state.direction) {
+        const lookTarget = probe.position.clone().add(state.direction);
+        probe.lookAt(lookTarget);
+      }
+    } else {
+      // Before launch or after mission end
+      probe.visible = false;
+    }
+  });
+}
+
+/**
+ * Ensures probes are loaded for all visible missions.
+ * Called when mission visibility changes.
+ */
+export function syncMissionProbes() {
+  missionData.forEach((mission) => {
+    if (config.showMissions[mission.id] && !missionProbes[mission.id] && mission.modelPath) {
+      loadMissionProbe(mission.id, mission.modelPath);
+    }
+  });
+}
+
+/**
+ * Returns a focus-compatible object for a probe.
+ * @param {string} missionId
+ * @returns {Object|null} { mesh, data: { name, radius }, type: 'probe' } or null
+ */
+export function getProbeForFocus(missionId) {
+  const probe = missionProbes[missionId];
+  if (!probe) return null;
+
+  const mission = missionData.find((m) => m.id === missionId);
+  if (!mission) return null;
+
+  return {
+    mesh: probe,
+    data: {
+      name: mission.name,
+      radius: 0.00001, // Very small radius in scene units - camera will get close
+    },
+    type: 'probe',
+  };
+}
+
+/**
+ * Ensures a probe is loaded, returning a promise that resolves when ready.
+ * @param {string} missionId
+ * @returns {Promise<boolean>} True if probe is loaded
+ */
+export async function ensureProbeLoaded(missionId) {
+  // If already loaded
+  if (missionProbes[missionId]) return true;
+
+  const mission = missionData.find((m) => m.id === missionId);
+  if (!mission || !mission.modelPath) return false;
+
+  // Enable and sync
+  config.showMissions[missionId] = true;
+  if (window.updateMissions) window.updateMissions();
+
+  // Wait for loading (poll with timeout)
+  const maxWait = 5000;
+  const interval = 100;
+  let waited = 0;
+
+  while (!missionProbes[missionId] && waited < maxWait) {
+    await new Promise((r) => setTimeout(r, interval));
+    waited += interval;
+  }
+
+  return !!missionProbes[missionId];
+}

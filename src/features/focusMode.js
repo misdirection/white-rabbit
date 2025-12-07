@@ -186,12 +186,15 @@ export function focusOnObject(
 
   focusedObject = targetObject;
 
-  // Enable high resolution for the new target
-  enableHighRes(focusedObject);
+  // Skip high-res for probes (they're already detailed 3D models)
+  if (targetObject.type !== 'probe') {
+    // Enable high resolution for the new target
+    enableHighRes(focusedObject);
 
-  // Trigger high-resolution texture load
-  if (targetObject.data?.name) {
-    textureManager.loadHighRes(targetObject.data.name);
+    // Trigger high-resolution texture load
+    if (targetObject.data?.name) {
+      textureManager.loadHighRes(targetObject.data.name);
+    }
   }
 
   // Get the world position of the target
@@ -207,6 +210,9 @@ export function focusOnObject(
     currentScale = config.sunScale;
   } else if (targetObject.type === 'planet' || targetObject.type === 'moon') {
     currentScale = config.planetScale;
+  } else if (targetObject.type === 'probe') {
+    // Probes are tiny - use a fixed close distance
+    currentScale = 1;
   }
 
   // Calculate visual radius (how big the object actually appears)
@@ -214,7 +220,12 @@ export function focusOnObject(
 
   // Calculate distance based on FOV to maintain constant screen size
   const fovInRadians = (camera.fov * Math.PI) / 180;
-  const distance = visualRadius / Math.sin((fovInRadians * screenFraction) / 2);
+  let distance = visualRadius / Math.sin((fovInRadians * screenFraction) / 2);
+
+  // For probes, ensure minimum distance for good visibility
+  if (targetObject.type === 'probe') {
+    distance = Math.max(distance, 0.01); // Minimum 0.01 scene units
+  }
 
   // Position camera in front and slightly above the object
   const angle = Math.PI / 6; // 30 degrees above

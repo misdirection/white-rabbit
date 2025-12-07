@@ -7,7 +7,13 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
  * A reusable class to render a 3D model preview in a given DOM container.
  */
 export class ModelPreview {
+  static instanceCount = 0;
+  
   constructor(container) {
+    ModelPreview.instanceCount++;
+    this.instanceId = ModelPreview.instanceCount;
+    console.log(`ModelPreview #${this.instanceId} CREATED (total: ${ModelPreview.instanceCount})`);
+    
     this.container = container;
     this.width = container.clientWidth;
     this.height = container.clientHeight || 250; // Default height if not set
@@ -48,11 +54,25 @@ export class ModelPreview {
     // Animation Loop
     this.boundAnimate = this.animate.bind(this);
     this.animationId = null;
+    this.isVisible = true;
     this.start();
 
     // Resize Observer
     this.resizeObserver = new ResizeObserver(() => this.onResize());
     this.resizeObserver.observe(this.container);
+    
+    // Visibility Observer - pause when not visible (e.g., tab switched)
+    this.intersectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        this.isVisible = entry.isIntersecting;
+        if (this.isVisible) {
+          this.start();
+        } else {
+          this.stop();
+        }
+      });
+    }, { threshold: 0 });
+    this.intersectionObserver.observe(this.container);
   }
 
   // Static cache for loaded models
@@ -153,9 +173,19 @@ export class ModelPreview {
   }
 
   dispose() {
+    console.log(`ModelPreview #${this.instanceId} DISPOSED`);
     this.stop();
     this.resizeObserver.disconnect();
+    this.intersectionObserver.disconnect();
     this.controls.dispose();
+    
+    // Force WebGL context release (browser doesn't always free immediately)
+    const gl = this.renderer.getContext();
+    const loseContext = gl.getExtension('WEBGL_lose_context');
+    if (loseContext) {
+      loseContext.loseContext();
+    }
+    
     this.renderer.dispose();
     if (this.container.contains(this.renderer.domElement)) {
       this.container.removeChild(this.renderer.domElement);

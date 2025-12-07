@@ -89,8 +89,10 @@ export class SimulationControl {
       // User also said: "slightly 'above' it (in case we add a rendering later)".
       // So likely: Camera is behind and above, looking forward (at the spacecraft and beyond).
 
-      const upOffset = 0.0005; // Slightly above (approx 75,000 km)
-      const backOffset = 0.002; // Behind (approx 300,000 km - Moon distance)
+      // Scale 1e-5 (~75 km displayed)
+      // Camera at 1e-4 behind (~750 km) for good visibility
+      const upOffset = 5e-5; // Above
+      const backOffset = 1e-4; // Behind
 
       // Camera Pos = MissionPos - (Direction * backOffset) + (Up * upOffset)
       // Up vector: Y axis? Or ecliptic normal? Scene Y is "Up" (perpendicular to ecliptic plane usually? No, Z is up? Check coords).

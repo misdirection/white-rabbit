@@ -27,6 +27,9 @@ import {
   updateMissions,
   updateMissionTrajectories,
   updateMissionVisuals,
+  setMissionProbeScene,
+  updateMissionProbes,
+  syncMissionProbes,
 } from '../features/missions.js';
 import { updateCoordinateSystem } from '../systems/coordinates.js';
 import { createHabitableZone } from '../systems/habitableZone.js';
@@ -160,6 +163,7 @@ export class Simulation {
       this.missionGroup = new THREE.Group();
       this.scene.add(this.missionGroup);
       initializeMissions(this.missionGroup);
+      setMissionProbeScene(this.missionGroup); // Enable probe model rendering
 
       // Setup Mission Interaction (Click to Select)
       // We pass the domElement to listen for clicks
@@ -169,7 +173,10 @@ export class Simulation {
         this.renderer.domElement
       );
 
-      window.updateMissions = updateMissions;
+      window.updateMissions = () => {
+        updateMissions();
+        syncMissionProbes();
+      };
 
       // Initialize relative orbits
       updateRelativeOrbits(orbitGroup, this.relativeOrbitGroup, planets, sun);
@@ -278,6 +285,7 @@ export class Simulation {
     if (this.config.coordinateSystem && this.missionGroup.children.length > 0) {
       updateMissionTrajectories(this.scene);
       updateMissionVisuals(this.config.date);
+      updateMissionProbes(this.config.date); // Update probe positions
     }
     updateAllOrbitGradients(this.orbitGroup, this.planets);
     updateAllMoonOrbitGradients(this.planets);

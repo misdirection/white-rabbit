@@ -18,7 +18,7 @@ const SHARED_STYLES = `
   .mission-list-item {
     display: flex;
     align-items: center;
-    padding: 4px 8px;
+    padding: 2px 8px; /* Reduced vertical padding further */
     cursor: pointer;
     transition: background 0.2s;
   }
@@ -40,10 +40,10 @@ const SHARED_STYLES = `
     transition: all 0.2s;
     background: none;
     border: none;
-    font-size: 1.2em;
+    font-size: 1.1em; /* Slight reduction */
     cursor: pointer;
-    padding: 2px 6px;
-    margin-left: 8px;
+    padding: 1px 4px; /* Reduced padding */
+    margin-left: 5px;
   }
 
   /* Show on hover */
@@ -54,10 +54,10 @@ const SHARED_STYLES = `
   }
 
   .mission-color-dot {
-    width: 12px;
-    height: 12px;
+    width: 10px; /* Smaller dots */
+    height: 10px;
     border-radius: 50%;
-    margin-right: 12px;
+    margin-right: 8px; /* Closer to text */
     flex-shrink: 0;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -228,6 +228,37 @@ export function setupMissionList(container, config) {
     row.appendChild(dot);
     row.appendChild(name);
 
+    // Focus Button (Satellite Icon) - Appears on Hover
+    const focusBtn = document.createElement('button');
+    focusBtn.className = 'story-btn'; // Reuse same style
+    focusBtn.textContent = '🛰️'; // Satellite icon
+    focusBtn.title = 'Focus on Probe';
+    focusBtn.onclick = async (e) => {
+      e.stopPropagation(); // Prevent row click (toggle)
+      
+      // Import required modules
+      const { ensureProbeLoaded, getProbeForFocus } = await import('../../features/missions.js');
+      const { focusOnObject } = await import('../../features/focusMode.js');
+
+      // Ensure probe is loaded (enables trajectory if needed)
+      const loaded = await ensureProbeLoaded(mission.id);
+      
+      if (loaded) {
+        updateDotState(); // Update UI to show enabled
+        
+        const probeWrapper = getProbeForFocus(mission.id);
+        if (probeWrapper) {
+          // Get camera and controls from SimulationControl
+          const { camera, controls } = window.SimulationControl || {};
+          if (camera && controls) {
+            focusOnObject(probeWrapper, camera, controls);
+          }
+        }
+      }
+    };
+
+    row.appendChild(focusBtn);
+
     // Story Button (Movie Icon) - Appears on Hover
     const storyBtn = document.createElement('button');
     storyBtn.className = 'story-btn';
@@ -320,6 +351,11 @@ export function setupMissionDetails(container, config) {
 
     // Re-render function to handle page switching without full rebuild
     const updateView = () => {
+        // Dispose any existing preview first (critical for WebGL context management)
+        if (activePreview) {
+          activePreview.dispose();
+          activePreview = null;
+        }
         content.innerHTML = '';
         
         // --- Header (Always Visible) ---
@@ -471,8 +507,8 @@ export function setupMissionDetails(container, config) {
 
                     row.onclick = () => {
                         const simCtrl = window.SimulationControl;
-                        if (simCtrl?.jumpToDateFn) {
-                            simCtrl.jumpToDate(event.date, true);
+                        if (simCtrl?.jumpToMissionLocation) {
+                            simCtrl.jumpToMissionLocation(mission.id, event.date, true);
                         }
                     };
 
@@ -528,10 +564,16 @@ export function setupMissionDetails(container, config) {
 
   // Initial Empty State
   renderEmpty();
+  
+  // Track current displayed mission to avoid unnecessary re-renders
+  let currentMissionId = null;
 
   // Listener
   const onMissionSelected = (e) => {
     const missionId = e.detail.missionId;
+    // Skip re-render if already showing this mission
+    if (missionId === currentMissionId) return;
+    currentMissionId = missionId;
     renderMission(missionId);
   };
   window.addEventListener('mission-selected', onMissionSelected);
