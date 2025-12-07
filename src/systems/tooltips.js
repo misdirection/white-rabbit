@@ -37,6 +37,7 @@ import * as Astronomy from 'astronomy-engine';
 import * as THREE from 'three';
 import { config, PARSEC_TO_SCENE } from '../config.js';
 import { CONSTELLATION_NAMES } from '../data/constellationNames.js';
+import { sunData } from '../data/sun.js';
 import { windowManager } from '../ui/WindowManager.js';
 import { Logger } from '../utils/logger.js';
 
@@ -581,17 +582,7 @@ function formatLiveDataSection(liveData) {
  * @returns {string} HTML string
  */
 function formatSunTooltip() {
-  const fields = [
-    { label: 'Type', value: 'G-type Main Sequence Star (G2V)' },
-    { label: 'Radius', value: '696,340 km (109 x Earth)' },
-    { label: 'Mass', value: '1.989 × 10³⁰ kg (333,000 x Earth)' },
-    { label: 'Density', value: '1.41 g/cm³' },
-    { label: 'Surface Gravity', value: '28 g' },
-    { label: 'Surface Temp', value: '5,500°C' },
-    { label: 'Core Temp', value: '15,000,000°C' },
-    { label: 'Rotation', value: '~27 days (Differential)' },
-    { label: 'Age', value: '4.6 Billion Years' },
-  ];
+  const fields = sunData.fields;
 
   const liveData = calculateSunLiveData();
   const liveSection = liveData ? formatLiveDataSection(liveData) : null;

@@ -21,20 +21,9 @@ import { config, PARSEC_TO_SCENE } from '../config.js';
 import { Logger } from '../utils/logger.js';
 import { Octree } from '../utils/Octree.js';
 
-const ZODIAC_IDS = [
-  'Ari',
-  'Tau',
-  'Gem',
-  'Cnc',
-  'Leo',
-  'Vir',
-  'Lib',
-  'Sco',
-  'Sgr',
-  'Cap',
-  'Aqr',
-  'Psc',
-];
+import { ZODIAC_IDS } from '../data/zodiac.js';
+
+// Chunk config matching generation script
 
 // Chunk config matching generation script
 const CHUNKS = [
