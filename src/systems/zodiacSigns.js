@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { config, PARSEC_TO_SCENE } from '../config.js';
+import { ZODIAC_IDS, ZODIAC_SIGNS } from '../data/zodiac.js';
 import { Logger } from '../utils/logger.js';
-import { ZODIAC_SIGNS, ZODIAC_IDS } from '../data/zodiac.js';
 
 export function createZodiacSigns(scene, textureLoader) {
   const zodiacSignsGroup = new THREE.Group();

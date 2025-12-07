@@ -24,9 +24,9 @@ import { setupFocusMode, updateFocusMode } from '../features/focusMode.js';
 import {
   initializeMissions,
   setupMissionInteraction,
+  updateMissions,
   updateMissionTrajectories,
   updateMissionVisuals,
-  updateMissions,
 } from '../features/missions.js';
 import { updateCoordinateSystem } from '../systems/coordinates.js';
 import { createHabitableZone } from '../systems/habitableZone.js';

@@ -23,6 +23,7 @@ import { windowManager } from '../WindowManager.js';
 export class TabbedWindow {
   constructor(id, title, options = {}) {
     this.id = id;
+    this.tabOrder = options.tabOrder || [];
     this.tabs = []; // { id, title, contentElement, originalWindowId }
     this.activeTabId = null;
 
@@ -74,8 +75,8 @@ export class TabbedWindow {
     // Check if tab already exists
     if (this.tabs.find((t) => t.id === id)) return;
 
-    // Ordered list of tab IDs
-    const TAB_ORDER = ['objects', 'orbits', 'magnetic', 'guides', 'stars', 'asterisms', 'system'];
+    // Use configured order or fallback
+    const TAB_ORDER = this.tabOrder;
 
     // Prepare content element
     contentElement.classList.add('tab-content'); // Add class for styling

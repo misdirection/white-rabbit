@@ -1,4 +1,5 @@
 import { missionData } from '../../data/missions.js';
+
 // import GUI from 'lil-gui'; // Unused
 
 // --- Shared Styles ---
@@ -17,8 +18,7 @@ const SHARED_STYLES = `
   .mission-list-item {
     display: flex;
     align-items: center;
-    padding: 8px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 4px 8px;
     cursor: pointer;
     transition: background 0.2s;
   }
@@ -31,6 +31,26 @@ const SHARED_STYLES = `
     flex-grow: 1;
     font-size: 0.95em;
     user-select: none;
+  }
+
+  .story-btn {
+    opacity: 0;
+    pointer-events: none; /* Ignore clicks when hidden */
+    transform: translateX(10px);
+    transition: all 0.2s;
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 2px 6px;
+    margin-left: 8px;
+  }
+
+  /* Show on hover */
+  .mission-list-item:hover .story-btn {
+    opacity: 1;
+    pointer-events: auto; /* Enable clicks */
+    transform: translateX(0);
   }
 
   .mission-color-dot {
@@ -50,12 +70,7 @@ const SHARED_STYLES = `
   }
 
   /* Detail Styles */
-  .mission-info-panel {
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 15px;
-  }
+  /* .mission-info-panel removed to save space */
   .mission-header {
     display: flex;
     align-items: center;
@@ -80,7 +95,7 @@ const SHARED_STYLES = `
     font-size: 0.9em;
     line-height: 1.5;
     opacity: 0.9;
-    margin-bottom: 20px;
+    margin-bottom: 5px;
     padding: 0 5px;
   }
 
@@ -213,10 +228,18 @@ export function setupMissionList(container, config) {
     row.appendChild(dot);
     row.appendChild(name);
 
-    // Row Click -> Select Mission & Open Details Tab
-    row.onclick = () => {
-      const event = new CustomEvent('mission-selected', { detail: { missionId: mission.id } });
-      window.dispatchEvent(event);
+    // Story Button (Movie Icon) - Appears on Hover
+    const storyBtn = document.createElement('button');
+    storyBtn.className = 'story-btn';
+    storyBtn.textContent = '🎞️'; // Movie strip icon
+    storyBtn.title = 'View Story';
+    storyBtn.onclick = (e) => {
+      e.stopPropagation(); // Prevent row click (toggle)
+      
+      // Select Mission and Open Story Tab
+      window.dispatchEvent(
+        new CustomEvent('mission-selected', { detail: { missionId: mission.id } })
+      );
 
       import('../WindowManager.js').then(({ windowManager }) => {
         const win = windowManager.getWindow('explorer-window');
@@ -224,6 +247,18 @@ export function setupMissionList(container, config) {
           win.controller.selectTab?.('mission-details');
         }
       });
+    };
+
+    row.appendChild(storyBtn);
+
+    // Row Click -> Toggle Visibility
+    row.onclick = () => {
+       config.showMissions[mission.id] = !config.showMissions[mission.id];
+       updateDotState();
+       window.dispatchEvent(
+        new CustomEvent('mission-visibility-changed', { detail: { missionId: mission.id } })
+       );
+       if (window.updateMissions) window.updateMissions();
     };
 
     // Listen for external updates (e.g. from Detail view)
@@ -245,6 +280,8 @@ export function setupMissionList(container, config) {
 /**
  * Tab 2: Mission Details
  */
+import { ModelPreview } from '../components/ModelPreview.js';
+
 export function setupMissionDetails(container, config) {
   container.innerHTML = '';
   container.className = 'mission-ui-container';
@@ -253,7 +290,17 @@ export function setupMissionDetails(container, config) {
   const content = document.createElement('div');
   container.appendChild(content);
 
+  // Store active preview to dispose it correctly
+  let activePreview = null;
+  // Track current page per mission (or global? Local seems better but resets on switch)
+  // Let's keep it simple: defaulting to page 0 (Info) when opening a mission.
+  let currentPage = 0; 
+
   const renderEmpty = () => {
+    if (activePreview) {
+      activePreview.dispose();
+      activePreview = null;
+    }
     content.innerHTML =
       '<div class="empty-state">Select a mission from the list to view details.</div>';
   };
@@ -265,171 +312,218 @@ export function setupMissionDetails(container, config) {
       return;
     }
 
-    content.innerHTML = '';
-
-    // Panel
-    const panel = document.createElement('div');
-    panel.className = 'mission-info-panel';
-
-    // Header
-    const header = document.createElement('div');
-    header.className = 'mission-header';
-
-    // Header Dot with Toggle Logic
-    const dot = document.createElement('div');
-    dot.className = 'mission-color-dot';
-    // Reuse the style class but maybe it needs specific sizing or just use same
-    // The previous CSS had mission-color-dot at 12px.
-
-    const updateHeaderDot = () => {
-      const isVisible = config.showMissions[mission.id];
-      if (isVisible) {
-        const colorHex = '#' + mission.color.toString(16).padStart(6, '0');
-        dot.style.backgroundColor = colorHex;
-        dot.style.boxShadow = `0 0 8px ${colorHex}`;
-        dot.style.borderColor = 'rgba(255,255,255,0.5)';
-      } else {
-        dot.style.backgroundColor = '#444'; // Dark grey
-        dot.style.boxShadow = 'none';
-        dot.style.borderColor = 'rgba(255,255,255,0.2)';
-      }
-    };
-    updateHeaderDot();
-
-    dot.onclick = () => {
-      config.showMissions[mission.id] = !config.showMissions[mission.id];
-      updateHeaderDot();
-      // Dispatch to update List view
-      window.dispatchEvent(
-        new CustomEvent('mission-visibility-changed', { detail: { missionId: mission.id } })
-      );
-      if (window.updateMissions) window.updateMissions();
-    };
-
-    const title = document.createElement('h3');
-    title.className = 'mission-title';
-    title.textContent = mission.name || mission.id;
-
-    header.appendChild(dot);
-    header.appendChild(title);
-    panel.appendChild(header);
-
-    // Image
-    if (mission.image) {
-      const img = document.createElement('img');
-      img.className = 'mission-image';
-      img.src = mission.image;
-      img.onerror = () => {
-        img.style.display = 'none';
-      };
-      panel.appendChild(img);
+    if (activePreview) {
+      activePreview.dispose();
+      activePreview = null;
     }
+    currentPage = 0; // Reset to Info page on new selection
 
-    // Summary
-    if (mission.summary) {
-      const p = document.createElement('p');
-      p.className = 'mission-summary';
-      p.textContent = mission.summary;
-      panel.appendChild(p);
-    }
+    // Re-render function to handle page switching without full rebuild
+    const updateView = () => {
+        content.innerHTML = '';
+        
+        // --- Header (Always Visible) ---
+        const header = document.createElement('div');
+        header.className = 'mission-header';
+        header.style.display = 'flex';
+        header.style.justifyContent = 'space-between'; // Space for arrows
+        header.style.alignItems = 'center';
 
-    // Timeline (Vertical Stepper)
-    if (mission.timeline && mission.timeline.length > 0) {
-      // NOTE: User requested removing label/header to save space
-      const timelineDiv = document.createElement('div');
-      timelineDiv.className = 'mission-timeline';
+        // Left: Dot + Title
+        const leftGroup = document.createElement('div');
+        leftGroup.style.display = 'flex';
+        leftGroup.style.alignItems = 'center';
+        leftGroup.style.flexGrow = '1';
 
-      mission.timeline.forEach((event) => {
-        const row = document.createElement('div');
-        row.className = 'timeline-event';
-        row.title = `Jump to ${event.date} - ${event.label}`;
-        // Store metadata for updates
-        row.dataset.date = event.date;
-        row.dataset.color = '#' + mission.color.toString(16).padStart(6, '0');
+        const dot = document.createElement('div');
+        dot.className = 'mission-color-dot';
+        
+        const updateHeaderDot = () => {
+        const isVisible = config.showMissions[mission.id];
+        if (isVisible) {
+            const colorHex = '#' + mission.color.toString(16).padStart(6, '0');
+            dot.style.backgroundColor = colorHex;
+            dot.style.boxShadow = `0 0 8px ${colorHex}`;
+            dot.style.borderColor = 'rgba(255,255,255,0.5)';
+        } else {
+            dot.style.backgroundColor = '#444'; 
+            dot.style.boxShadow = 'none';
+            dot.style.borderColor = 'rgba(255,255,255,0.2)';
+        }
+        };
+        updateHeaderDot();
 
-        row.onclick = () => {
-          const simCtrl = window.SimulationControl;
-          if (simCtrl?.jumpToDateFn) {
-            simCtrl.jumpToDate(event.date, true);
-          } else {
-            console.warn('SimulationControl.jumpToDate not available');
-          }
+        dot.onclick = () => {
+        config.showMissions[mission.id] = !config.showMissions[mission.id];
+        updateHeaderDot();
+        window.dispatchEvent(
+            new CustomEvent('mission-visibility-changed', { detail: { missionId: mission.id } })
+        );
+        if (window.updateMissions) window.updateMissions();
         };
 
-        // Stepper Dot
-        // Stepper Dot
-        const dot = document.createElement('div');
-        dot.className = 'timeline-dot';
+        const title = document.createElement('h3');
+        title.className = 'mission-title';
+        title.textContent = mission.name || mission.id;
+        // title.style.flexGrow = '1'; // Removed, handled by parent
 
-        // Intelligent Styling: Solid if Past/Now, Outline if Future
-        const eventDate = new Date(event.date);
-        const simDate = config.date;
-        const isFuture = eventDate > simDate;
-        const colorHex = '#' + mission.color.toString(16).padStart(6, '0');
+        leftGroup.appendChild(dot);
+        leftGroup.appendChild(title);
+        header.appendChild(leftGroup);
 
-        if (isFuture) {
-          // Future: Thin Inner Outline
-          dot.style.backgroundColor = 'transparent';
-          // Transparent border preserves layout size (10px + 4px = 14px)
-          dot.style.border = '2px solid transparent';
-          // Inset shadow creates the "inner" ring exactly where the solid fill would be
-          dot.style.boxShadow = `inset 0 0 0 1px ${colorHex}`;
-        } else {
-          // Past: Solid
-          dot.style.backgroundColor = colorHex;
-          // Default dark border for contrast
-          dot.style.border = '2px solid #222';
-          dot.style.boxShadow = 'none';
+        // Right: Pagination Controls (< >)
+        // Only if we have a timeline
+        if (mission.timeline && mission.timeline.length > 0) {
+            const navGroup = document.createElement('div');
+            navGroup.style.display = 'flex';
+            navGroup.style.gap = '10px';
+            navGroup.style.userSelect = 'none';
+            
+            const prevBtn = document.createElement('span');
+            prevBtn.textContent = '<';
+            prevBtn.style.cursor = 'pointer';
+            prevBtn.style.opacity = currentPage === 0 ? '0.3' : '1';
+            prevBtn.onclick = () => {
+                if (currentPage > 0) {
+                    currentPage--;
+                    updateView();
+                }
+            };
+
+            const nextBtn = document.createElement('span');
+            nextBtn.textContent = '>';
+            nextBtn.style.cursor = 'pointer';
+            nextBtn.style.opacity = currentPage === 1 ? '0.3' : '1';
+            nextBtn.onclick = () => {
+                if (currentPage < 1) {
+                    currentPage++;
+                    updateView();
+                }
+            };
+
+            navGroup.appendChild(prevBtn);
+            navGroup.appendChild(nextBtn);
+            header.appendChild(navGroup);
         }
 
-        // Fix for box-sizing mismatch causing potential jitter
-        // Let's standardise to border-box for both to be safe, modifying size slightly?
-        // Actually, let's just use inline styles to override specific props.
-        // Existing CSS: width 10px, height 10px, border 2px solid #222. Total 14px.
-        // If Future: border 2px solid color. width 10px. Total 14px.
-        // So size is consistent.
+        content.appendChild(header);
 
-        row.appendChild(dot);
+        // --- Page Content ---
+        const pageContainer = document.createElement('div');
+        pageContainer.className = 'mission-page-content';
+        content.appendChild(pageContainer);
 
-        // Date (inline)
-        const dateSpan = document.createElement('span');
-        dateSpan.className = 'event-date';
-        dateSpan.textContent = event.date;
-        row.appendChild(dateSpan);
+        if (currentPage === 0) {
+            // PAGE 1: Info + Model/Image
+            
+            // 3D Model or Image
+            if (mission.modelPath) {
+                const modelContainer = document.createElement('div');
+                modelContainer.style.width = '100%';
+                modelContainer.style.height = '200px';
+                modelContainer.style.backgroundColor = 'transparent'; // Let canvas verify
+                modelContainer.style.marginBottom = '10px';
+                modelContainer.style.position = 'relative'; // For loading text
+                pageContainer.appendChild(modelContainer);
+                
+                // Initialize ModelPreview
+                // We need to delay slightly to ensure container is in DOM for size? 
+                // ModelPreview uses clientWidth, so it must be attached.
+                // It is attached now.
+                activePreview = new ModelPreview(modelContainer);
+                activePreview.loadModel(mission.modelPath);
+                
+            } else if (mission.image) {
+                const img = document.createElement('img');
+                img.className = 'mission-image';
+                img.src = mission.image;
+                img.style.height = '200px'; // Match model height
+                img.style.objectFit = 'contain';
+                img.onerror = () => { img.style.display = 'none'; };
+                pageContainer.appendChild(img);
+            }
 
-        // Label (inline)
-        const labelSpan = document.createElement('span');
-        labelSpan.className = 'event-label';
-        labelSpan.textContent = event.label;
-        labelSpan.style.cursor = 'pointer'; // Make it look clickable
-        labelSpan.title = 'Jump to Location & Date';
+            // Summary
+            if (mission.summary) {
+                const p = document.createElement('p');
+                p.className = 'mission-summary';
+                p.textContent = mission.summary;
+                pageContainer.appendChild(p);
+            }
 
-        labelSpan.onclick = (e) => {
-          e.stopPropagation(); // Prevent parent row click (which just jumps to date)
-          const simCtrl = window.SimulationControl;
-          if (simCtrl?.jumpToMissionLocation) {
-            simCtrl.jumpToMissionLocation(mission.id, event.date, true);
-          } else {
-            console.warn('SimulationControl.jumpToMissionLocation not available');
-          }
-        };
+        } else {
+            // PAGE 2: Timeline
+            if (activePreview) {
+                activePreview.dispose();
+                activePreview = null;
+            }
 
-        labelSpan.onmouseover = () => {
-          labelSpan.style.textDecoration = 'underline';
-        };
-        labelSpan.onmouseout = () => {
-          labelSpan.style.textDecoration = 'none';
-        };
+             if (mission.timeline && mission.timeline.length > 0) {
+                const timelineDiv = document.createElement('div');
+                timelineDiv.className = 'mission-timeline';
 
-        row.appendChild(labelSpan);
+                mission.timeline.forEach((event) => {
+                    const row = document.createElement('div');
+                    row.className = 'timeline-event';
+                    row.title = `Jump to ${event.date.split('T')[0]} - ${event.label}`;
+                    row.dataset.date = event.date;
+                    row.dataset.color = '#' + mission.color.toString(16).padStart(6, '0');
 
-        timelineDiv.appendChild(row);
-      });
+                    row.onclick = () => {
+                        const simCtrl = window.SimulationControl;
+                        if (simCtrl?.jumpToDateFn) {
+                            simCtrl.jumpToDate(event.date, true);
+                        }
+                    };
 
-      panel.appendChild(timelineDiv);
-    }
+                    const dot = document.createElement('div');
+                    dot.className = 'timeline-dot';
+                    
+                    // Style logic matches updateMissionTimeline
+                    const eventDate = new Date(event.date);
+                    const simDate = config.date;
+                    const isFuture = eventDate > simDate;
+                    const colorHex = '#' + mission.color.toString(16).padStart(6, '0');
 
-    content.appendChild(panel);
+                    if (isFuture) {
+                        dot.style.backgroundColor = 'transparent';
+                        dot.style.border = '2px solid transparent';
+                        dot.style.boxShadow = `inset 0 0 0 1px ${colorHex}`;
+                    } else {
+                        dot.style.backgroundColor = colorHex;
+                        dot.style.border = '2px solid #222';
+                        dot.style.boxShadow = 'none';
+                    }
+                    row.appendChild(dot);
+
+                    const dateSpan = document.createElement('span');
+                    dateSpan.className = 'event-date';
+                    dateSpan.textContent = event.date.split('T')[0];
+                    row.appendChild(dateSpan);
+
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'event-label';
+                    labelSpan.textContent = event.label;
+                    labelSpan.style.cursor = 'pointer';
+                    labelSpan.onclick = (e) => {
+                        e.stopPropagation();
+                        const simCtrl = window.SimulationControl;
+                        if (simCtrl?.jumpToMissionLocation) {
+                            simCtrl.jumpToMissionLocation(mission.id, event.date, true);
+                        }
+                    };
+                    labelSpan.onmouseover = () => { labelSpan.style.textDecoration = 'underline'; };
+                    labelSpan.onmouseout = () => { labelSpan.style.textDecoration = 'none'; };
+                    row.appendChild(labelSpan);
+
+                    timelineDiv.appendChild(row);
+                });
+                pageContainer.appendChild(timelineDiv);
+            }
+        }
+    };
+
+    updateView();
   };
 
   // Initial Empty State
@@ -439,9 +533,6 @@ export function setupMissionDetails(container, config) {
   const onMissionSelected = (e) => {
     const missionId = e.detail.missionId;
     renderMission(missionId);
-    // Note: We are NO LONGER auto-showing the mission on selection,
-    // as the user might want to read about it without enabling the trajectory.
-    // The user can now use the header dot to toggle it.
   };
   window.addEventListener('mission-selected', onMissionSelected);
 }

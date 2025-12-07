@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { config } from '../config.js';
 import { exitFocusMode, focusOnObject, isFocusModeActive } from '../features/focusMode.js';
+import { getMissionState } from '../features/missions.js';
 import {
   updateAsterismsVisibility,
   updateAxesVisibility,
@@ -15,7 +16,6 @@ import {
   updateZodiacSignsVisibility,
 } from '../ui/modules/visual.js';
 import { Logger } from '../utils/logger.js';
-import { getMissionState } from '../features/missions.js';
 
 /**
  * API for controlling the simulation programmatically.

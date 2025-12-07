@@ -130,7 +130,8 @@ export function setupGUI(
   const visualWindow = new TabbedWindow('visual-tools', 'Visual Tools', {
     width: '320px',
     height: 'auto',
-    snap: { x: 'right', y: 'top' }, // Changed to top
+    snap: { x: 'right', y: 'top' },
+    tabOrder: ['objects', 'orbits', 'magnetic', 'guides', 'stars', 'asterisms', 'system'],
   });
 
   // Helper to create a tab with an embedded lil-gui
@@ -231,6 +232,7 @@ export function setupGUI(
     width: '320px', // Matches Visual Window
     height: 'auto',
     snap: { x: 'right', y: 'bottom' },
+    tabOrder: ['find', 'missions', 'mission-details', 'events'],
   });
 
   // Helper for Explorer tabs (reused logic)
@@ -247,7 +249,7 @@ export function setupGUI(
   createExplorerTab('missions', 'Missions', '🚀', (container) =>
     setupMissionList(container, config)
   );
-  createExplorerTab('mission-details', 'Story', '☄️', (container) =>
+  createExplorerTab('mission-details', 'Story', '🎞️', (container) =>
     setupMissionDetails(container, config)
   );
   createExplorerTab('events', 'Events', '📅', (container) =>

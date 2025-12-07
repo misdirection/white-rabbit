@@ -75,6 +75,7 @@ export const missionData = [
     summary:
       'Launched in 1977, Voyager 1 is the farthest human-made object from Earth. After visiting Jupiter and Saturn, it crossed the heliopause in 2012, becoming the first spacecraft to enter interstellar space.',
     image: 'assets/missions/voyager.jpg',
+    modelPath: 'assets/models/voyager.glb',
     wikiUrl: 'https://en.wikipedia.org/wiki/Voyager_1',
     exit: { ra: 17.2, dec: 12.1 }, // Ophiuchus
     timeline: [
@@ -100,6 +101,7 @@ export const missionData = [
     summary:
       'Voyager 2 is the only spacecraft to have visited Uranus and Neptune. Launched shortly before Voyager 1, it completed the "Grand Tour" of the outer solar system and entered interstellar space in 2018.',
     image: 'assets/missions/voyager.jpg',
+    modelPath: 'assets/models/voyager.glb', // Same model
     wikiUrl: 'https://en.wikipedia.org/wiki/Voyager_2',
     exit: { ra: 20.0, dec: -60.0 }, // Pavo/Telescopium
     timeline: [
@@ -128,6 +130,7 @@ export const missionData = [
     summary:
       'Pioneer 10 was the first spacecraft to travel through the asteroid belt and visit Jupiter. It sent back the first close-up images of the giant planet and carried a famous golden plaque with a message for extraterrestrial life.',
     image: 'assets/missions/pioneer.jpg',
+    modelPath: 'assets/models/pioneer_10.glb',
     wikiUrl: 'https://en.wikipedia.org/wiki/Pioneer_10',
     exit: { ra: 5.2, dec: 26.0 }, // Taurus
     timeline: [
@@ -152,6 +155,7 @@ export const missionData = [
     summary:
       'Pioneer 11 was the second mission to investigate Jupiter and the outer solar system and the first to explore Saturn and its main rings.',
     image: 'assets/missions/pioneer.jpg',
+    modelPath: 'assets/models/pioneer_10.glb', // Same basic design
     wikiUrl: 'https://en.wikipedia.org/wiki/Pioneer_11',
     exit: { ra: 18.8, dec: -8.0 }, // Scutum
     timeline: [
@@ -175,6 +179,7 @@ export const missionData = [
     summary:
       'Galileo was an unmanned spacecraft that studied the planet Jupiter and its moons, as well as several other Solar System bodies. It was the first spacecraft to orbit an outer planet.',
     image: 'assets/missions/galileo.jpg',
+    modelPath: 'assets/models/Galileo.glb',
     wikiUrl: 'https://en.wikipedia.org/wiki/Galileo_(spacecraft)',
     timeline: [
       { date: '1989-10-18T16:53:40Z', label: 'Launch' },
@@ -204,6 +209,7 @@ export const missionData = [
     summary:
       'Cassini-Huygens was a collaboration between NASA, ESA, and ASI to send a probe to study the planet Saturn and its system, including its rings and natural satellites.',
     image: 'assets/missions/cassini.jpg',
+    modelPath: 'assets/models/cassini.glb',
     wikiUrl: 'https://en.wikipedia.org/wiki/Cassini%E2%80%93Huygens',
     timeline: [
       { date: '1997-10-15T08:43:00Z', label: 'Launch' },
@@ -254,6 +260,7 @@ export const missionData = [
     summary:
       'Parker Solar Probe is a NASA robotic spacecraft launched in 2018, with the mission of making observations of the outer corona of the Sun.',
     image: 'assets/missions/parker.jpg',
+    modelPath: 'assets/models/parker_solar_probe.glb',
     wikiUrl: 'https://en.wikipedia.org/wiki/Parker_Solar_Probe',
     timeline: [
       { date: '2018-08-12T07:31:00Z', label: 'Launch' },
@@ -306,6 +313,7 @@ export const missionData = [
     summary:
       'Rosetta was a space probe built by the European Space Agency which performed a detailed study of comet 67P/Churyumov–Gerasimenko.',
     image: 'assets/missions/rosetta.jpg',
+    modelPath: 'assets/models/ibex.glb', // Using IBEX per request/plan
     wikiUrl: 'https://en.wikipedia.org/wiki/Rosetta_(spacecraft)',
     timeline: [
       { date: '2004-03-02T07:17:00Z', label: 'Launch' },
@@ -337,6 +345,7 @@ export const missionData = [
     summary:
       'Ulysses was a robotic space probe designed to study the Sun at all latitudes. It used a gravity assist from Jupiter to leave the ecliptic plane.',
     image: 'assets/missions/ulysses.jpg',
+    modelPath: 'assets/models/Ulysses.glb',
     wikiUrl: 'https://en.wikipedia.org/wiki/Ulysses_(spacecraft)',
     timeline: [
       { date: '1990-10-06T11:47:10Z', label: 'Launch' },

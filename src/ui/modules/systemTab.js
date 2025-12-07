@@ -8,6 +8,7 @@
  * - Scale Adjustments (Presets & Custom)
  */
 import { config, REAL_PLANET_SCALE_FACTOR, REAL_SUN_SCALE_FACTOR } from '../../config.js';
+import { updateMissionTrajectories } from '../../features/missions.js';
 import { updateCoordinateSystem } from '../../systems/coordinates.js';
 import { updateRelativeOrbits } from '../../systems/relativeOrbits.js';
 import {
@@ -15,7 +16,6 @@ import {
   updateReferencePlane,
   updateSunMagneticFieldScale,
 } from './visual.js';
-import { updateMissionTrajectories } from '../../features/missions.js';
 
 export function setupSystemTab(
   container,

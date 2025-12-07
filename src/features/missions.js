@@ -36,12 +36,13 @@
  *
  * References: JPL Horizons System, NASA mission archives
  */
-import * as THREE from 'three';
+
 import * as Astronomy from 'astronomy-engine';
-import { AU_TO_SCENE, REAL_PLANET_SCALE_FACTOR, config } from '../config.js';
-import { calculateKeplerianPosition } from '../physics/orbits.js';
+import * as THREE from 'three';
+import { AU_TO_SCENE, config, REAL_PLANET_SCALE_FACTOR } from '../config.js';
+import { customBodies, missionData } from '../data/missions.js';
 import { createOrbitMaterial } from '../materials/OrbitMaterial.js';
-import { missionData, customBodies } from '../data/missions.js';
+import { calculateKeplerianPosition } from '../physics/orbits.js';
 
 /**
  * Mission trajectory data
@@ -425,7 +426,7 @@ export function updateMissionTrajectories(scene, forceUpdate = false) {
       // 2. Apply Coordinate System Correction
       // If Geocentric/Tychonic, subtract Earth's position at that time
       // If Barycentric, subtract SSB position at that time
-      let correction = new THREE.Vector3(0, 0, 0);
+      const correction = new THREE.Vector3(0, 0, 0);
 
       if (currentSystem === 'Geocentric' || currentSystem === 'Tychonic') {
         const earthPos = getBodyPosition('Earth', wp.date);
@@ -662,7 +663,7 @@ function getAbsoluteMissionWaypointPosition(wp) {
     }
 
     // Check if offset is x,y,z object or Vector3
-    let offsetVec = new THREE.Vector3(wp.offset.x || 0, wp.offset.y || 0, wp.offset.z || 0);
+    const offsetVec = new THREE.Vector3(wp.offset.x || 0, wp.offset.y || 0, wp.offset.z || 0);
 
     pos.add(offsetVec.multiplyScalar(scale));
   } else if (wp.lat !== undefined && wp.lon !== undefined && wp.body) {
@@ -794,7 +795,7 @@ export function getMissionState(missionId, date) {
     }
 
     // Apply Coordinate Correction
-    let correction = new THREE.Vector3(0, 0, 0);
+    const correction = new THREE.Vector3(0, 0, 0);
     if (currentSystem === 'Geocentric' || currentSystem === 'Tychonic') {
       const earthPos = getBodyPosition('Earth', wp.date);
       correction.copy(earthPos);

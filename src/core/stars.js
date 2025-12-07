@@ -18,10 +18,9 @@
  */
 import * as THREE from 'three';
 import { config, PARSEC_TO_SCENE } from '../config.js';
+import { ZODIAC_IDS } from '../data/zodiac.js';
 import { Logger } from '../utils/logger.js';
 import { Octree } from '../utils/Octree.js';
-
-import { ZODIAC_IDS } from '../data/zodiac.js';
 
 // Chunk config matching generation script
 
