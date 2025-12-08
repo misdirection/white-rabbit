@@ -21,6 +21,7 @@ import { config, PARSEC_TO_SCENE } from '../config.js';
 import { ZODIAC_IDS } from '../data/zodiac.js';
 import { Logger } from '../utils/logger.js';
 import { Octree } from '../utils/Octree.js';
+// import { getVirtualOrigin } from './VirtualOrigin.js'; // TODO: Re-enable with proper approach
 
 // Chunk config matching generation script
 
@@ -253,6 +254,9 @@ class StarManager {
 
       material.onBeforeCompile = (shader) => {
         // console.log(`[Shader] Compiling star material for Chunk ${chunkId}`);
+
+        // TODO: Camera-relative positioning disabled - see MaterialFactory.js
+
         shader.vertexShader = `
                     attribute float starSize;
                     ${shader.vertexShader}

@@ -19,7 +19,8 @@
  * realistic shadows while other planets remain illuminated by the point light at the Sun.
  */
 import * as THREE from 'three';
-import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
+// Note: ArcballControls import moved to VirtualCameraControls.js
+// import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
 
 /**
  * Creates and initializes the Three.js scene with camera, renderer, and controls
@@ -28,16 +29,17 @@ import { ArcballControls } from 'three/addons/controls/ArcballControls.js';
  * - Perspective camera with wide near/far range for astronomical scale
  * - WebGL renderer with logarithmic depth buffer for extreme distance rendering
  * - ACES Filmic tone mapping for realistic lighting
- * - Orbit controls for camera manipulation
  * - Ambient and point lighting
  * - Groups for organizing orbit lines and zodiac constellations
  * - Responsive resize handler
+ *
+ * NOTE: Controls are created separately in Simulation.js using VirtualCameraControls
+ *       wrapper for camera-at-origin precision rendering.
  *
  * @returns {Object} Scene components
  * @returns {THREE.Scene} returns.scene - The main Three.js scene
  * @returns {THREE.PerspectiveCamera} returns.camera - Perspective camera (60° FOV)
  * @returns {THREE.WebGLRenderer} returns.renderer - WebGL renderer with tone mapping
- * @returns {ArcballControls} returns.controls - Camera arcball controls with damping
  * @returns {THREE.Group} returns.orbitGroup - Group for planet orbit lines
  * @returns {THREE.Group} returns.zodiacGroup - Group for zodiac constellation lines
  */
@@ -61,10 +63,8 @@ export function createScene() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   document.body.appendChild(renderer.domElement);
 
-  const controls = new ArcballControls(camera, renderer.domElement, scene);
-  controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
-  controls.setGizmosVisible(false); // Hide the gizmo by default
+  // NOTE: Controls (VirtualCameraControls) are created in Simulation.js
+  // after universeGroup is available, enabling camera-at-origin precision.
 
   // --- Lighting ---
   const ambientLight = new THREE.AmbientLight(0x333333, 0.5); // Reduced intensity
@@ -125,5 +125,5 @@ export function createScene() {
   // Lights are NOT added to scene here. They must be added to universeGroup/Sun in main.js
   // so they move with the coordinate system shifts.
 
-  return { scene, camera, renderer, controls, orbitGroup, zodiacGroup, sunLight, shadowLight };
+  return { scene, camera, renderer, orbitGroup, zodiacGroup, sunLight, shadowLight };
 }

@@ -33,6 +33,7 @@ import * as Astronomy from 'astronomy-engine';
 import * as THREE from 'three';
 import { AU_TO_SCENE, config, REAL_PLANET_SCALE_FACTOR } from '../config.js';
 import { textureManager } from '../managers/TextureManager.js';
+import { patchMaterialForOrigin } from '../materials/MaterialFactory.js';
 import { createOrbitMaterial, createProgressAttribute } from '../materials/OrbitMaterial.js';
 
 /**
@@ -57,6 +58,9 @@ function createMoonMesh(moonData) {
   const moonGeo = new THREE.SphereGeometry(moonData.radius, 32, 32);
   // Start with base color
   const moonMat = new THREE.MeshStandardMaterial({ color: moonData.color });
+
+  // Patch for camera-relative positioning (precision fix at astronomical distances)
+  patchMaterialForOrigin(moonMat);
 
   if (moonData.texture) {
     textureManager.loadTexture(moonData.texture, moonMat, moonData.name, true, moonData.category);

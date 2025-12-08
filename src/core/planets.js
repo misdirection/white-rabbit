@@ -21,6 +21,7 @@ import * as THREE from 'three';
 import { AU_TO_SCENE, config } from '../config.js';
 import { dwarfPlanetData, planetData } from '../data/bodies.js';
 import { textureManager } from '../managers/TextureManager.js';
+import { patchMaterialForOrigin } from '../materials/MaterialFactory.js';
 import { createSunMaterial } from '../materials/SunMaterial.js';
 import { calculateKeplerianPosition } from '../physics/orbits.js';
 import { createMoons, updateMoonPositions } from '../systems/moons.js';
@@ -111,6 +112,9 @@ export function createPlanets(scene, orbitGroup) {
     // Start with base color
     const material = new THREE.MeshStandardMaterial({ color: data.color });
 
+    // Patch for camera-relative positioning (precision fix at astronomical distances)
+    patchMaterialForOrigin(material);
+
     if (data.texture) {
       textureManager.loadTexture(data.texture, material, data.name);
     }
@@ -171,6 +175,10 @@ export function createPlanets(scene, orbitGroup) {
           opacity: 1.0,
           depthWrite: false,
         });
+
+        // Patch for camera-relative positioning
+        patchMaterialForOrigin(cloudMaterial);
+
         const cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial);
         cloudMesh.visible = false; // Hide until loaded
         cloudMesh.layers.set(1); // Clouds also need shadows

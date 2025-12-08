@@ -4,6 +4,7 @@
  */
 
 import * as THREE from 'three';
+// import { getVirtualOrigin } from '../core/VirtualOrigin.js'; // TODO: Re-enable with proper approach
 
 /**
  * Creates the shader material for the Sun with procedural noise
@@ -26,6 +27,8 @@ export function createSunMaterial(customUniforms) {
 
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = customUniforms.uTime;
+
+    // TODO: Camera-relative positioning disabled - see MaterialFactory.js
 
     // Inject Noise Function safely after common include
     shader.fragmentShader = shader.fragmentShader.replace(

@@ -50,6 +50,7 @@ import { Logger } from '../utils/logger.js';
 import { createPlanets, updatePlanets } from './planets.js';
 import { createScene } from './scene.js';
 import { createAsterisms, createConstellations, createStarfield } from './stars.js';
+import { OriginAwareArcballControls } from '../controls/OriginAwareArcballControls.js';
 
 export class Simulation {
   constructor() {
@@ -70,6 +71,8 @@ export class Simulation {
     this.clock = new THREE.Clock();
     this.magneticFieldTime = 0;
     this.shadowLight = null;
+
+    // Note: controls created later as VirtualCameraControls after universeGroup exists
   }
 
   async init() {
@@ -80,13 +83,12 @@ export class Simulation {
 
       // 1. Setup Scene
       loading.textContent = 'Creating Scene...';
-      const { scene, camera, renderer, controls, orbitGroup, zodiacGroup, sunLight, shadowLight } =
+      const { scene, camera, renderer, orbitGroup, zodiacGroup, sunLight, shadowLight } =
         createScene();
 
       this.scene = scene;
       this.camera = camera;
       this.renderer = renderer;
-      this.controls = controls;
       this.orbitGroup = orbitGroup;
       this.zodiacGroup = zodiacGroup;
       this.shadowLight = shadowLight;
@@ -104,6 +106,19 @@ export class Simulation {
       // Add groups to universe
       this.universeGroup.add(orbitGroup);
       this.universeGroup.add(zodiacGroup);
+
+      // Create OriginAwareArcballControls - extends ArcballControls with origin-aware positioning
+      // Intercepts camera movement and moves universe group instead for float32 precision
+      this.controls = new OriginAwareArcballControls(
+        camera,
+        renderer.domElement,
+        scene,
+        this.universeGroup
+      );
+      this.controls.enableDamping = true;
+      this.controls.dampingFactor = 0.05;
+      this.controls.setGizmosVisible(false);
+      window.controls = this.controls; // Expose for debugging
 
       const asterismsGroup = new THREE.Group();
       this.universeGroup.add(asterismsGroup);
@@ -292,7 +307,8 @@ export class Simulation {
     updateFocusMode(this.camera, this.controls, this.planets, this.sun);
 
     this.rabbit.update(delta);
-    this.controls.update();
+    this.controls.update(); // VirtualCameraControls handles camera-at-origin internally
+
     this.renderer.render(this.scene, this.camera);
 
     this.updateMagneticFieldsAnimations();

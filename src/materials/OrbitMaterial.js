@@ -12,11 +12,14 @@
  * Points near progress=0 (where the object just was) are brightest.
  */
 import * as THREE from 'three';
+// import { getVirtualOrigin } from '../core/VirtualOrigin.js'; // TODO: Re-enable with proper approach
 
 // Vertex shader for orbit lines
+// TODO: Camera-relative positioning disabled due to double-subtraction with viewMatrix
 const orbitVertexShader = `
   attribute float progress;
   attribute float lineDistance;
+  
   varying float vProgress;
   varying float vLineDistance;
   varying vec2 vUv;
@@ -195,6 +198,7 @@ export function createOrbitMaterial(options = {}) {
       uMode: { value: options.mode === 'mission' ? 1 : 0 },
       uCurrentTime: { value: 1.0 }, // Default to full visibility
       uDashTexture: { value: _dashTexture },
+      // TODO: Camera-relative positioning disabled - see MaterialFactory.js
     },
     vertexShader: orbitVertexShader,
     fragmentShader: orbitFragmentShader,
