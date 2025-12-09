@@ -106,9 +106,17 @@ export class SimulationControl {
         .addScaledVector(direction, -backOffset)
         .add(new THREE.Vector3(0, upOffset, 0));
 
-      this.camera.position.copy(camPos);
-      this.controls.target.copy(position);
-      this.controls.update();
+      // Use OriginAware controls API if available to ensure changes persist
+      if (this.controls.setVirtualPosition && this.controls.setVirtualTarget) {
+        if (this.controls.resetMomentum) this.controls.resetMomentum();
+        this.controls.setVirtualTarget(position);
+        this.controls.setVirtualPosition(camPos);
+      } else {
+        // Fallback for standard controls
+        this.camera.position.copy(camPos);
+        this.controls.target.copy(position);
+        this.controls.update();
+      }
 
       // Exit focus mode if active to prevent conflict (and suppress message)
       if (isFocusModeActive && isFocusModeActive()) {

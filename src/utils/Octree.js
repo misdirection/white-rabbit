@@ -1,6 +1,23 @@
+/**
+ * @file Octree.js
+ * @description Spatial indexing data structure for efficient 3D point queries.
+ *
+ * Implements an octree (8-tree) for fast star lookup in 3D space. Recursively subdivides
+ * space into 8 octants when node capacity is exceeded, enabling O(log n) queries instead
+ * of O(n) brute-force searches.
+ *
+ * Key features:
+ * - Ray intersection queries with expansion threshold
+ * - Configurable node capacity (default: 64 points)
+ * - Automatic subdivision when capacity exceeded
+ * - Used for star selection in tooltips (500 AU query threshold)
+ *
+ * Performance: With 100k+ stars, reduces tooltip hover checks from millions to hundreds.
+ */
 import * as THREE from 'three';
 
 const _box = new THREE.Box3();
+
 
 export class Octree {
   constructor(bounds, capacity = 64) {

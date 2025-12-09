@@ -39,7 +39,12 @@ import { config, PARSEC_TO_SCENE } from '../config.js';
 import { CONSTELLATION_NAMES } from '../data/constellationNames.js';
 import { sunData } from '../data/sun.js';
 import { windowManager } from '../ui/WindowManager.js';
+import { formatDecimal, formatGravity, formatScientific } from '../utils/formatting.js';
 import { Logger } from '../utils/logger.js';
+import {
+	distToSegmentSquared,
+	findClosestObjectScreenSpace,
+} from '../utils/screenSpace.js';
 
 const SCREEN_HIT_RADIUS = 10; // Pixels on screen for hit detection
 
@@ -590,92 +595,7 @@ function formatSunTooltip() {
   return buildTooltip('Sun', fields, liveSection);
 }
 
-/**
- * Formats a number in scientific notation using unicode superscripts
- * e.g. 1.23 x 10⁵
- * Strips utility zeros from mantissa.
- * @param {number} value - The value to format
- * @param {number} precision - Decimal places for the coefficient
- * @returns {string} Formatted string
- */
-function formatScientific(value, precision = 2) {
-  if (!value) return '0';
-
-  // Get exponential string e.g. "1.23e+5"
-  const expStr = value.toExponential(precision);
-  const [coeffStr, exponentStr] = expStr.split('e');
-
-  // Clean coefficient: parseFloat removes trailing zeros e.g. "3.00" -> 3
-  const coeff = parseFloat(coeffStr);
-
-  // Convert exponent to superscripts
-  const exponent = parseInt(exponentStr);
-  const superscripts = {
-    0: '⁰',
-    1: '¹',
-    2: '²',
-    3: '³',
-    4: '⁴',
-    5: '⁵',
-    6: '⁶',
-    7: '⁷',
-    8: '⁸',
-    9: '⁹',
-    '-': '⁻',
-    '+': '',
-  };
-
-  const exponentFormatted = exponent
-    .toString()
-    .split('')
-    .map((char) => superscripts[char] || char)
-    .join('');
-
-  return `${coeff} × 10${exponentFormatted}`;
-}
-
-/**
- * Smart number formatter
- * - value >= 1000: No decimals
- * - value >= 10: 1 decimal
- * - value < 10: up to 3 decimals
- */
-function formatDecimal(value) {
-  if (typeof value !== 'number') return value;
-
-  const absVal = Math.abs(value);
-
-  if (absVal >= 1000) {
-    return value.toLocaleString('en-US', { maximumFractionDigits: 0 });
-  } else if (absVal >= 10) {
-    return value.toLocaleString('en-US', { maximumFractionDigits: 1 });
-  } else {
-    // For very small numbers, up to 3 significant digits or fixed decimals?
-    // Let's go with max 3 decimals for consistency with "0.38" etc.
-    return value.toLocaleString('en-US', { maximumFractionDigits: 3 });
-  }
-}
-
-/**
- * Formats gravity value to 'g' units
- * @param {string|number} value - Gravity value
- * @returns {string} Formatted string
- */
-function formatGravity(value) {
-  if (!value) return 'N/A';
-  if (typeof value === 'string') {
-    // If it already has units, just return it (assuming manual data is correct)
-    // Most planet data is already like "0.38 g"
-    return value;
-  }
-  if (typeof value === 'number') {
-    // Assume m/s² if number (standard for moon data)
-    // 1 g = 9.807 m/s²
-    const gVal = value / 9.807;
-    return `${gVal.toFixed(2)} g`;
-  }
-  return value;
-}
+// Formatting functions moved to src/utils/formatting.js for reusability
 
 /**
  * Formats tooltip for a planet
@@ -942,70 +862,4 @@ function formatTooltip(closestObject) {
   }
 }
 
-/**
- * Calculates squared distance from a point (x,y) to a line segment (x1,y1)-(x2,y2)
- */
-function distToSegmentSquared(x, y, x1, y1, x2, y2) {
-  const l2 = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-  if (l2 === 0) return (x - x1) * (x - x1) + (y - y1) * (y - y1);
-  let t = ((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) / l2;
-  t = Math.max(0, Math.min(1, t));
-  const px = x1 + t * (x2 - x1);
-  const py = y1 + t * (y2 - y1);
-  return (x - px) * (x - px) + (y - py) * (y - py);
-}
-
-/**
- * Finds the closest object in screen space within a generous radius
- * Used as a fallback when exact 3D raycasting fails (e.g. small objects)
- */
-function findClosestObjectScreenSpace(mouseX, mouseY, camera, planets, sun) {
-  let closest = null;
-  let minDist = 20; // Pixel radius for "generous" hit
-
-  /*
-   * Internal helper to check distance and update closest
-   */
-  const check = (mesh, type, data, parentName) => {
-    if (!mesh || !mesh.visible) return;
-
-    // Get world position
-    const worldPos = new THREE.Vector3();
-    mesh.getWorldPosition(worldPos);
-
-    // Project to screen
-    const projected = worldPos.clone().project(camera);
-
-    // Check if in front of camera
-    if (projected.z < -1 || projected.z > 1) return;
-
-    // Convert to screen coords
-    const screenX = (projected.x * 0.5 + 0.5) * window.innerWidth;
-    const screenY = (-(projected.y * 0.5) + 0.5) * window.innerHeight;
-
-    // Distance
-    const dx = mouseX - screenX;
-    const dy = mouseY - screenY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    if (dist < minDist) {
-      minDist = dist;
-      closest = { type, data, parentName };
-    }
-  };
-
-  // Check Sun
-  check(sun, 'sun', {});
-
-  // Check Planets and Moons
-  planets.forEach((p) => {
-    check(p.mesh, 'planet', p.data);
-    if (p.moons) {
-      p.moons.forEach((m) => {
-        check(m.mesh, 'moon', m.data, p.data.name);
-      });
-    }
-  });
-
-  return closest;
-}
+// Screen-space functions moved to src/utils/screenSpace.js for reusability
