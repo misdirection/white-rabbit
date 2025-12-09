@@ -21,7 +21,7 @@ import { config, PARSEC_TO_SCENE } from '../config.js';
 import { ZODIAC_IDS } from '../data/zodiac.js';
 import { Logger } from '../utils/logger.js';
 import { Octree } from '../utils/Octree.js';
-// import { getVirtualOrigin } from './VirtualOrigin.js'; // TODO: Re-enable with proper approach
+// VirtualOrigin import removed
 
 // Chunk config matching generation script
 
@@ -194,24 +194,12 @@ class StarManager {
         colors.push(r * intensity, g * intensity, b * intensity);
 
         if (i === 0) {
-          console.warn(
-            `[DEBUG Chunk ${chunkId}] First Star Pos: ${x}, ${y}, ${z} | RGB: ${r}, ${g}, ${b}`
-          );
+          // Debug removed
         }
 
-        // Debug Polaris Position (HIP 11767)
-        if (hip === 11767) {
-          console.warn(
-            `[DEBUG] Polaris Found! Raw(x,y,z): [${xRaw}, ${yRaw}, ${zRaw}]. Scene(x,y,z): [${x}, ${y}, ${z}]`
-          );
-        }
+        // Debug Polaris Position (HIP 11767) - Removed
 
-        // Debug stats for first few stars of each chunk
-        if (i < 5) {
-          console.log(
-            `[Chunk ${chunkId} Sample ${i}] Mag: ${mag.toFixed(2)}, Lum: ${lum.toFixed(2)}, Dist: ${dist.toFixed(2)}, logFlux(mag): ${logFlux.toFixed(2)}, Size: ${size.toFixed(2)}, Intensity: ${intensity.toFixed(2)}`
-          );
-        }
+        // Debug stats for first few stars of each chunk - Removed
 
         chunkData.push({
           id,

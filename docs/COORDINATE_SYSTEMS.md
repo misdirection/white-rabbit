@@ -76,3 +76,22 @@ For missions leaving the solar system (Voyager, Pioneer, New Horizons), the fina
 
 ### Interpolation
 For intermediate points without a major planetary body (e.g., asteroid flybys like Gaspra or Ida), the position is **interpolated** based on time between the previous and next known planetary positions, ensuring a smooth path that respects the orbital mechanics of the transfer orbit.
+
+## 6. Scale & Precision
+
+Scientific simulations involve vast distances that exceed the precision of standard 32-bit floating point numbers used by WebGL (approx 7 digits of precision), known as **Floating Point Jitter** or "Z-Fighting".
+
+To solve this, White Rabbit employs a **Moving Universe / Proxy Camera** pattern via `OriginAwareArcballControls`:
+
+1. **Virtual Space (High Precision)**:
+   - The control system maintains a `_virtualCamera` that moves freely through the solar system using 64-bit coordinates (JavaScript `Number` doubles).
+
+2. **Scene Space (Render Relative)**:
+   - For rendering, the **Real Camera** is strictly locked to `(0, 0, 0)` at the origin.
+   - The entire `UniverseGroup` (containing Sun, Planets, Stars) is shifted by the inverse of the virtual camera's position.
+   - `UniversePosition = -VirtualCameraPosition`
+
+**Result**:
+- The camera is always locally at `0,0,0`.
+- Objects near the camera have small coordinate values, maximizing floating-point precision where it matters most.
+- This allows smooth, jitter-free rendering of detailed geometry (like spacecraft models) even when "billions of kilometers" away from the Sun.

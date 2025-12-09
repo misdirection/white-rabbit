@@ -176,6 +176,10 @@ function getBodyPosition(bodyName, dateStr, customElements = null) {
   }
 
   const vec = Astronomy.HelioVector(body, date);
+  if (!vec) {
+    console.warn(`Failed to calculate vector for ${bodyName} at ${date}`);
+    return new THREE.Vector3(0, 0, 0);
+  }
   // Convert Astronomy engine coordinates to Scene coordinates
   // Astronomy: x=Equinox, y=90deg, z=North
   // Scene: x=x, y=z, z=-y
@@ -861,19 +865,22 @@ async function loadMissionProbe(missionId, modelPath) {
     const model = gltf.scene.clone();
     model.name = `probe_${missionId}`;
     model.scale.setScalar(1e-4); // ~750 km displayed
-    
+
     // Make materials emissive
     model.traverse((node) => {
       if (node.isMesh && node.material) {
         if (Array.isArray(node.material)) {
-          node.material.forEach((m) => { m.emissive = m.color?.clone(); m.emissiveIntensity = 0.5; });
+          node.material.forEach((m) => {
+            m.emissive = m.color?.clone();
+            m.emissiveIntensity = 0.5;
+          });
         } else {
           node.material.emissive = node.material.color?.clone() || new THREE.Color(1, 1, 1);
           node.material.emissiveIntensity = 0.5;
         }
       }
     });
-    
+
     missionProbeScene.add(model);
     missionProbes[missionId] = model;
     return;
@@ -894,22 +901,25 @@ async function loadMissionProbe(missionId, modelPath) {
 
       const model = gltf.scene.clone();
       model.name = `probe_${missionId}`;
-      
+
       // Scale: 1e-4 (~750 km displayed)
       model.scale.setScalar(1e-4);
-      
+
       // Make materials emissive so probe is self-lit (visible in dark space)
       model.traverse((node) => {
         if (node.isMesh && node.material) {
           if (Array.isArray(node.material)) {
-            node.material.forEach((m) => { m.emissive = m.color.clone(); m.emissiveIntensity = 0.5; });
+            node.material.forEach((m) => {
+              m.emissive = m.color.clone();
+              m.emissiveIntensity = 0.5;
+            });
           } else {
             node.material.emissive = node.material.color?.clone() || new THREE.Color(1, 1, 1);
             node.material.emissiveIntensity = 0.5;
           }
         }
       });
-      
+
       missionProbeScene.add(model);
       missionProbes[missionId] = model;
     },

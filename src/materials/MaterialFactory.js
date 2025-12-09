@@ -17,29 +17,23 @@
  */
 
 import * as THREE from 'three';
-import { getVirtualOrigin } from '../core/VirtualOrigin.js';
 
 /**
  * Patches a Three.js material to use camera-relative positioning.
  * Works with MeshStandardMaterial, MeshPhongMaterial, MeshBasicMaterial, etc.
  *
- * The patch injects code into the vertex shader that subtracts the camera's
- * world position from each vertex, keeping all geometry near the origin
- * where float32 precision is optimal.
+ * NOTE: With OriginAwareArcballControls moving the universe group,
+ * explicit shader patching is no longer strictly necessary for standard materials,
+ * but this infrastructure is kept for future custom shader needs.
  *
  * @param {THREE.Material} material - The material to patch
- * @param {Object} [uniforms] - Optional custom uniforms object. If not provided,
- *                              uses the global VirtualOrigin uniforms.
+ * @param {Object} [uniforms] - Unused in current architecture
  */
 export function patchMaterialForOrigin(material, uniforms = null) {
-  // TODO: Current implementation causes double-subtraction.
-  // Three.js viewMatrix already subtracts camera position.
-  // Need to implement proper camera-at-origin approach (Option B) or
-  // use a custom viewMatrix that assumes camera at origin.
-  // For now, this is a no-op - keeping infrastructure for future.
-
-  // Mark as patched to avoid confusion
-  material.userData.originPatched = false; // false = not actually patched
+  // OriginAwareArcballControls handles precision by moving the UniverseGroup.
+  // Standard ViewMatrix/ModelMatrix transform handles the rest.
+  // This function is kept for backward compatibility with existing calls.
+  material.userData.originPatched = false;
 }
 
 /**
@@ -112,19 +106,14 @@ export function createPointsMaterial(params, uniforms = null) {
 
 /**
  * Merges VirtualOrigin uniforms into a custom shader's uniforms object.
- * Use this when creating custom ShaderMaterials.
+ * Deprecated: OriginAwareArcballControls handles this via scene graph.
  *
  * @param {Object} shaderUniforms - The shader's uniforms object
- * @param {Object} [originUniforms] - Optional custom uniforms. If not provided,
- *                                    uses the global VirtualOrigin uniforms.
- * @returns {Object} Merged uniforms object
+ * @param {Object} [originUniforms] - Unused
+ * @returns {Object} Merged uniforms object (pass-through)
  */
 export function mergeOriginUniforms(shaderUniforms, originUniforms = null) {
-  const origin = originUniforms || getVirtualOrigin().uniforms;
-  return {
-    ...shaderUniforms,
-    uCameraWorldPosition: origin.uCameraWorldPosition,
-  };
+  return { ...shaderUniforms };
 }
 
 /**

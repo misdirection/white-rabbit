@@ -79,13 +79,8 @@ export class OriginAwareArcballControls extends ArcballControls {
       this.object = this._realCamera;
     }
 
-    // 2. Let ArcballControls update the camera it thinks it controls
-    // Note: ArcballControls doesn't have an update() method in recent versions
-    // unless animations are enabled, but we might listen to change events.
-    // However, we need to sync every frame if animations are running.
-
-    // Verify if we need to call something specific?
-    // ArcballControls logic runs on events. But animations run in loop.
+    // 2. Let ArcballControls update custom logic (momentum etc)
+    if (super.update) super.update();
 
     // 3. Sync state from virtual camera to real camera/universe
     this._syncState();
@@ -96,7 +91,7 @@ export class OriginAwareArcballControls extends ArcballControls {
    * We intercept this to ensure sync happens immediately after any transform.
    */
   applyTransformMatrix(transformation) {
-    super.applyTransformMatrix(transformation);
+    if (super.applyTransformMatrix) super.applyTransformMatrix(transformation);
     this._syncState();
   }
 
@@ -161,6 +156,21 @@ export class OriginAwareArcballControls extends ArcballControls {
 
   setVirtualPosition(pos) {
     this._virtualCamera.position.copy(pos);
+    this._virtualCamera.lookAt(this.target); // Force orientation update
+    this._virtualCamera.updateMatrix(); // Update matrix for internal state sync
+
+    // Sync Arcball internal state to prevent snap-back
+    if (this._cameraMatrixState) {
+      this._cameraMatrixState.copy(this._virtualCamera.matrix);
+    }
+
+    // Also update gizmo state if possible (approximation)
+    if (this._gizmoMatrixState && this._gizmos) {
+      this._gizmos.position.copy(this.target);
+      this._gizmos.updateMatrix();
+      this._gizmoMatrixState.copy(this._gizmos.matrix);
+    }
+
     this._syncState();
   }
 
@@ -170,7 +180,20 @@ export class OriginAwareArcballControls extends ArcballControls {
 
   setVirtualTarget(target) {
     this.target.copy(target);
-    this._syncState(); // ArcballControls naturally handles target updates, but we might need to nudge gizmos
+    this._virtualCamera.lookAt(this.target); // Force orientation update
+    this._virtualCamera.updateMatrix();
+
+    if (this._cameraMatrixState) {
+      this._cameraMatrixState.copy(this._virtualCamera.matrix);
+    }
+
+    if (this._gizmoMatrixState && this._gizmos) {
+      this._gizmos.position.copy(this.target);
+      this._gizmos.updateMatrix();
+      this._gizmoMatrixState.copy(this._gizmos.matrix);
+    }
+
+    this._syncState();
   }
 
   disableOriginAware() {
@@ -207,5 +230,47 @@ export class OriginAwareArcballControls extends ArcballControls {
       console.log('[OriginAwareArcballControls] Enabled');
       this.setGizmosVisible(false);
     }
+  }
+
+  /**
+   * Manually resets momentum and animation state.
+   * Useful when externally setting camera position to prevent "jumps" or residual velocity.
+   */
+  resetMomentum() {
+    // 1. Cancel animation frame
+    if (this._animationId !== -1) {
+      window.cancelAnimationFrame(this._animationId);
+      this._animationId = -1;
+    }
+
+    // 2. Toggle damping to force internal state reset if loop persists
+    const originalDamping = this.enableDamping;
+    this.enableDamping = false;
+
+    this._timeStart = -1;
+    this._angleCurrent = 0;
+    this._w0 = 0;
+
+    // 3. Force state to IDLE
+    if (this.updateTbState) {
+      this.updateTbState(0, false);
+    } else {
+      this._state = 0;
+    }
+
+    // 4. Recalculate radius
+    if (this.calculateTbRadius) {
+      this._tbRadius = this.calculateTbRadius(this.object);
+    }
+    if (this.makeGizmos && this._gizmos) {
+      this.makeGizmos(this._gizmos.position, this._tbRadius);
+    }
+
+    if (this.activateGizmos) {
+      this.activateGizmos(false);
+    }
+
+    // 5. Restore damping (Arcball will re-read this on next interaction)
+    this.enableDamping = originalDamping;
   }
 }

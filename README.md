@@ -10,7 +10,8 @@ Just another solar system simulator - follow the white rabbit! An interactive 3D
 - **Real Starfield**: Star positions based on actual astronomical data with accurate right ascension and declination
 - **Constellations**: Toggle zodiac constellations and all 88 astronomical constellations with accurate star-to-star connections
 - **Adjustable Scaling**: Artistic (500x planets, 20x sun, 100x moon orbits) or Realistic (1x) preset modes
-- **Focus Mode**: Double-click any celestial body to follow it with the camera
+- **Focus Mode**: Double-click any celestial body to follow it with the camera, featuring **Momentum-Preserving Tracking** that allows smooth rotation around moving targets
+- **High Precision Rendering**: Uses a "Floating Origin" system to eliminate 3D jitter at large distances, allowing crisp rendering of spacecraft billions of kilometers from Earth
 - **Mission Trajectories**: Visualize the paths of historic space missions with **dynamically calculated trajectories** based on actual launch and encounter dates (Voyager 1 & 2, Pioneer 10 & 11, Galileo, Cassini, New Horizons, Parker Solar Probe, Juno, Rosetta, Ulysses)
 - **Axis Visualization**: Toggle rotation axes for all celestial bodies
 - **Interactive Controls**: Camera controls, time speed adjustment, orbit visualization, and dynamic scaling

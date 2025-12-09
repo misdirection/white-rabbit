@@ -15,6 +15,7 @@ graph TD
         scene[scene.js]
         planets[planets.js]
         stars[stars.js]
+        controls[OriginAwareArcballControls.js]
     end
 
     subgraph Data
@@ -54,6 +55,7 @@ graph TD
     Simulation --> planets
     Simulation --> stars
     Simulation --> gui
+    Simulation --> controls
 
     planets --> bodies
     planets --> moonData
@@ -83,6 +85,9 @@ src/
 │   ├── scene.js         # Three.js scene, camera, renderer, lighting setup
 │   ├── planets.js       # Planet/dwarf planet creation/updates
 │   └── stars.js         # Starfield, constellations, asterisms
+│
+├── controls/            # Camera controls
+│   └── OriginAwareArcballControls.js # Custom controls handling floating origin (Proxy Camera)
 │
 ├── data/                # Static data definitions (no logic)
 │   ├── bodies.js        # Planet properties (radius, period, texture, etc.)
@@ -125,6 +130,7 @@ src/
 │       └── ...
 │
 ├── materials/           # Custom Three.js materials
+│   ├── MaterialFactory.js # Material generation and legacy origin patching
 │   └── SunMaterial.js   # Sun shader material
 │
 ├── managers/            # Resource managers
@@ -134,8 +140,8 @@ src/
 │   ├── logger.js        # Debug logging
 │   └── Octree.js        # Spatial data structure for star queries
 │
-└── api/                 # External API integrations
-    └── nasa.js          # NASA API for textures (not currently used)
+├── api/                 # External API integrations
+│   └── nasa.js          # NASA API for textures (not currently used)
 ```
 
 ## Key Design Principles

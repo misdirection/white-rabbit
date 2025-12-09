@@ -195,9 +195,9 @@ export const missionData = [
       { date: '1989-10-18T16:53:40Z', body: 'Earth', lat: 28.5, lon: -80.5 },
       { date: '1990-02-10', body: 'Venus', offset: { x: 0.00011, y: 0, z: 0 } }, // 16,000 km
       { date: '1990-12-08', body: 'Earth', offset: { x: 0.00005, y: 0, z: 0 } }, // 960 km alt
-      { date: '1991-10-29', customBody: { p: 1.83e8, e: 0.17 }, label: 'Gaspra' }, // Gaspra
+      { date: '1991-10-29', customBody: 'Gaspra', label: 'Gaspra' }, // Gaspra
       { date: '1992-12-08', body: 'Earth', offset: { x: 0.000045, y: 0, z: 0.00001 } }, // 303 km alt
-      { date: '1993-08-28', customBody: { p: 2.7e8, e: 0.04 }, label: 'Ida' }, // Ida
+      { date: '1993-08-28', customBody: 'Ida', label: 'Ida' }, // Ida
       { date: '1995-12-07', body: 'Jupiter', offset: { x: 0.003, y: 0, z: 0 } }, // Arrival
       { date: '2003-09-21', body: 'Jupiter', label: 'Impact' }, // End
     ],

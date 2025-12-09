@@ -147,7 +147,7 @@ export class Simulation {
       this.setupMagneticFields();
 
       this.relativeOrbitGroup = new THREE.Group();
-      scene.add(this.relativeOrbitGroup);
+      this.universeGroup.add(this.relativeOrbitGroup);
 
       // 3. Setup GUI & Interactions (Immediate)
       loading.textContent = 'Setting up GUI...';
@@ -173,10 +173,10 @@ export class Simulation {
       setupTooltipSystem(camera, planets, sun, this.starsRef, zodiacGroup, asterismsGroup);
       setupFocusMode(camera, controls, planets, sun);
 
-      // Create dedicated group for missions that is NOT part of universeGroup
-      // This ensures we can control their positioning independently of the coordinate system shifts
+      // Create dedicated group for missions
+      // We add it to universeGroup so it moves with the rest of the solar system during origin rebasing
       this.missionGroup = new THREE.Group();
-      this.scene.add(this.missionGroup);
+      this.universeGroup.add(this.missionGroup);
       initializeMissions(this.missionGroup);
       setMissionProbeScene(this.missionGroup); // Enable probe model rendering
 
@@ -304,10 +304,10 @@ export class Simulation {
     }
     updateAllOrbitGradients(this.orbitGroup, this.planets);
     updateAllMoonOrbitGradients(this.planets);
-    updateFocusMode(this.camera, this.controls, this.planets, this.sun);
-
     this.rabbit.update(delta);
     this.controls.update(); // VirtualCameraControls handles camera-at-origin internally
+
+    updateFocusMode(this.camera, this.controls, this.planets, this.sun);
 
     this.renderer.render(this.scene, this.camera);
 

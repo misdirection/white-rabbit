@@ -210,18 +210,32 @@ export function setupFindControlsCustom(container, planets, sun, starsRef, camer
         }
 
         const target = findState.selectedObject;
-        const pos = new THREE.Vector3();
+        const scenePos = new THREE.Vector3();
 
         // Handle dummy meshes for stars
         if (target.mesh.position) {
-          target.mesh.getWorldPosition(pos);
+          target.mesh.getWorldPosition(scenePos);
         } else {
-          pos.copy(target.mesh.position);
+          scenePos.copy(target.mesh.position);
         }
 
-        controls.target.copy(pos);
-        camera.lookAt(pos);
-        controls.update();
+        // Handle Origin-Aware Controls
+        if (controls.setVirtualTarget) {
+          // Convert scene position to virtual position
+          // scenePos is relative to camera (0,0,0) + universe offset
+          // we need the virtual world coordinate
+          const virtualPos = controls.localToWorld(scenePos);
+          controls.setVirtualTarget(virtualPos);
+
+          // For lookAt, we might want to adjust camera rotation?
+          // Arcball handles lookAt by setting target.
+          // Camera position stays same (virtually), target changes -> rotation changes.
+          controls.update();
+        } else {
+          controls.target.copy(scenePos);
+          camera.lookAt(scenePos);
+          controls.update();
+        }
       });
     }
   };
