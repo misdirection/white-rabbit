@@ -12,6 +12,7 @@
 import * as THREE from 'three';
 import { config } from '../config.js';
 import { textureManager } from '../managers/TextureManager.js';
+import { getMissionState } from './missions.js';
 
 const SCREEN_HIT_RADIUS = 15; // Pixels on screen for hit detection
 const ANIMATION_DURATION = 2000; // ms for camera transition
@@ -152,91 +153,30 @@ export function updateFocusMode(camera, controls) {
       return;
     }
 
-    // Get current virtual position of target (the planet)
+    // Get current virtual position of target (the planet/probe)
     const currentObjectPosition = getObjectVirtualPosition(focusedObject.mesh, controls);
 
-    // Calculate delta movement since last frame (based on where controls thinks target is)
-    // Note: controls.target is in Virtual Coordinates
-    const delta = currentObjectPosition.clone().sub(controls.target);
+    // Calculate actual movement of the object since last frame
+    const delta = new THREE.Vector3().subVectors(currentObjectPosition, previousObjectPosition);
 
-    // Apply delta to both Camera and Target to move them together
-    // This preserves relative orientation and momentum, preventing stutters/acceleration conflicts
-    if (delta.lengthSq() > 1e-10) {
-      // Tiny threshold to avoid drift
-      controls.object.position.add(delta);
-      controls.target.add(delta);
+    // Filter out huge jumps (e.g. initial rebase or teleport)
+    if (delta.lengthSq() > 0 && delta.lengthSq() < 1000000) {
+       // Apply delta to both Camera and Target to move them together
+       // This maintains the relative camera position to the object (following)
+       
+       if (controls.setVirtualPosition) {
+           const camPos = controls.getVirtualPosition();
+           const targetPos = controls.getVirtualTarget();
 
-      // OriginAwareArcballControls specific:
-      // We modified _virtualCamera directly (controls.object).
-      // ArcballControls.update() will run later and sync gizmos/state.
-      // It detects target change and updates gizmos.
-    }
-    // If we want to strictly follow, we might need to adjust camera position relative to new target?
-    // Arcball naturally preserves relative position if we just move target?
-    // No, Arcball lookAt pivots around target. If target moves, camera rotates to look at it.
-    // It doesn't translate the camera.
-    // If planet moves, we want camera to translate WITH it.
+           camPos.add(delta);
+           targetPos.add(delta);
 
-    // Calculate the delta movement of the target
-    if (controls.target) {
-      // We need previous target position to know delta?
-      // Arcball doesn't store previous target publicy easily for this.
-      // But we know the planet moved.
-      // Actually, simpler:
-      // Camera should maintain relative offset to Target.
-      // NewCamPos = CurrentCamPos + (NewTargetPos - OldTargetPos).
-      // But we just overwrote target.
-      // Let's rely on the fact orbit speeds are slow enough or handle it?
-      // WAIT. If we just move Target, Camera stays still, and just rotates to look at new Target.
-      // This means Camera falls behind the planet!
-      // We must MOVE camera too.
-      // Correct approach is likely:
-      // controls.setVirtualPosition( newCamPos );
-      // controls.setVirtualTarget( newTargetPos );
-      // BUT that causes the stutter/conflict.
-    }
-    // DEBUG: Check for massive jumps
-    // The delta calculation and application logic was removed as per the instruction.
-    // The previousObjectPosition tracking is also removed as it's no longer used for delta.
-    // The `if (delta.length() > 1000)` block is kept as it was outside the replaced section.
-    // The `console.log` and comments related to delta are also kept.
-    if (
-      new THREE.Vector3().subVectors(currentObjectPosition, previousObjectPosition).length() > 1000
-    ) {
-      console.warn(
-        '[FocusMode] Massive tracking delta detected:',
-        new THREE.Vector3().subVectors(currentObjectPosition, previousObjectPosition).length(),
-        new THREE.Vector3().subVectors(currentObjectPosition, previousObjectPosition)
-      );
-    }
-    // console.log('[FocusMode] Tracking delta:', delta.length());
-
-    // If delta is huge (teleport/rebasing jump?), we should probably clamp or ignore?
-    // OriginAwareArcballControls handles rebasing internally.
-    // If universe moves, the virtual position of objects changes relative to... wait.
-    // If universe moves, the mesh.position (local) is same, but worldPos changes?
-    // getObjectVirtualPosition returns the world-space position.
-    // If origin rebase happens, does world-space position of object change?
-    // No. Virtual Position of camera changes. Universe moves.
-    // The "World Position" of an object in Three.js Scene Coordinates DOES change.
-    // BUT we want the "Virtual World Position".
-
-    // OriginAwareArcballControls:
-    // localToWorld(scenePos) -> VirtualPos
-
-    // Applying delta to camera:
-    if (controls.getVirtualPosition) {
-      const camPos = controls.getVirtualPosition();
-      const targetPos = controls.getVirtualTarget();
-
-      camPos.add(delta);
-      targetPos.add(delta);
-
-      controls.setVirtualPosition(camPos);
-      controls.setVirtualTarget(targetPos);
-    } else {
-      camera.position.add(delta);
-      controls.target.add(delta);
+           controls.setVirtualPosition(camPos);
+           controls.setVirtualTarget(targetPos);
+       } else {
+           camera.position.add(delta);
+           controls.target.add(delta);
+       }
     }
 
     previousObjectPosition.copy(currentObjectPosition);
@@ -294,15 +234,45 @@ export function focusOnObject(
   // Calculate Distance
   const fovInRadians = (camera.fov * Math.PI) / 180;
   let distance = visualRadius / Math.sin((fovInRadians * screenFraction) / 2);
-  if (targetObject.type === 'probe') distance = Math.max(distance, 0.01);
+  if (targetObject.type === 'probe') distance = Math.max(distance, 2e-6);
 
   // Offset
-  const angle = Math.PI / 6;
-  const offset = new THREE.Vector3(
-    distance * Math.cos(angle),
-    distance * Math.sin(angle),
-    distance * Math.cos(angle)
-  );
+  let offset;
+  
+  if (targetObject.type === 'probe') {
+      // Chase Camera: Behind and slightly above
+      // Get mission state to find direction
+      const state = getMissionState(targetObject.data.id, config.date);
+      let direction = new THREE.Vector3(0, 0, 1); // Default if fail
+      if (state && state.direction) {
+          direction.copy(state.direction);
+      }
+      
+      // Position: Behind (-direction) * distance + Up (+y) * small_offset
+      const backDist = distance * 1.0; 
+      const upDist = distance * 0.3; // 30% up elevation
+      
+      const up = new THREE.Vector3(0, 1, 0);
+      // Ensure up is not parallel to direction (rare in solar system plane)
+      if (Math.abs(direction.dot(up)) > 0.99) {
+          up.set(1, 0, 0); // Gimbal lock fallback
+      }
+      
+      // We want to be BEHIND the probe, so we move -Direction.
+      // But wait, if direction is velocity, we want to look at the probe FROM behind.
+      // So CameraPos = ProbePos - Direction * Dist.
+      
+      offset = direction.clone().multiplyScalar(-backDist).add(up.multiplyScalar(upDist));
+      
+  } else {
+      // Standard Diagonal view for planets
+      const angle = Math.PI / 6;
+      offset = new THREE.Vector3(
+        distance * Math.cos(angle),
+        distance * Math.sin(angle),
+        distance * Math.cos(angle)
+      );
+  }
 
   // Capture Start State
   if (controls.getVirtualPosition) {

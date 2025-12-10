@@ -61,7 +61,7 @@ export class SimulationControl {
     }
   }
 
-  jumpToMissionLocation(missionId, date, pause = true) {
+  jumpToMissionLocation(missionId, date, pause = true, moveCamera = true) {
     // 1. Jump to Date
     this.jumpToDate(date, pause);
 
@@ -77,6 +77,8 @@ export class SimulationControl {
     // So ideally we should execute this on next frame or after update.
     // But let's try immediate first. Reference frames generally only rotate.
 
+    if (!moveCamera) return;
+
     const state = getMissionState(missionId, date);
 
     if (state) {
@@ -89,10 +91,10 @@ export class SimulationControl {
       // User also said: "slightly 'above' it (in case we add a rendering later)".
       // So likely: Camera is behind and above, looking forward (at the spacecraft and beyond).
 
-      // Scale 1e-5 (~75 km displayed)
-      // Camera at 1e-4 behind (~750 km) for good visibility
-      const upOffset = 5e-5; // Above
-      const backOffset = 1e-4; // Behind
+      // Scale 1e-6 (~3 km displayed)
+      // Camera at 5e-6 behind (~15 km) for good visibility
+      const upOffset = 2e-6; // Above
+      const backOffset = 5e-6; // Behind
 
       // Camera Pos = MissionPos - (Direction * backOffset) + (Up * upOffset)
       // Up vector: Y axis? Or ecliptic normal? Scene Y is "Up" (perpendicular to ecliptic plane usually? No, Z is up? Check coords).

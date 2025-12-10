@@ -235,17 +235,35 @@ export function setupMissionList(container, config) {
     focusBtn.title = 'Focus on Probe';
     focusBtn.onclick = async (e) => {
       e.stopPropagation(); // Prevent row click (toggle)
-      
+
+      // Auto-enable mission if hidden
+      if (!config.showMissions[mission.id]) {
+        config.showMissions[mission.id] = true;
+        updateDotState();
+        window.dispatchEvent(
+          new CustomEvent('mission-visibility-changed', { detail: { missionId: mission.id } })
+        );
+        if (window.updateMissions) window.updateMissions();
+      }
+
       // Import required modules
-      const { ensureProbeLoaded, getProbeForFocus } = await import('../../features/missions.js');
+      // Import required modules
+      const { ensureProbeLoaded, getProbeForFocus, updateMissionProbes } = await import(
+        '../../features/missions.js'
+      );
       const { focusOnObject } = await import('../../features/focusMode.js');
+      // const { config } = await import('../../config.js'); // ALREADY IMPORTED!
 
       // Ensure probe is loaded (enables trajectory if needed)
       const loaded = await ensureProbeLoaded(mission.id);
-      
+
       if (loaded) {
-        updateDotState(); // Update UI to show enabled
-        
+        // FORCE update just for this probe's visibility/pos before we focus?
+        // Or update all. Update all is safer and fast enough.
+        updateMissionProbes(config.date);
+
+        updateDotState(); // Ensure UI reflects state
+
         const probeWrapper = getProbeForFocus(mission.id);
         if (probeWrapper) {
           // Get camera and controls from SimulationControl
@@ -266,7 +284,7 @@ export function setupMissionList(container, config) {
     storyBtn.title = 'View Story';
     storyBtn.onclick = (e) => {
       e.stopPropagation(); // Prevent row click (toggle)
-      
+
       // Select Mission and Open Story Tab
       window.dispatchEvent(
         new CustomEvent('mission-selected', { detail: { missionId: mission.id } })
@@ -284,12 +302,12 @@ export function setupMissionList(container, config) {
 
     // Row Click -> Toggle Visibility
     row.onclick = () => {
-       config.showMissions[mission.id] = !config.showMissions[mission.id];
-       updateDotState();
-       window.dispatchEvent(
+      config.showMissions[mission.id] = !config.showMissions[mission.id];
+      updateDotState();
+      window.dispatchEvent(
         new CustomEvent('mission-visibility-changed', { detail: { missionId: mission.id } })
-       );
-       if (window.updateMissions) window.updateMissions();
+      );
+      if (window.updateMissions) window.updateMissions();
     };
 
     // Listen for external updates (e.g. from Detail view)
@@ -325,7 +343,7 @@ export function setupMissionDetails(container, config) {
   let activePreview = null;
   // Track current page per mission (or global? Local seems better but resets on switch)
   // Let's keep it simple: defaulting to page 0 (Info) when opening a mission.
-  let currentPage = 0; 
+  let currentPage = 0;
 
   const renderEmpty = () => {
     if (activePreview) {
@@ -351,212 +369,221 @@ export function setupMissionDetails(container, config) {
 
     // Re-render function to handle page switching without full rebuild
     const updateView = () => {
-        // Dispose any existing preview first (critical for WebGL context management)
+      // Dispose any existing preview first (critical for WebGL context management)
+      if (activePreview) {
+        activePreview.dispose();
+        activePreview = null;
+      }
+      content.innerHTML = '';
+
+      // --- Header (Always Visible) ---
+      const header = document.createElement('div');
+      header.className = 'mission-header';
+      header.style.display = 'flex';
+      header.style.justifyContent = 'space-between'; // Space for arrows
+      header.style.alignItems = 'center';
+
+      // Left: Dot + Title
+      const leftGroup = document.createElement('div');
+      leftGroup.style.display = 'flex';
+      leftGroup.style.alignItems = 'center';
+      leftGroup.style.flexGrow = '1';
+
+      const dot = document.createElement('div');
+      dot.className = 'mission-color-dot';
+
+      const updateHeaderDot = () => {
+        const isVisible = config.showMissions[mission.id];
+        if (isVisible) {
+          const colorHex = '#' + mission.color.toString(16).padStart(6, '0');
+          dot.style.backgroundColor = colorHex;
+          dot.style.boxShadow = `0 0 8px ${colorHex}`;
+          dot.style.borderColor = 'rgba(255,255,255,0.5)';
+        } else {
+          dot.style.backgroundColor = '#444';
+          dot.style.boxShadow = 'none';
+          dot.style.borderColor = 'rgba(255,255,255,0.2)';
+        }
+      };
+      updateHeaderDot();
+
+      dot.onclick = () => {
+        config.showMissions[mission.id] = !config.showMissions[mission.id];
+        updateHeaderDot();
+        window.dispatchEvent(
+          new CustomEvent('mission-visibility-changed', { detail: { missionId: mission.id } })
+        );
+        if (window.updateMissions) window.updateMissions();
+      };
+
+      const title = document.createElement('h3');
+      title.className = 'mission-title';
+      title.textContent = mission.name || mission.id;
+      // title.style.flexGrow = '1'; // Removed, handled by parent
+
+      leftGroup.appendChild(dot);
+      leftGroup.appendChild(title);
+      header.appendChild(leftGroup);
+
+      // Right: Pagination Controls (< >)
+      // Only if we have a timeline
+      if (mission.timeline && mission.timeline.length > 0) {
+        const navGroup = document.createElement('div');
+        navGroup.style.display = 'flex';
+        navGroup.style.gap = '10px';
+        navGroup.style.userSelect = 'none';
+
+        const prevBtn = document.createElement('span');
+        prevBtn.textContent = '<';
+        prevBtn.style.cursor = 'pointer';
+        prevBtn.style.opacity = currentPage === 0 ? '0.3' : '1';
+        prevBtn.onclick = () => {
+          if (currentPage > 0) {
+            currentPage--;
+            updateView();
+          }
+        };
+
+        const nextBtn = document.createElement('span');
+        nextBtn.textContent = '>';
+        nextBtn.style.cursor = 'pointer';
+        nextBtn.style.opacity = currentPage === 1 ? '0.3' : '1';
+        nextBtn.onclick = () => {
+          if (currentPage < 1) {
+            currentPage++;
+            updateView();
+          }
+        };
+
+        navGroup.appendChild(prevBtn);
+        navGroup.appendChild(nextBtn);
+        header.appendChild(navGroup);
+      }
+
+      content.appendChild(header);
+
+      // --- Page Content ---
+      const pageContainer = document.createElement('div');
+      pageContainer.className = 'mission-page-content';
+      content.appendChild(pageContainer);
+
+      if (currentPage === 0) {
+        // PAGE 1: Info + Model/Image
+
+        // 3D Model or Image
+        if (mission.modelPath) {
+          const modelContainer = document.createElement('div');
+          modelContainer.style.width = '100%';
+          modelContainer.style.height = '200px';
+          modelContainer.style.backgroundColor = 'transparent'; // Let canvas verify
+          modelContainer.style.marginBottom = '10px';
+          modelContainer.style.position = 'relative'; // For loading text
+          pageContainer.appendChild(modelContainer);
+
+          // Initialize ModelPreview
+          // We need to delay slightly to ensure container is in DOM for size?
+          // ModelPreview uses clientWidth, so it must be attached.
+          // It is attached now.
+          activePreview = new ModelPreview(modelContainer);
+          activePreview.loadModel(mission.modelPath);
+        } else if (mission.image) {
+          const img = document.createElement('img');
+          img.className = 'mission-image';
+          img.src = mission.image;
+          img.style.height = '200px'; // Match model height
+          img.style.objectFit = 'contain';
+          img.onerror = () => {
+            img.style.display = 'none';
+          };
+          pageContainer.appendChild(img);
+        }
+
+        // Summary
+        if (mission.summary) {
+          const p = document.createElement('p');
+          p.className = 'mission-summary';
+          p.textContent = mission.summary;
+          pageContainer.appendChild(p);
+        }
+      } else {
+        // PAGE 2: Timeline
         if (activePreview) {
           activePreview.dispose();
           activePreview = null;
         }
-        content.innerHTML = '';
-        
-        // --- Header (Always Visible) ---
-        const header = document.createElement('div');
-        header.className = 'mission-header';
-        header.style.display = 'flex';
-        header.style.justifyContent = 'space-between'; // Space for arrows
-        header.style.alignItems = 'center';
 
-        // Left: Dot + Title
-        const leftGroup = document.createElement('div');
-        leftGroup.style.display = 'flex';
-        leftGroup.style.alignItems = 'center';
-        leftGroup.style.flexGrow = '1';
-
-        const dot = document.createElement('div');
-        dot.className = 'mission-color-dot';
-        
-        const updateHeaderDot = () => {
-        const isVisible = config.showMissions[mission.id];
-        if (isVisible) {
-            const colorHex = '#' + mission.color.toString(16).padStart(6, '0');
-            dot.style.backgroundColor = colorHex;
-            dot.style.boxShadow = `0 0 8px ${colorHex}`;
-            dot.style.borderColor = 'rgba(255,255,255,0.5)';
-        } else {
-            dot.style.backgroundColor = '#444'; 
-            dot.style.boxShadow = 'none';
-            dot.style.borderColor = 'rgba(255,255,255,0.2)';
-        }
-        };
-        updateHeaderDot();
-
-        dot.onclick = () => {
-        config.showMissions[mission.id] = !config.showMissions[mission.id];
-        updateHeaderDot();
-        window.dispatchEvent(
-            new CustomEvent('mission-visibility-changed', { detail: { missionId: mission.id } })
-        );
-        if (window.updateMissions) window.updateMissions();
-        };
-
-        const title = document.createElement('h3');
-        title.className = 'mission-title';
-        title.textContent = mission.name || mission.id;
-        // title.style.flexGrow = '1'; // Removed, handled by parent
-
-        leftGroup.appendChild(dot);
-        leftGroup.appendChild(title);
-        header.appendChild(leftGroup);
-
-        // Right: Pagination Controls (< >)
-        // Only if we have a timeline
         if (mission.timeline && mission.timeline.length > 0) {
-            const navGroup = document.createElement('div');
-            navGroup.style.display = 'flex';
-            navGroup.style.gap = '10px';
-            navGroup.style.userSelect = 'none';
-            
-            const prevBtn = document.createElement('span');
-            prevBtn.textContent = '<';
-            prevBtn.style.cursor = 'pointer';
-            prevBtn.style.opacity = currentPage === 0 ? '0.3' : '1';
-            prevBtn.onclick = () => {
-                if (currentPage > 0) {
-                    currentPage--;
-                    updateView();
-                }
+          const timelineDiv = document.createElement('div');
+          timelineDiv.className = 'mission-timeline';
+
+          mission.timeline.forEach((event) => {
+            const row = document.createElement('div');
+            row.className = 'timeline-event';
+            row.title = `Jump to ${event.date.split('T')[0]} - ${event.label}`;
+            row.dataset.date = event.date;
+            row.dataset.color = '#' + mission.color.toString(16).padStart(6, '0');
+
+            const dot = document.createElement('div');
+            dot.className = 'timeline-dot';
+
+            // Style logic matches updateMissionTimeline
+            const eventDate = new Date(event.date);
+            const simDate = config.date;
+            const isFuture = eventDate > simDate;
+            const colorHex = '#' + mission.color.toString(16).padStart(6, '0');
+
+            if (isFuture) {
+              dot.style.backgroundColor = 'transparent';
+              dot.style.border = '2px solid transparent';
+              dot.style.boxShadow = `inset 0 0 0 1px ${colorHex}`;
+            } else {
+              dot.style.backgroundColor = colorHex;
+              dot.style.border = '2px solid #222';
+              dot.style.boxShadow = 'none';
+            }
+            row.appendChild(dot);
+
+            // Date: Click -> Time Jump ONLY
+            const dateSpan = document.createElement('span');
+            dateSpan.className = 'event-date';
+            dateSpan.textContent = event.date.split('T')[0];
+            dateSpan.style.cursor = 'pointer';
+            dateSpan.onclick = (e) => {
+              e.stopPropagation();
+              const simCtrl = window.SimulationControl;
+              if (simCtrl?.jumpToMissionLocation) {
+                // pause=true, moveCamera=false
+                simCtrl.jumpToMissionLocation(mission.id, event.date, true, false);
+              }
             };
+            row.appendChild(dateSpan);
 
-            const nextBtn = document.createElement('span');
-            nextBtn.textContent = '>';
-            nextBtn.style.cursor = 'pointer';
-            nextBtn.style.opacity = currentPage === 1 ? '0.3' : '1';
-            nextBtn.onclick = () => {
-                if (currentPage < 1) {
-                    currentPage++;
-                    updateView();
-                }
+            // Label: Click -> Time Jump + Space Jump
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'event-label';
+            labelSpan.textContent = event.label;
+            labelSpan.style.cursor = 'pointer';
+            labelSpan.onclick = (e) => {
+              e.stopPropagation();
+              const simCtrl = window.SimulationControl;
+              if (simCtrl?.jumpToMissionLocation) {
+                // pause=true, moveCamera=true
+                simCtrl.jumpToMissionLocation(mission.id, event.date, true, true);
+              }
             };
+            labelSpan.onmouseover = () => {
+              labelSpan.style.textDecoration = 'underline';
+            };
+            labelSpan.onmouseout = () => {
+              labelSpan.style.textDecoration = 'none';
+            };
+            row.appendChild(labelSpan);
 
-            navGroup.appendChild(prevBtn);
-            navGroup.appendChild(nextBtn);
-            header.appendChild(navGroup);
+            timelineDiv.appendChild(row);
+          });
+          pageContainer.appendChild(timelineDiv);
         }
-
-        content.appendChild(header);
-
-        // --- Page Content ---
-        const pageContainer = document.createElement('div');
-        pageContainer.className = 'mission-page-content';
-        content.appendChild(pageContainer);
-
-        if (currentPage === 0) {
-            // PAGE 1: Info + Model/Image
-            
-            // 3D Model or Image
-            if (mission.modelPath) {
-                const modelContainer = document.createElement('div');
-                modelContainer.style.width = '100%';
-                modelContainer.style.height = '200px';
-                modelContainer.style.backgroundColor = 'transparent'; // Let canvas verify
-                modelContainer.style.marginBottom = '10px';
-                modelContainer.style.position = 'relative'; // For loading text
-                pageContainer.appendChild(modelContainer);
-                
-                // Initialize ModelPreview
-                // We need to delay slightly to ensure container is in DOM for size? 
-                // ModelPreview uses clientWidth, so it must be attached.
-                // It is attached now.
-                activePreview = new ModelPreview(modelContainer);
-                activePreview.loadModel(mission.modelPath);
-                
-            } else if (mission.image) {
-                const img = document.createElement('img');
-                img.className = 'mission-image';
-                img.src = mission.image;
-                img.style.height = '200px'; // Match model height
-                img.style.objectFit = 'contain';
-                img.onerror = () => { img.style.display = 'none'; };
-                pageContainer.appendChild(img);
-            }
-
-            // Summary
-            if (mission.summary) {
-                const p = document.createElement('p');
-                p.className = 'mission-summary';
-                p.textContent = mission.summary;
-                pageContainer.appendChild(p);
-            }
-
-        } else {
-            // PAGE 2: Timeline
-            if (activePreview) {
-                activePreview.dispose();
-                activePreview = null;
-            }
-
-             if (mission.timeline && mission.timeline.length > 0) {
-                const timelineDiv = document.createElement('div');
-                timelineDiv.className = 'mission-timeline';
-
-                mission.timeline.forEach((event) => {
-                    const row = document.createElement('div');
-                    row.className = 'timeline-event';
-                    row.title = `Jump to ${event.date.split('T')[0]} - ${event.label}`;
-                    row.dataset.date = event.date;
-                    row.dataset.color = '#' + mission.color.toString(16).padStart(6, '0');
-
-                    row.onclick = () => {
-                        const simCtrl = window.SimulationControl;
-                        if (simCtrl?.jumpToMissionLocation) {
-                            simCtrl.jumpToMissionLocation(mission.id, event.date, true);
-                        }
-                    };
-
-                    const dot = document.createElement('div');
-                    dot.className = 'timeline-dot';
-                    
-                    // Style logic matches updateMissionTimeline
-                    const eventDate = new Date(event.date);
-                    const simDate = config.date;
-                    const isFuture = eventDate > simDate;
-                    const colorHex = '#' + mission.color.toString(16).padStart(6, '0');
-
-                    if (isFuture) {
-                        dot.style.backgroundColor = 'transparent';
-                        dot.style.border = '2px solid transparent';
-                        dot.style.boxShadow = `inset 0 0 0 1px ${colorHex}`;
-                    } else {
-                        dot.style.backgroundColor = colorHex;
-                        dot.style.border = '2px solid #222';
-                        dot.style.boxShadow = 'none';
-                    }
-                    row.appendChild(dot);
-
-                    const dateSpan = document.createElement('span');
-                    dateSpan.className = 'event-date';
-                    dateSpan.textContent = event.date.split('T')[0];
-                    row.appendChild(dateSpan);
-
-                    const labelSpan = document.createElement('span');
-                    labelSpan.className = 'event-label';
-                    labelSpan.textContent = event.label;
-                    labelSpan.style.cursor = 'pointer';
-                    labelSpan.onclick = (e) => {
-                        e.stopPropagation();
-                        const simCtrl = window.SimulationControl;
-                        if (simCtrl?.jumpToMissionLocation) {
-                            simCtrl.jumpToMissionLocation(mission.id, event.date, true);
-                        }
-                    };
-                    labelSpan.onmouseover = () => { labelSpan.style.textDecoration = 'underline'; };
-                    labelSpan.onmouseout = () => { labelSpan.style.textDecoration = 'none'; };
-                    row.appendChild(labelSpan);
-
-                    timelineDiv.appendChild(row);
-                });
-                pageContainer.appendChild(timelineDiv);
-            }
-        }
+      }
     };
 
     updateView();
@@ -564,7 +591,7 @@ export function setupMissionDetails(container, config) {
 
   // Initial Empty State
   renderEmpty();
-  
+
   // Track current displayed mission to avoid unnecessary re-renders
   let currentMissionId = null;
 

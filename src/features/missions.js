@@ -205,7 +205,13 @@ function getExitVector(raHours, decDeg) {
 
 // Mission definitions imported from data/missions.js
 
+// Mission definitions imported from data/missions.js
+
 const missionLines = {};
+
+import { Line2 } from 'three/examples/jsm/lines/Line2.js';
+import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
+import { createMissionLineMaterial } from '../materials/MissionLineMaterial.js';
 
 /**
  * Initialize mission trajectories and add them to the scene
@@ -244,21 +250,12 @@ export function initializeMissions(scene) {
         finalPoints.push({ pos: wp.pos, date: wp.date });
       } else if (wp.type === 'exit') {
         // For exit points, we need the direction.
-        // If mission has exit vector defined, use it.
         if (mission.exit) {
           const exitVec = getExitVector(mission.exit.ra, mission.exit.dec);
           const pos = exitVec.multiplyScalar(wp.dist);
           finalPoints.push({ pos, date: wp.date });
         } else {
-          // If no exit vector (e.g. Pioneer 10 intermediate points), we need to be smarter.
-          // For Pioneer 10/11, the intermediate points are just distance markers along the path.
-          // We should interpolate direction from previous known points or use the final exit vector.
-          // Let's assume the exit vector applies to all "dist" points for simplicity,
-          // or interpolate if we are between known positions.
-
-          // Actually, for Pioneer 10, we have Earth -> Jupiter -> Saturn Orbit -> Neptune Orbit -> End.
-          // Saturn/Neptune orbit crossings are just distances.
-          // We can use the exit vector for all of them if they are post-Jupiter.
+          // Fallback
           if (mission.exit) {
             const exitVec = getExitVector(mission.exit.ra, mission.exit.dec);
             const pos = exitVec.multiplyScalar(wp.dist);
@@ -273,7 +270,8 @@ export function initializeMissions(scene) {
         let next = null;
         // Search forward for next known point
         for (let j = i + 1; j < calculatedWaypoints.length; j++) {
-          if (calculatedWaypoints[j].pos) {
+          if (calculatedWaypoints[j].type !== 'interpolate') {
+            // Fixed: check against 'type', not 'pos'
             next = calculatedWaypoints[j];
             break;
           }
@@ -291,6 +289,9 @@ export function initializeMissions(scene) {
           // Fallback if interpolation fails
           finalPoints.push({ pos: new THREE.Vector3(0, 0, 0), date: wp.date });
         }
+      } else {
+        // It's a point we calculated in pass 1 (orbit, body, or exit)
+        finalPoints.push({ pos: wp.pos, date: wp.date });
       }
     }
 
@@ -308,64 +309,53 @@ export function initializeMissions(scene) {
       return;
     }
 
-    const geometry = new THREE.BufferGeometry().setFromPoints(
-      smoothPoints.map((p) => p.pos.multiplyScalar(AU_TO_SCENE))
-    );
+    // --- Line2 Implementation ---
 
-    // Create progress attribute for gradient shader
-    // Progress is now Normalized Time (0..1) relative to mission duration
-    const numPoints = smoothPoints.length;
-    const progress = new Float32Array(numPoints);
+    const geometry = new LineGeometry();
 
-    // Find Start and End times
-    const startTime = smoothPoints[0].date;
-    const endTime = smoothPoints[numPoints - 1].date;
-    const duration = endTime - startTime;
-
-    // Calculate progress (time) and lineDistance (spatial)
-    const lineDistances = new Float32Array(numPoints);
-    let totalDist = 0;
-
-    for (let i = 0; i < numPoints; i++) {
-      // Time Progress
-      if (duration > 0) {
-        progress[i] = (smoothPoints[i].date - startTime) / duration;
-      } else {
-        progress[i] = 0;
-      }
-
-      // Spatial Distance
-      if (i > 0) {
-        // Distance in Scene Units
-        // Note: points in smoothPoints are Vector3s but NOT scaled to AU_TO_SCENE yet?
-        // Wait, look at setFromPoints above: p.pos.multiplyScalar(AU_TO_SCENE)
-        // smoothPoints[i].pos is in AU.
-        const p1 = smoothPoints[i - 1].pos;
-        const p2 = smoothPoints[i].pos;
-        const d = p1.distanceTo(p2);
-        totalDist += d;
-      }
-      lineDistances[i] = totalDist;
-    }
-
-    geometry.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
-    geometry.setAttribute('lineDistance', new THREE.BufferAttribute(lineDistances, 1));
-
-    const material = createOrbitMaterial({
-      color: mission.color,
-      opacity: 1.0,
-      useGradient: true,
-      glowIntensity: 0.8,
-      mode: 'mission',
+    // Convert points to flat array for LineGeometry
+    const positions = [];
+    smoothPoints.forEach((p) => {
+      const scaled = p.pos.clone().multiplyScalar(AU_TO_SCENE);
+      positions.push(scaled.x, scaled.y, scaled.z);
     });
 
-    const line = new THREE.Line(geometry, material);
+    geometry.setPositions(positions);
 
-    // Store timing metadata for updates
+    const material = createMissionLineMaterial({
+      color: mission.color,
+      linewidth: 3, // Thicker line as requested (starts at 2x)
+      resolution: new THREE.Vector2(window.innerWidth, window.innerHeight),
+    });
+
+    const line = new Line2(geometry, material);
+
+    // Initial Distance Calculation necessary for dashed lines
+    line.computeLineDistances();
+
+    // Store metadata
+    const startTime = smoothPoints[0].date;
+    const endTime = smoothPoints[smoothPoints.length - 1].date;
+    const duration = endTime - startTime;
+
     line.userData.id = mission.id;
     line.userData.startTime = startTime;
     line.userData.duration = duration;
     line.visible = config.showMissions[mission.id];
+
+    // Store original high-precision points for rebasing
+    line.userData.originalPoints = smoothPoints.map((p) =>
+      p.pos.clone().multiplyScalar(AU_TO_SCENE)
+    );
+    // Store full trajectory data with dates for precise probe positioning
+    line.userData.trajectoryData = smoothPoints.map((p) => ({
+      pos: p.pos.clone().multiplyScalar(AU_TO_SCENE),
+      date: p.date,
+    }));
+
+    // Initial local origin
+    line.userData.localOrigin = new THREE.Vector3(0, 0, 0);
+
     scene.add(line);
     missionLines[mission.id] = line;
   });
@@ -452,24 +442,10 @@ export function updateMissionTrajectories(scene, forceUpdate = false) {
     });
 
     // Second pass to resolve 'exit' and 'interpolate' with CORRECTED positions
-    // Note: interpolation needs to happen between already corrected points for accuracy
     const finalPoints = [];
 
     for (let i = 0; i < calculatedWaypoints.length; i++) {
       const wp = calculatedWaypoints[i];
-
-      // If it's a known position (calculated above), use it
-      // We check if it WAS an exit/interpolate point in the first pass
-      // But wait, the first pass calculated positions for everything EXCEPT 'interpolate' types maybe?
-      // Let's re-verify the logic from initializeMissions.
-
-      // Refined logic:
-      // In initializeMissions, 'exit' used getExitVector. 'interpolate' was skipped in first pass.
-      // In this loop, we did the same for 'body', 'customBody', 'pos', and 'exit' (if dist).
-      // So 'interpolate' ones currently have (0,0,0) or undefined pos from the map above if we didn't handle them.
-
-      // Actually the map above returns valid pos for Body/Custom/Pos/Exit.
-      // It returns undefined pos for 'interpolate'.
 
       if (wp.type === 'interpolate') {
         // Find previous and next known points (which are already corrected!)
@@ -477,8 +453,6 @@ export function updateMissionTrajectories(scene, forceUpdate = false) {
         let next = null;
         // Search forward for next known point
         for (let j = i + 1; j < calculatedWaypoints.length; j++) {
-          // Check if that future point has a position (calculated in pass 1)
-          // Note: 'interpolate' points won't have it calculated yet.
           if (calculatedWaypoints[j].type !== 'interpolate') {
             next = calculatedWaypoints[j];
             break;
@@ -513,100 +487,168 @@ export function updateMissionTrajectories(scene, forceUpdate = false) {
       return;
     }
 
+    // --- Update Line2 Geometry ---
     const geometry = line.geometry;
 
-    // Update position attribute
-    const newGeometry = new THREE.BufferGeometry().setFromPoints(
-      smoothPoints.map((p) => p.pos.multiplyScalar(AU_TO_SCENE))
+    // LineGeometry setPositions expects flat array
+    const positions = [];
+    smoothPoints.forEach((p) => {
+      const scaled = p.pos.clone().multiplyScalar(AU_TO_SCENE);
+      positions.push(scaled.x, scaled.y, scaled.z);
+    });
+
+    geometry.setPositions(positions);
+
+    // IMPORTANT: Recompute distances for dashing
+    line.computeLineDistances();
+
+    // Update original high-precision points for rebasing
+    line.userData.originalPoints = smoothPoints.map((p) =>
+      p.pos.clone().multiplyScalar(AU_TO_SCENE)
     );
 
-    geometry.setAttribute('position', newGeometry.getAttribute('position'));
+    // Store full trajectory data with dates for precise probe positioning
+    line.userData.trajectoryData = smoothPoints.map((p) => ({
+      pos: p.pos.clone().multiplyScalar(AU_TO_SCENE),
+      date: p.date,
+    }));
 
-    // Update progress attribute (Time based) and lineDistance (Spatial)
-    const numPoints = smoothPoints.length;
-    // Always recreate attributes to be safe with lengths
-
-    // Check if attributes need resizing or just updating
-    // const progressAttribute = geometry.getAttribute('progress');
-    // const distanceAttribute = geometry.getAttribute('lineDistance');
-
-    let progress, lineDistances;
-
-    // If counts match, reuse array (faster?), actually cleaner to just new Float32Array
-    // But if we want to avoid GC, we could reuse if size matches.
-    // Given the frequency of this update (only on coordinate change), new arrays are fine.
-    progress = new Float32Array(numPoints);
-    lineDistances = new Float32Array(numPoints);
-
-    const startTime = smoothPoints[0].date;
-    const endTime = smoothPoints[numPoints - 1].date;
-    const duration = endTime - startTime;
-    let totalDist = 0;
-
-    for (let i = 0; i < numPoints; i++) {
-      // Time
-      if (duration > 0) {
-        progress[i] = (smoothPoints[i].date - startTime) / duration;
-      } else {
-        progress[i] = 0;
-      }
-
-      // Distance
-      if (i > 0) {
-        const p1 = smoothPoints[i - 1].pos;
-        const p2 = smoothPoints[i].pos;
-        const d = p1.distanceTo(p2);
-        totalDist += d;
-      }
-      lineDistances[i] = totalDist;
-    }
-
-    geometry.setAttribute('progress', new THREE.BufferAttribute(progress, 1));
-    geometry.setAttribute('lineDistance', new THREE.BufferAttribute(lineDistances, 1));
-
-    // Update metadata just in case dates changed (unlikely unless data changed)
-    line.userData.startTime = smoothPoints[0].date;
-    line.userData.duration = smoothPoints[numPoints - 1].date - smoothPoints[0].date;
-
-    // Important: Recompute bounding sphere for culling
     geometry.computeBoundingSphere();
 
-    // Trigger update
-    geometry.attributes.position.needsUpdate = true;
-    geometry.attributes.progress.needsUpdate = true;
+    // Reset local origin as the points are fresh absolute positions (rebase will kick in next frame)
+    line.userData.localOrigin.set(0, 0, 0);
+    line.position.set(0, 0, 0); // Reset position offset
+    line.userData.totalLength = null; // Force recalc of length
   });
 }
 
 /**
  * Updates visual uniforms for mission lines based on current simulation time.
+ * Also handles continuous centering (Local Rebase) to prevent floating point jitter.
  * Should be called every frame.
  * @param {number} currentSimTime - Time in ms
  */
 export function updateMissionVisuals(currentSimTime) {
   try {
-    Object.values(missionLines).forEach((line) => {
+    const lines = Object.values(missionLines);
+    if (lines.length === 0) return;
+
+    // Update screen resolution for all lines (needed for LineMaterial)
+    // We should only do this on resize, but checking here is safe enough if costly
+    // Use a shared vector to avoid alloc?
+    // Actually, renderer is not passed here.
+    // We can assume standard window size or pass it.
+    const resolution = new THREE.Vector2(window.innerWidth, window.innerHeight);
+
+    // --- Continuous Centering (Local Rebase) ---
+    // We check if the camera (inverse universe position) has moved far enough from the
+    // last used "Local Origin" for the mesh vertices.
+    // If so, we shift the mesh vertices to be relative to the new camera position,
+    // and move the mesh container to compensate.
+
+    // 1. Get Virtual Camera Position
+    // The mission lines are in missionGroup -> universeGroup.
+    // universeGroup is moved by controls to be at -virtualCameraPos.
+    // So virtualCameraPos = -universeGroup.position.
+    const missionGroup = lines[0].parent;
+    if (!missionGroup || !missionGroup.parent) return; // Should be universeGroup
+
+    const universeGroup = missionGroup.parent;
+    const virtualCameraPos = universeGroup.position.clone().negate();
+
+    // 2. Continuous Rebase (Threshold-based)
+    // We only rebase when the camera moves significantly, to avoid expensive geometry updates.
+    // We check distance from the CURRENT missionGroup position to the new camera position.
+
+    // Check if we need to rebase (All lines share the same parent group, so we treat it as a unit)
+    if (missionGroup.position.distanceTo(virtualCameraPos) > 1000) {
+      // Move missionGroup to the new origin
+      missionGroup.position.copy(virtualCameraPos);
+
+      // Rebase all lines to be relative to this new origin
+      lines.forEach((line) => {
+        // Safeguard: Ensure originalPoints exist
+        if (!line.userData.originalPoints) return;
+
+        const positions = [];
+        const originalPoints = line.userData.originalPoints;
+
+        originalPoints.forEach((p) => {
+          // Vertex = Absolute - NewOrigin (which is now MissionGroup Position)
+          positions.push(
+            p.x - virtualCameraPos.x,
+            p.y - virtualCameraPos.y,
+            p.z - virtualCameraPos.z
+          );
+        });
+
+        line.geometry.setPositions(positions);
+        line.computeLineDistances();
+
+        // Update tracker if we still use it, though missionGroup.position is the source of truth now
+        if (line.userData.localOrigin) {
+          line.userData.localOrigin.copy(virtualCameraPos);
+        }
+      });
+    }
+
+    // Material Resolution & Uniforms Update (Must run every frame)
+    lines.forEach((line) => {
+      // Material Resolution Update
+      if (line.material.resolution) {
+        line.material.resolution.copy(resolution);
+      }
+
       if (!line.visible) return;
 
       const startTime = line.userData.startTime;
       const duration = line.userData.duration;
 
+      if (!line.userData.totalLength) {
+        // Calculate once
+        let dist = 0;
+        const pts = line.userData.originalPoints;
+        // Approximate
+        for (let i = 1; i < pts.length; i++) {
+          dist += pts[i].distanceTo(pts[i - 1]);
+        }
+        line.userData.totalLength = dist;
+
+        // Update material once
+        if (line.material.uniforms.uTotalLength) {
+          line.material.uniforms.uTotalLength.value = dist;
+        }
+      }
+
       if (startTime !== undefined && duration > 0) {
-        // Calculate normalized time (0..1)
-        const relativeTime = (currentSimTime - startTime) / duration;
-        // Clamp to 0..1 (although shader handles >1, we generally want 1 max)
-        // Actually, if we want dotted line for future, we need >1?
-        // No, progress is 0..1. If sim time is > end time, relativeTime > 1.
-        // Shader: if (vProgress > uCurrentTime). vProgress is 0..1.
-        // If relativeTime > 1, uCurrentTime > 1, so vProgress is always < uCurrentTime -> Solid line (Mission Complete).
-        // If relativeTime < 0 (Pre-launch), uCurrentTime < 0, vProgress > uCurrentTime -> Dotted line (Planned).
+        let relativeTime;
+        if (duration > 0) {
+          // progress 0..1
+          relativeTime = (currentSimTime - startTime) / duration;
+        } else {
+          relativeTime = 1.0;
+        }
+
+        // Clamp 0..1 - Actually let it go beyond 0..1 if we want to show everything or hide everything
+        relativeTime = Math.max(0, Math.min(1, relativeTime));
 
         if (line.material && line.material.uniforms && line.material.uniforms.uCurrentTime) {
+          // Log only occasionally or for first mission to avoid spam
+          if (line.userData.id === 'Voyager 1' && Math.random() < 0.01) {
+            console.log(
+              `Voyager 1: relativeTime=${relativeTime}, t=${currentSimTime}, start=${startTime}, dur=${duration}`
+            );
+          }
           line.material.uniforms.uCurrentTime.value = relativeTime;
         }
       }
     });
   } catch (e) {
     // Suppress spammy visual update errors
+    if (!window._suppressMissionErrors) {
+      console.warn('Mission update error:', e);
+      window._suppressMissionErrors = true;
+    }
   }
 }
 
@@ -746,17 +788,55 @@ function getAbsoluteMissionWaypointPosition(wp) {
 export function getMissionState(missionId, date) {
   // 1. Get Mission Data
   const mission = missionData.find((m) => m.id === missionId);
-  if (!mission || !mission.waypoints || mission.waypoints.length < 2) return null;
+  if (!mission) return null;
 
-  // 2. Parse Date
   const time = typeof date === 'string' || date instanceof Date ? new Date(date).getTime() : date;
 
-  // 3. Find Segment
-  // We need to find index i such that waypoints[i].date <= date < waypoints[i+1].date
+  // 2. Try to use High-Precision Trajectory Data (Visual Match)
+  // This uses the cached smooth curve points, ensuring the probe aligns perfectly with the line.
+  const line = missionLines[missionId];
+  if (
+    line &&
+    line.userData &&
+    line.userData.trajectoryData &&
+    line.userData.trajectoryData.length > 1
+  ) {
+    const data = line.userData.trajectoryData;
+    // Optimization: Check boundaries
+    if (time >= data[0].date && time <= data[data.length - 1].date) {
+      // Find segment in dense array
+      // Linear search is O(N) but N ~ 1000, fast enough for 10 probes.
+      // Can be optimized to Binary Search if needed.
+      let idx = -1;
+      const len = data.length;
+      for (let i = 0; i < len - 1; i++) {
+        if (time >= data[i].date && time <= data[i + 1].date) {
+          idx = i;
+          break;
+        }
+      }
+
+      if (idx !== -1) {
+        const p1 = data[idx];
+        const p2 = data[idx + 1];
+        const duration = p2.date - p1.date;
+        const alpha = duration > 0 ? (time - p1.date) / duration : 0;
+
+        // p1.pos and p2.pos are already SCALED (AU_TO_SCENE) and in Absolute Scene coords.
+        const position = new THREE.Vector3().lerpVectors(p1.pos, p2.pos, alpha);
+        const direction = new THREE.Vector3().subVectors(p2.pos, p1.pos).normalize();
+        return { position, direction };
+      }
+    }
+  }
+
+  // 3. Fallback: Parse Waypoints (Original Logic)
+  // Used if visual line is not generated or date is out of range of the visual line (early/late?)
+  if (!mission.waypoints || mission.waypoints.length < 2) return null;
+
+  // Find Segment
   let segmentIndex = -1;
   const waypoints = mission.waypoints;
-
-  // Sort waypoints by date just in case (though usually sorted)
   const wpTimes = waypoints.map((wp) => new Date(wp.date).getTime());
 
   if (time < wpTimes[0]) return null; // Before launch
@@ -769,28 +849,23 @@ export function getMissionState(missionId, date) {
     }
   }
 
-  if (segmentIndex === -1) return null; // Should not happen given checks above
+  if (segmentIndex === -1) return null;
 
   const tStart = wpTimes[segmentIndex];
   const tEnd = wpTimes[segmentIndex + 1];
   const duration = tEnd - tStart;
-
-  // Normalized time within this segment (0..1)
   const alpha = duration > 0 ? (time - tStart) / duration : 0;
 
-  // 4. Calculate Positions for Start/End Waypoints
-  // We must apply the SAME coordinate system corrections as updateMissionTrajectories
+  // Calculate Positions
   const currentSystem = config.coordinateSystem;
 
   const getCorrectedPos = (wpIndex) => {
     const wp = waypoints[wpIndex];
     let pos = getAbsoluteMissionWaypointPosition(wp);
 
-    // Handle 'exit' vector case if needed
     if (wp.dist && mission.exit) {
       const exitVec = getExitVector(mission.exit.ra, mission.exit.dec);
       pos = exitVec.multiplyScalar(wp.dist);
-      // Apply offset to exit points too if they have them?
       if (wp.offset) {
         const scale = 1;
         const offsetVec = new THREE.Vector3(wp.offset.x || 0, wp.offset.y || 0, wp.offset.z || 0);
@@ -798,7 +873,6 @@ export function getMissionState(missionId, date) {
       }
     }
 
-    // Apply Coordinate Correction
     const correction = new THREE.Vector3(0, 0, 0);
     if (currentSystem === 'Geocentric' || currentSystem === 'Tychonic') {
       const earthPos = getBodyPosition('Earth', wp.date);
@@ -815,11 +889,9 @@ export function getMissionState(missionId, date) {
   const p1 = getCorrectedPos(segmentIndex);
   const p2 = getCorrectedPos(segmentIndex + 1);
 
-  // 5. Interpolate
   const position = new THREE.Vector3().lerpVectors(p1, p2, alpha);
   const direction = new THREE.Vector3().subVectors(p2, p1).normalize();
 
-  // Scale to Scene Units (Critical fix for "Not even close" issue)
   position.multiplyScalar(AU_TO_SCENE);
 
   return { position, direction };
@@ -854,9 +926,8 @@ async function loadMissionProbe(missionId, modelPath) {
   const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
   const { DRACOLoader } = await import('three/examples/jsm/loaders/DRACOLoader.js');
 
-  // Practical scale: 1e-6 scene units (~7.5 km displayed size)
-  // This is a compromise between realism and floating-point precision.
-  // True realistic scale (5.35e-10) causes precision issues with camera positioning.
+  // Practical scale: 1e-6 scene units (~3 km displayed size)
+  // This is a compromise between realism (5m) and visibility/precision
   const PROBE_SCALE = 1e-6;
 
   // Check cache first
@@ -864,7 +935,8 @@ async function loadMissionProbe(missionId, modelPath) {
     const gltf = ModelPreview.modelCache.get(modelPath);
     const model = gltf.scene.clone();
     model.name = `probe_${missionId}`;
-    model.scale.setScalar(1e-4); // ~750 km displayed
+    model.name = `probe_${missionId}`;
+    model.scale.setScalar(PROBE_SCALE);
 
     // Make materials emissive
     model.traverse((node) => {
@@ -903,7 +975,8 @@ async function loadMissionProbe(missionId, modelPath) {
       model.name = `probe_${missionId}`;
 
       // Scale: 1e-4 (~750 km displayed)
-      model.scale.setScalar(1e-4);
+      // Scale: 1e-6 (~3 km displayed)
+      model.scale.setScalar(PROBE_SCALE);
 
       // Make materials emissive so probe is self-lit (visible in dark space)
       model.traverse((node) => {
@@ -955,7 +1028,22 @@ export function updateMissionProbes(currentDate) {
 
     if (state) {
       probe.visible = true;
-      probe.position.copy(state.position);
+
+      // Apply LOCAL REBASE OFFSET
+      // If missions are rebased, the missionGroup is shifted by 'localOrigin'.
+      // The probe is a child of missionGroup, so its local position must be relative to that origin.
+      // Pos = Absolute - localOrigin.
+
+      // Find the associated line to get the shared tracker
+      const line = missionLines[missionId];
+      let localOrigin = new THREE.Vector3(0, 0, 0);
+      if (line && line.userData && line.userData.localOrigin) {
+        localOrigin = line.userData.localOrigin;
+      }
+
+      // Calculate relative position
+      const relativePos = state.position.clone().sub(localOrigin);
+      probe.position.copy(relativePos);
 
       // Orient probe along flight direction
       if (state.direction) {
@@ -997,7 +1085,7 @@ export function getProbeForFocus(missionId) {
     mesh: probe,
     data: {
       name: mission.name,
-      radius: 0.00001, // Very small radius in scene units - camera will get close
+      radius: 2e-6, // Matches new PROBE_SCALE roughly (3km visual)
     },
     type: 'probe',
   };

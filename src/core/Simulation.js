@@ -296,16 +296,23 @@ export class Simulation {
     updatePlanets(this.planets, this.sun, this.shadowLight);
     updateCoordinateSystem(this.universeGroup, this.planets, this.sun);
     updateRelativeOrbits(this.orbitGroup, this.relativeOrbitGroup, this.planets, this.sun);
+    updateAllOrbitGradients(this.orbitGroup, this.planets);
+    updateAllMoonOrbitGradients(this.planets);
+    this.rabbit.update(delta);
+    
+    // Update controls first to ensure universe position is final for this frame
+    this.controls.update(); 
+    // VirtualCameraControls handles camera-at-origin internally by moving universeGroup
+
     // Update Mission Trajectories (re-calculate if coordinate system changed)
+    // Must happen AFTER controls update so we can compensate for universe movement correctly
     if (this.config.coordinateSystem && this.missionGroup.children.length > 0) {
       updateMissionTrajectories(this.scene);
       updateMissionVisuals(this.config.date);
       updateMissionProbes(this.config.date); // Update probe positions
     }
-    updateAllOrbitGradients(this.orbitGroup, this.planets);
-    updateAllMoonOrbitGradients(this.planets);
-    this.rabbit.update(delta);
-    this.controls.update(); // VirtualCameraControls handles camera-at-origin internally
+
+    updateFocusMode(this.camera, this.controls, this.planets, this.sun);
 
     updateFocusMode(this.camera, this.controls, this.planets, this.sun);
 

@@ -29,6 +29,9 @@ import * as THREE from 'three';
 /**
  * Manages periodic origin rebasing for precision rendering.
  */
+/**
+ * Manages periodic origin rebasing for precision rendering.
+ */
 export class VirtualOrigin {
   constructor() {
     /**

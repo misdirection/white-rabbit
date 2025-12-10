@@ -92,6 +92,7 @@ export const missionData = [
       { date: '2004-12-16', dist: 94, label: 'Termination Shock' },
       { date: '2012-08-25', dist: 121, label: 'Heliopause' },
       { date: '2024-01-01', dist: 162, label: 'Current' },
+      { date: '2050-01-01', dist: 255, label: 'Future' }, // Extrapolated
     ],
   },
   {
@@ -121,6 +122,7 @@ export const missionData = [
       { date: '2007-08-30', dist: 84, label: 'Termination Shock' },
       { date: '2018-11-05', dist: 119, label: 'Heliopause' },
       { date: '2024-01-01', dist: 136, label: 'Current' },
+      { date: '2050-01-01', dist: 215, label: 'Future' }, // Extrapolated
     ],
   },
   {
@@ -146,6 +148,7 @@ export const missionData = [
       { date: '1983-06-13', dist: 30.1, label: 'Neptune Orbit' }, // Approx crossing
       { date: '2003-01-23', dist: 80, label: 'End of Comms' },
       { date: '2024-01-01', dist: 135, label: 'Current' },
+      { date: '2050-01-01', dist: 200, label: 'Future' }, // Extrapolated
     ],
   },
   {
@@ -170,6 +173,7 @@ export const missionData = [
       { date: '1979-09-01', body: 'Saturn', offset: { x: 0.00014, y: 0.0001, z: 0.0001 } }, // ~21,000 km
       { date: '1995-11-24', dist: 44, label: 'End of Comms' },
       { date: '2024-01-01', dist: 113, label: 'Current' },
+      { date: '2050-01-01', dist: 175, label: 'Future' }, // Extrapolated
     ],
   },
   {
@@ -251,6 +255,7 @@ export const missionData = [
       { date: '2015-07-14', body: 'Pluto', offset: { x: 0.0001, y: 0, z: 0 } }, // ~12,500km
       { date: '2019-01-01', customBody: 'Arrokoth' },
       { date: '2024-01-01', dist: 58, label: 'Current' },
+      { date: '2050-01-01', dist: 140, label: 'Future' }, // Extrapolated
     ],
   },
   {

@@ -49,7 +49,7 @@ export function createScene() {
   const camera = new THREE.PerspectiveCamera(
     60,
     window.innerWidth / window.innerHeight,
-    1e-5,
+    1e-7,
     1e12
   );
   camera.position.set(0, 200, 400);
