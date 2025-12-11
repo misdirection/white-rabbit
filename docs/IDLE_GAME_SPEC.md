@@ -49,7 +49,7 @@ All building costs scale with the number owned: `baseCost * (1.15 ^ owned)`
 ### Mine
 - **Base Cost**: 10 Minerals
 - **Production**: +1 Mineral/second
-- **Energy Cost**: 1 Energy/second
+- **Energy Cost**: 0
 - **Unlock**: Available from start
 
 ### Trading Post

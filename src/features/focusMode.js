@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { config } from '../config.js';
 import { textureManager } from '../managers/TextureManager.js';
 import { getMissionState } from './missions.js';
+import { toggleIdleGame } from '../ui/modules/idleGame.js';
 
 const SCREEN_HIT_RADIUS = 15; // Pixels on screen for hit detection
 const ANIMATION_DURATION = 2000; // ms for camera transition
@@ -64,7 +65,53 @@ export function setupFocusMode(camera, controls, planets, sun) {
     }
   });
 
+  // Single click on Earth to open Colony game
+  // Use a delayed check to avoid interfering with double-click
+  let singleClickTimer = null;
+  let lastClickEvent = null;
+
+  window.addEventListener('click', (event) => {
+    // Only handle clicks on canvas (not UI elements)
+    if (event.target.tagName !== 'CANVAS') {
+      return;
+    }
+
+    lastClickEvent = event;
+
+    // Clear any pending single-click action
+    if (singleClickTimer) {
+      clearTimeout(singleClickTimer);
+    }
+
+    // Delay single-click action to allow double-click to cancel it
+    singleClickTimer = setTimeout(() => {
+      if (!lastClickEvent) return;
+
+      const clickedObject = findObjectAtPosition(
+        lastClickEvent.clientX,
+        lastClickEvent.clientY,
+        camera,
+        controls,
+        planets,
+        sun
+      );
+
+      // If clicked on Earth, open the idle game
+      if (clickedObject && clickedObject.data?.name === 'Earth') {
+        toggleIdleGame();
+      }
+
+      lastClickEvent = null;
+    }, 250); // Wait 250ms to see if it's a double-click
+  });
+
   window.addEventListener('dblclick', (event) => {
+    // Cancel any pending single-click action
+    if (singleClickTimer) {
+      clearTimeout(singleClickTimer);
+      singleClickTimer = null;
+      lastClickEvent = null;
+    }
     const clickedObject = findObjectAtPosition(
       event.clientX,
       event.clientY,
@@ -161,22 +208,22 @@ export function updateFocusMode(camera, controls) {
 
     // Filter out huge jumps (e.g. initial rebase or teleport)
     if (delta.lengthSq() > 0 && delta.lengthSq() < 1000000) {
-       // Apply delta to both Camera and Target to move them together
-       // This maintains the relative camera position to the object (following)
-       
-       if (controls.setVirtualPosition) {
-           const camPos = controls.getVirtualPosition();
-           const targetPos = controls.getVirtualTarget();
+      // Apply delta to both Camera and Target to move them together
+      // This maintains the relative camera position to the object (following)
 
-           camPos.add(delta);
-           targetPos.add(delta);
+      if (controls.setVirtualPosition) {
+        const camPos = controls.getVirtualPosition();
+        const targetPos = controls.getVirtualTarget();
 
-           controls.setVirtualPosition(camPos);
-           controls.setVirtualTarget(targetPos);
-       } else {
-           camera.position.add(delta);
-           controls.target.add(delta);
-       }
+        camPos.add(delta);
+        targetPos.add(delta);
+
+        controls.setVirtualPosition(camPos);
+        controls.setVirtualTarget(targetPos);
+      } else {
+        camera.position.add(delta);
+        controls.target.add(delta);
+      }
     }
 
     previousObjectPosition.copy(currentObjectPosition);
@@ -238,40 +285,39 @@ export function focusOnObject(
 
   // Offset
   let offset;
-  
+
   if (targetObject.type === 'probe') {
-      // Chase Camera: Behind and slightly above
-      // Get mission state to find direction
-      const state = getMissionState(targetObject.data.id, config.date);
-      let direction = new THREE.Vector3(0, 0, 1); // Default if fail
-      if (state && state.direction) {
-          direction.copy(state.direction);
-      }
-      
-      // Position: Behind (-direction) * distance + Up (+y) * small_offset
-      const backDist = distance * 1.0; 
-      const upDist = distance * 0.3; // 30% up elevation
-      
-      const up = new THREE.Vector3(0, 1, 0);
-      // Ensure up is not parallel to direction (rare in solar system plane)
-      if (Math.abs(direction.dot(up)) > 0.99) {
-          up.set(1, 0, 0); // Gimbal lock fallback
-      }
-      
-      // We want to be BEHIND the probe, so we move -Direction.
-      // But wait, if direction is velocity, we want to look at the probe FROM behind.
-      // So CameraPos = ProbePos - Direction * Dist.
-      
-      offset = direction.clone().multiplyScalar(-backDist).add(up.multiplyScalar(upDist));
-      
+    // Chase Camera: Behind and slightly above
+    // Get mission state to find direction
+    const state = getMissionState(targetObject.data.id, config.date);
+    const direction = new THREE.Vector3(0, 0, 1); // Default if fail
+    if (state && state.direction) {
+      direction.copy(state.direction);
+    }
+
+    // Position: Behind (-direction) * distance + Up (+y) * small_offset
+    const backDist = distance * 1.0;
+    const upDist = distance * 0.3; // 30% up elevation
+
+    const up = new THREE.Vector3(0, 1, 0);
+    // Ensure up is not parallel to direction (rare in solar system plane)
+    if (Math.abs(direction.dot(up)) > 0.99) {
+      up.set(1, 0, 0); // Gimbal lock fallback
+    }
+
+    // We want to be BEHIND the probe, so we move -Direction.
+    // But wait, if direction is velocity, we want to look at the probe FROM behind.
+    // So CameraPos = ProbePos - Direction * Dist.
+
+    offset = direction.clone().multiplyScalar(-backDist).add(up.multiplyScalar(upDist));
   } else {
-      // Standard Diagonal view for planets
-      const angle = Math.PI / 6;
-      offset = new THREE.Vector3(
-        distance * Math.cos(angle),
-        distance * Math.sin(angle),
-        distance * Math.cos(angle)
-      );
+    // Standard Diagonal view for planets
+    const angle = Math.PI / 6;
+    offset = new THREE.Vector3(
+      distance * Math.cos(angle),
+      distance * Math.sin(angle),
+      distance * Math.cos(angle)
+    );
   }
 
   // Capture Start State

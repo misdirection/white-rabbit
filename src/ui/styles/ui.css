@@ -683,3 +683,648 @@
 .system-slider:active::-moz-range-thumb {
   background: #44aaff;
 }
+
+/* ==================== */
+/* Idle Game UI Styles */
+/* ==================== */
+
+.idle-game-window {
+  min-width: 380px;
+  max-width: 450px;
+}
+
+.idle-game-window .window-content {
+  padding: 0;
+  overflow: hidden;
+}
+
+.idle-game-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 600px;
+}
+
+/* Resource Bar */
+.idle-resource-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.idle-resource {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.idle-resource .resource-icon {
+  font-size: 14px;
+}
+
+.idle-resource .resource-value {
+  font-family: var(--font-mono);
+  color: #fff;
+  min-width: 35px;
+}
+
+.idle-resource .resource-rate {
+  font-family: var(--font-mono);
+  color: #88cc88;
+  font-size: 10px;
+}
+
+.idle-resource.energy.negative .resource-value {
+  color: #ff6666;
+}
+
+/* Tabs */
+.idle-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.idle-tab {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-radius: 6px 6px 0 0;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.idle-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.idle-tab.active {
+  background: rgba(68, 170, 255, 0.2);
+  color: #44aaff;
+  font-weight: 600;
+}
+
+/* Content Area */
+.idle-game-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+/* Buildings Tab */
+.idle-buildings-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Gather Section */
+.idle-gather-section {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.idle-gather-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 80px;
+  background: linear-gradient(145deg, rgba(139, 69, 19, 0.6), rgba(160, 82, 45, 0.4));
+  border: 2px solid rgba(205, 133, 63, 0.5);
+  border-radius: 12px;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.idle-gather-btn:hover {
+  transform: scale(1.05);
+  background: linear-gradient(145deg, rgba(160, 82, 45, 0.7), rgba(205, 133, 63, 0.5));
+  border-color: rgba(255, 200, 100, 0.6);
+}
+
+.idle-gather-btn:active,
+.idle-gather-btn.clicked {
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.idle-gather-btn .gather-icon {
+  font-size: 24px;
+}
+
+.idle-gather-btn .gather-text {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.idle-gather-btn .gather-amount {
+  font-size: 14px;
+  color: #ffd700;
+  font-weight: bold;
+}
+
+/* Buildings List */
+.idle-buildings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.idle-building {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.idle-building:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.idle-building.locked {
+  opacity: 0.6;
+}
+
+.building-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.building-name {
+  font-weight: 600;
+  color: #ddd;
+}
+
+.building-count {
+  color: #888;
+  font-size: 12px;
+}
+
+.building-locked-icon {
+  margin-left: auto;
+}
+
+.building-info {
+  margin-bottom: 8px;
+}
+
+.building-rates {
+  font-size: 11px;
+  color: #88cc88;
+  font-family: var(--font-mono);
+}
+
+.building-unlock {
+  font-size: 11px;
+  color: #888;
+  font-style: italic;
+}
+
+.building-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.building-buy-btn,
+.building-sell-btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s;
+}
+
+.building-buy-btn {
+  background: rgba(68, 170, 255, 0.2);
+  color: #44aaff;
+  flex: 1;
+}
+
+.building-buy-btn:hover:not(.disabled) {
+  background: rgba(68, 170, 255, 0.3);
+  border-color: #44aaff;
+}
+
+.building-buy-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.building-sell-btn {
+  background: rgba(255, 100, 100, 0.2);
+  color: #ff8888;
+}
+
+.building-sell-btn:hover {
+  background: rgba(255, 100, 100, 0.3);
+  border-color: #ff6666;
+}
+
+/* Research Tab */
+.idle-research-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.idle-research-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+}
+
+.scientists-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.hire-btn {
+  padding: 4px 10px;
+  background: rgba(147, 112, 219, 0.2);
+  border: 1px solid rgba(147, 112, 219, 0.4);
+  border-radius: 4px;
+  color: #9370db;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s;
+}
+
+.hire-btn:hover:not(.disabled) {
+  background: rgba(147, 112, 219, 0.3);
+  border-color: #9370db;
+}
+
+.hire-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.slots-info {
+  font-size: 11px;
+  color: #888;
+}
+
+/* Research Sections */
+.idle-research-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.research-section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6688aa;
+  font-weight: 600;
+}
+
+.no-research {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+  padding: 8px;
+}
+
+/* Research Items */
+.research-item {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.research-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.research-item.locked {
+  opacity: 0.6;
+}
+
+.research-item.active {
+  border-color: rgba(147, 112, 219, 0.4);
+  background: rgba(147, 112, 219, 0.1);
+}
+
+.research-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.research-name {
+  font-weight: 600;
+  color: #ddd;
+  font-size: 12px;
+}
+
+.research-level {
+  font-size: 11px;
+  color: #888;
+}
+
+.research-time {
+  font-size: 11px;
+  color: #aaa;
+  font-family: var(--font-mono);
+}
+
+.research-locked-icon {
+  font-size: 14px;
+}
+
+.research-desc {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 6px;
+}
+
+.research-unlock {
+  font-size: 11px;
+  color: #666;
+  font-style: italic;
+}
+
+.research-info {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.research-cost {
+  color: #9370db;
+}
+
+/* Research Progress Bar */
+.research-progress-bar {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  margin: 8px 0;
+  overflow: hidden;
+}
+
+.research-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #9370db, #b088f9);
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.research-start-btn,
+.research-cancel-btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s;
+}
+
+.research-start-btn {
+  background: rgba(147, 112, 219, 0.2);
+  color: #9370db;
+}
+
+.research-start-btn:hover:not(.disabled) {
+  background: rgba(147, 112, 219, 0.3);
+  border-color: #9370db;
+}
+
+.research-start-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.research-cancel-btn {
+  background: rgba(255, 100, 100, 0.2);
+  color: #ff8888;
+  margin-top: 4px;
+}
+
+.research-cancel-btn:hover {
+  background: rgba(255, 100, 100, 0.3);
+}
+
+/* Spaceship Progress Section */
+.idle-spaceship-section {
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.spaceship-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.spaceship-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #aaccff;
+}
+
+.spaceship-percent {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: #44aaff;
+}
+
+.spaceship-progress-bar {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 4px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.spaceship-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #44aaff, #88ddff);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.spaceship-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.spaceship-resource {
+  color: #888;
+}
+
+.spaceship-resource.complete {
+  color: #88cc88;
+}
+
+.spaceship-launch-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  background: linear-gradient(145deg, rgba(68, 170, 255, 0.3), rgba(100, 200, 255, 0.2));
+  border: 2px solid rgba(68, 170, 255, 0.5);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+  animation: pulse 2s infinite;
+}
+
+.spaceship-launch-btn:hover {
+  background: linear-gradient(145deg, rgba(68, 170, 255, 0.4), rgba(100, 200, 255, 0.3));
+  border-color: #44aaff;
+  transform: scale(1.02);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(68, 170, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px 5px rgba(68, 170, 255, 0.2);
+  }
+}
+
+/* Footer */
+.idle-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+}
+
+.idle-stats {
+  display: flex;
+  gap: 12px;
+  color: #666;
+}
+
+.idle-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.idle-save-btn,
+.idle-reset-btn {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: #aaa;
+  cursor: pointer;
+  font-size: 10px;
+  transition: all 0.2s;
+}
+
+.idle-save-btn:hover {
+  background: rgba(68, 170, 255, 0.2);
+  color: #44aaff;
+}
+
+.idle-reset-btn:hover {
+  background: rgba(255, 100, 100, 0.2);
+  color: #ff8888;
+}
+
+/* Win Screen */
+.idle-win-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.idle-win-screen .win-rocket {
+  font-size: 60px;
+  animation: rocket-fly 2s ease-in-out infinite;
+}
+
+@keyframes rocket-fly {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.idle-win-screen h2 {
+  color: #ffd700;
+  margin: 20px 0 10px;
+  font-size: 24px;
+}
+
+.idle-win-screen p {
+  color: #aaa;
+  margin: 5px 0;
+}
+
+.idle-win-screen .win-subtitle {
+  color: #44aaff;
+  font-style: italic;
+  margin-top: 15px;
+}
+
+.win-continue-btn {
+  margin-top: 30px;
+  padding: 12px 24px;
+  background: rgba(68, 170, 255, 0.2);
+  border: 1px solid rgba(68, 170, 255, 0.4);
+  border-radius: 6px;
+  color: #44aaff;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.win-continue-btn:hover {
+  background: rgba(68, 170, 255, 0.3);
+  border-color: #44aaff;
+}
