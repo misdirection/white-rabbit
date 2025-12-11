@@ -54,6 +54,7 @@ let gameWindow = null;
 let currentTab = 'buildings';
 let initialized = false;
 let needsFullRender = true;
+let lastActiveResearchCount = 0;
 
 /**
  * Initialize the idle game UI
@@ -175,6 +176,9 @@ function fullRender(state) {
   const rates = getProductionRates();
   const hasResearch = isResearchTabUnlocked(state);
 
+  // Track active research count to detect completions
+  lastActiveResearchCount = state.research.activeResearches.length;
+
   const html = `
     <div class="idle-game-container">
       ${renderResourceBar(state, rates)}
@@ -198,6 +202,15 @@ function fullRender(state) {
 function incrementalUpdate(state) {
   const rates = getProductionRates();
   const content = gameWindow.content;
+
+  // Check if active research count changed (research completed or started)
+  const currentActiveCount = state.research.activeResearches.length;
+  if (currentActiveCount !== lastActiveResearchCount) {
+    lastActiveResearchCount = currentActiveCount;
+    needsFullRender = true;
+    fullRender(state);
+    return;
+  }
 
   // Update resource values
   updateElementText(
@@ -250,7 +263,7 @@ function incrementalUpdate(state) {
 
     const buyBtn = content.querySelector(`[data-building="${buildingId}"].building-buy-btn`);
     if (buyBtn) {
-      buyBtn.textContent = `Buy ${formatCost(cost)}`;
+      buyBtn.textContent = formatCost(cost);
       buyBtn.disabled = !affordable;
       buyBtn.classList.toggle('disabled', !affordable);
     }
@@ -443,8 +456,8 @@ function renderBuildingsList(state) {
             <span class="building-name">${building.name}</span>
             <span class="building-locked-icon">🔒</span>
           </div>
-          <div class="building-unlock">
-            ${getUnlockText(building)}
+          <div class="building-info">
+            <span class="building-unlock">${getUnlockText(building)}</span>
           </div>
         </div>
       `;
@@ -464,7 +477,7 @@ function renderBuildingsList(state) {
             <button class="building-buy-btn ${affordable ? '' : 'disabled'}" 
                     data-building="${buildingId}" 
                     ${affordable ? '' : 'disabled'}>
-              Buy ${formatCost(cost)}
+              ${formatCost(cost)}
             </button>
             <button class="building-sell-btn" data-building="${buildingId}" 
                     style="${owned > 0 ? '' : 'display:none'}">
